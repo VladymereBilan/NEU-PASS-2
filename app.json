@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "NEU-Pass",
+    "slug": "neu-pass",
+    "scheme": "neu-pass",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "plugins": [
+      "expo-router",
+      "expo-sqlite"
+    ],
+    "assetBundlePatterns": [
+      "**/*"
+    ]
+  }
+}
