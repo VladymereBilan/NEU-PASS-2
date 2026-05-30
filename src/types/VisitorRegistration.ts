@@ -20,11 +20,13 @@ export type VisitorRegistration = {
   email: string;
   idType: string;
   idNumber: string;
+  idImageUri: string;
   purposeOfVisit: string;
   otherAgenda: string;
   consentAccepted: boolean;
   ocrReviewed: boolean;
   faceVerificationStatus: FaceVerificationStatusType;
+  faceImageUri: string;
   registrationStatus: RegistrationStatus;
   timeIn: string;
   visitorPassNumber: string;

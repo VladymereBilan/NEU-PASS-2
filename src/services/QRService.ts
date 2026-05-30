@@ -7,6 +7,24 @@ type QRPayload = {
   token: string;
 };
 
+export function parseQRValue(value: string) {
+  try {
+    const parsed = JSON.parse(value) as Partial<QRPayload>;
+    if (
+      typeof parsed.visitorId !== "string" ||
+      typeof parsed.visitorPassNumber !== "string" ||
+      typeof parsed.timestamp !== "string" ||
+      typeof parsed.token !== "string"
+    ) {
+      return null;
+    }
+
+    return parsed as QRPayload;
+  } catch {
+    return null;
+  }
+}
+
 export function generateQRValue(
   visitorId: string,
   visitorPassNumber: string

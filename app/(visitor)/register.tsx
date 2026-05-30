@@ -96,11 +96,13 @@ export default function RegisterVisitScreen() {
       email: form.email.trim(),
       idType: form.idType.trim(),
       idNumber: form.idNumber.trim(),
+      idImageUri: "",
       purposeOfVisit: form.purpose.trim(),
       otherAgenda: form.agenda.trim(),
       consentAccepted: false,
       ocrReviewed: false,
-      faceVerificationStatus: FaceVerificationStatus.Pending
+      faceVerificationStatus: FaceVerificationStatus.Pending,
+      faceImageUri: ""
     });
     Alert.alert("Registration information saved for prototype.");
     router.push("/(visitor)/privacy-consent");

@@ -1,5 +1,8 @@
 import * as SQLite from "expo-sqlite";
-import { CREATE_VISITOR_REGISTRATIONS_TABLE } from "./schema";
+import {
+  CREATE_USER_ACCOUNTS_TABLE,
+  CREATE_VISITOR_REGISTRATIONS_TABLE,
+} from "./schema";
 
 export const db = SQLite.openDatabaseSync("neu-pass.db");
 
@@ -14,6 +17,8 @@ const REQUIRED_COLUMNS: Array<{
   { name: "consentAccepted", type: "INTEGER", defaultValue: "0" },
   { name: "ocrReviewed", type: "INTEGER", defaultValue: "0" },
   { name: "faceVerificationStatus", type: "TEXT", defaultValue: "''" },
+  { name: "idImageUri", type: "TEXT", defaultValue: "''" },
+  { name: "faceImageUri", type: "TEXT", defaultValue: "''" },
   { name: "registrationStatus", type: "TEXT", defaultValue: "''" },
   { name: "visitorPassNumber", type: "TEXT", defaultValue: "''" },
   { name: "qrStatus", type: "TEXT", defaultValue: "''" },
@@ -55,6 +60,7 @@ export async function initDb() {
   if (initialized) return;
 
   db.execSync(CREATE_VISITOR_REGISTRATIONS_TABLE);
+  db.execSync(CREATE_USER_ACCOUNTS_TABLE);
   await runMigrations();
 
   initialized = true;

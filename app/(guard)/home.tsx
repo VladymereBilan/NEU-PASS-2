@@ -42,6 +42,12 @@ export default function GuardHomeScreen() {
         >
           <Text style={styles.actionText}>Visitor Logs</Text>
         </Pressable>
+        <Pressable
+          style={styles.actionButton}
+          onPress={() => router.push("/(guard)/reports")}
+        >
+          <Text style={styles.actionText}>Reports</Text>
+        </Pressable>
 
         <SignOutButton onPress={handleSignOut} />
       </View>

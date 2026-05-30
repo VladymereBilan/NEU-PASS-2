@@ -8,11 +8,13 @@ export type RegistrationDraft = {
   email: string;
   idType: string;
   idNumber: string;
+  idImageUri: string;
   purposeOfVisit: string;
   otherAgenda: string;
   consentAccepted: boolean;
   ocrReviewed: boolean;
   faceVerificationStatus: FaceVerificationStatusType;
+  faceImageUri: string;
 };
 
 type RegistrationDraftContextValue = {
