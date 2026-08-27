@@ -18,6 +18,7 @@ import {
 } from "../../src/services/FaceVerificationService";
 import { addRegistration } from "../../src/services/PrototypeRegistrationStore";
 import { useRegistrationDraft } from "../../src/context/RegistrationDraftContext";
+import type { VisitorRegistration } from "../../src/types/VisitorRegistration";
 
 export default function FacialVerificationScreen() {
   const router = useRouter();
@@ -95,7 +96,7 @@ export default function FacialVerificationScreen() {
       return;
     }
 
-    const registration = {
+    const registration: VisitorRegistration = {
       id: `REG-${Date.now()}`,
       fullName: draft.fullName,
       address: draft.address,
@@ -110,7 +111,7 @@ export default function FacialVerificationScreen() {
       ocrReviewed: draft.ocrReviewed,
       faceVerificationStatus: draft.faceVerificationStatus || status,
       faceImageUri: draft.faceImageUri,
-      registrationStatus: "Pending" as const,
+      registrationStatus: "Pending",
       timeIn: "",
       visitorPassNumber: "",
       qrStatus: "Inactive",
