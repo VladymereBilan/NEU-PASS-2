@@ -8,17 +8,21 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { Redirect, useRouter } from "expo-router";
 import { useAuth } from "../src/context/AuthContext";
 import { authenticateVisitor } from "../src/repositories/AccountRepository";
 
 export default function VisitorLoginScreen() {
   const router = useRouter();
-  const { signIn } = useAuth();
+  const { role, signIn } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  if (role === "visitor") {
+    return <Redirect href="/(visitor)/home" />;
+  }
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {

@@ -9,7 +9,6 @@ import {
   TextInput,
   View
 } from "react-native";
-import BackButton from "../../src/components/BackButton";
 import { useRouter } from "expo-router";
 import { useRegistrationDraft } from "../../src/context/RegistrationDraftContext";
 import { FaceVerificationStatus } from "../../src/services/FaceVerificationService";
@@ -21,6 +20,7 @@ type FormState = {
   contactNumber: string;
   email: string;
   idType: string;
+  idDescription: string;
   idNumber: string;
   purpose: string;
   agenda: string;
@@ -34,10 +34,37 @@ const initialState: FormState = {
   contactNumber: "",
   email: "",
   idType: "",
+  idDescription: "",
   idNumber: "",
   purpose: "",
   agenda: ""
 };
+
+const ID_TYPE_OPTIONS = [
+  "Philippine National ID (PhilID / ePhilID)",
+  "Driver's License",
+  "Philippine Passport",
+  "UMID",
+  "PRC ID",
+  "SSS ID",
+  "GSIS ID",
+  "Voter's ID",
+  "Postal ID",
+  "Senior Citizen ID",
+  "PWD ID",
+  "PhilHealth ID",
+  "TIN ID",
+  "Pag-IBIG ID / Loyalty Card",
+  "Company / Employee ID",
+  "Barangay ID",
+  "Other Government-Issued ID",
+  "Other"
+];
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const NAME_LETTER_PATTERN = /[A-Za-zÀ-ÖØ-öø-ÿ]/;
+const NAME_DIGIT_PATTERN = /\d/;
+const ID_NUMBER_PATTERN = /^(?=.*\d)[A-Za-z0-9\-\s]+$/;
 
 export default function RegisterVisitScreen() {
   const router = useRouter();
@@ -45,6 +72,7 @@ export default function RegisterVisitScreen() {
   const [form, setForm] = useState<FormState>(initialState);
   const [errors, setErrors] = useState<FormErrors>({});
   const [showPurposeOptions, setShowPurposeOptions] = useState(false);
+  const [showIdTypeOptions, setShowIdTypeOptions] = useState(false);
 
   const isOthersSelected = useMemo(
     () => form.purpose === "Others",
@@ -59,13 +87,35 @@ export default function RegisterVisitScreen() {
   const validate = (): FormErrors => {
     const nextErrors: FormErrors = {};
 
-    if (!form.fullName.trim()) nextErrors.fullName = "Full Name is required.";
-    if (!form.address.trim()) nextErrors.address = "Address is required.";
+    if (!form.fullName.trim()) {
+      nextErrors.fullName = "Full Name is required.";
+    } else if (
+      !NAME_LETTER_PATTERN.test(form.fullName) ||
+      NAME_DIGIT_PATTERN.test(form.fullName)
+    ) {
+      nextErrors.fullName = "Full Name must contain letters and cannot contain numbers.";
+    }
+    if (!form.address.trim()) {
+      nextErrors.address = "Address is required.";
+    } else if (!/[A-Za-zÀ-ÖØ-öø-ÿ]/.test(form.address) || !/\d/.test(form.address)) {
+      nextErrors.address = "Address must contain both letters and a number.";
+    }
     if (!form.contactNumber.trim())
       nextErrors.contactNumber = "Contact Number is required.";
-    if (!form.email.trim()) nextErrors.email = "Email Address is required.";
+    if (!form.email.trim()) {
+      nextErrors.email = "Email Address is required.";
+    } else if (!EMAIL_PATTERN.test(form.email.trim())) {
+      nextErrors.email = "Enter a valid email address.";
+    }
     if (!form.idType.trim()) nextErrors.idType = "ID Type is required.";
-    if (!form.idNumber.trim()) nextErrors.idNumber = "ID Number is required.";
+    if (form.idType === "Other" && !form.idDescription.trim()) {
+      nextErrors.idDescription = "Please specify the type of ID.";
+    }
+    if (!form.idNumber.trim()) {
+      nextErrors.idNumber = "ID Number is required.";
+    } else if (!ID_NUMBER_PATTERN.test(form.idNumber.trim())) {
+      nextErrors.idNumber = "ID Number must contain numbers and may also contain letters.";
+    }
     if (!form.purpose.trim()) nextErrors.purpose = "Purpose is required.";
     if (form.purpose === "Others" && !form.agenda.trim()) {
       nextErrors.agenda = "Please specify your agenda.";
@@ -87,7 +137,10 @@ export default function RegisterVisitScreen() {
       address: form.address.trim(),
       contactNumber: form.contactNumber.trim(),
       email: form.email.trim(),
-      idType: form.idType.trim(),
+      idType:
+        form.idType === "Other"
+          ? `Other: ${form.idDescription.trim()}`
+          : form.idType.trim(),
       idNumber: form.idNumber.trim(),
       idImageUri: "",
       purposeOfVisit: form.purpose.trim(),
@@ -105,7 +158,6 @@ export default function RegisterVisitScreen() {
     <SafeAreaView style={styles.screen}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.card}>
-          <BackButton />
           <Text style={styles.title}>Register Visit</Text>
           <Text style={styles.subtitle}>Provide your details below.</Text>
 
@@ -166,16 +218,55 @@ export default function RegisterVisitScreen() {
 
           <View style={styles.field}>
             <Text style={styles.label}>ID Type</Text>
-            <TextInput
-              value={form.idType}
-              onChangeText={(value) => updateField("idType", value)}
-              placeholder="Government ID"
-              style={styles.input}
-            />
+            <Pressable
+              style={styles.select}
+              onPress={() => setShowIdTypeOptions((prev) => !prev)}
+            >
+              <Text style={form.idType ? styles.selectText : styles.placeholderText}>
+                {form.idType || "Select ID type"}
+              </Text>
+              <Text style={styles.selectCaret}>
+                {showIdTypeOptions ? "▲" : "▼"}
+              </Text>
+            </Pressable>
+            {showIdTypeOptions ? (
+              <View style={styles.options}>
+                {ID_TYPE_OPTIONS.map((option) => (
+                  <Pressable
+                    key={option}
+                    style={styles.optionButton}
+                    onPress={() => {
+                      updateField("idType", option);
+                      if (option !== "Other") {
+                        updateField("idDescription", "");
+                      }
+                      setShowIdTypeOptions(false);
+                    }}
+                  >
+                    <Text style={styles.optionText}>{option}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            ) : null}
             {errors.idType ? (
               <Text style={styles.error}>{errors.idType}</Text>
             ) : null}
           </View>
+
+          {form.idType === "Other" ? (
+            <View style={styles.field}>
+              <Text style={styles.label}>Specify ID Type</Text>
+              <TextInput
+                value={form.idDescription}
+                onChangeText={(value) => updateField("idDescription", value)}
+                placeholder="e.g. Foreign passport or residence permit"
+                style={styles.input}
+              />
+              {errors.idDescription ? (
+                <Text style={styles.error}>{errors.idDescription}</Text>
+              ) : null}
+            </View>
+          ) : null}
 
           <View style={styles.field}>
             <Text style={styles.label}>ID Number</Text>
@@ -311,6 +402,10 @@ const styles = StyleSheet.create({
   selectText: {
     fontSize: 14,
     color: "#111827"
+  },
+  placeholderText: {
+    fontSize: 14,
+    color: "#9ca3af"
   },
   selectCaret: {
     fontSize: 12,

@@ -11,7 +11,6 @@ import {
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useFocusEffect } from "expo-router";
-import BackButton from "../../src/components/BackButton";
 import {
   completeCheckout,
   getCheckoutRequests,
@@ -196,7 +195,6 @@ export default function CheckoutVerificationScreen() {
     <SafeAreaView style={styles.screen}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.card}>
-          <BackButton />
           <Text style={styles.title}>Checkout Verification</Text>
           <Pressable style={styles.refreshButton} onPress={() => void refresh()}>
             <Text style={styles.refreshText}>Refresh</Text>

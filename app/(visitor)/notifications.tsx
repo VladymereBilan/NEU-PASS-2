@@ -1,11 +1,9 @@
 import { SafeAreaView, StyleSheet, Text, View } from "react-native";
-import BackButton from "../../src/components/BackButton";
 
 export default function VisitorNotificationsScreen() {
   return (
     <SafeAreaView style={styles.screen}>
       <View style={styles.card}>
-        <BackButton />
         <Text style={styles.title}>Notifications</Text>
         <Text style={styles.body}>Placeholder for visitor notifications.</Text>
       </View>

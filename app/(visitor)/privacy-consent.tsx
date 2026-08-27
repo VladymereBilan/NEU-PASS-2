@@ -1,6 +1,5 @@
 import { Alert, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
-import BackButton from "../../src/components/BackButton";
 import { useRegistrationDraft } from "../../src/context/RegistrationDraftContext";
 
 export default function PrivacyConsentScreen() {
@@ -20,7 +19,6 @@ export default function PrivacyConsentScreen() {
   return (
     <SafeAreaView style={styles.screen}>
       <View style={styles.card}>
-        <BackButton />
         <Text style={styles.title}>Privacy Consent Form</Text>
         <Text style={styles.body}>
           NEU-Pass collects personal information and facial image for visitor

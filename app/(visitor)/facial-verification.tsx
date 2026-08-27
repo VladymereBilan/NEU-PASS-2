@@ -1,16 +1,16 @@
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   Alert,
   Image,
   Pressable,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   View
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import { useRouter } from "expo-router";
-import BackButton from "../../src/components/BackButton";
+import { useFocusEffect, useRouter } from "expo-router";
 import {
   FaceVerificationStatus,
   type FaceVerificationStatusType,
@@ -26,12 +26,22 @@ export default function FacialVerificationScreen() {
   const cameraRef = useRef<any>(null);
   const [permission, requestPermission] = useCameraPermissions();
   const [showCamera, setShowCamera] = useState(false);
+  const [cameraReady, setCameraReady] = useState(false);
+  const [cameraSessionKey, setCameraSessionKey] = useState(0);
   const [capturedUri, setCapturedUri] = useState(draft?.faceImageUri || "");
   const [status, setStatus] = useState<FaceVerificationStatusType>(
     draft?.faceVerificationStatus || FaceVerificationStatus.Pending
   );
   const [submitting, setSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        setShowCamera(false);
+      };
+    }, [])
+  );
 
   const openCamera = async () => {
     // Real OCR and facial recognition will be implemented in Capstone 2.
@@ -41,6 +51,8 @@ export default function FacialVerificationScreen() {
 
     if (result?.granted) {
       setStatusMessage("");
+      setCameraReady(false);
+      setCameraSessionKey((key) => key + 1);
       setShowCamera(true);
       return;
     }
@@ -52,6 +64,11 @@ export default function FacialVerificationScreen() {
   };
 
   const capturePhoto = async () => {
+    if (!cameraReady || !cameraRef.current) {
+      setStatusMessage("Camera is still starting. Please wait a moment and try again.");
+      return;
+    }
+
     try {
       const photo = await cameraRef.current?.takePictureAsync({
         quality: 0.7,
@@ -76,6 +93,8 @@ export default function FacialVerificationScreen() {
   const retakePhoto = () => {
     setCapturedUri("");
     updateDraft({ faceImageUri: "" });
+    setCameraReady(false);
+    setCameraSessionKey((key) => key + 1);
     setShowCamera(true);
     setStatusMessage("");
   };
@@ -138,75 +157,93 @@ export default function FacialVerificationScreen() {
 
   return (
     <SafeAreaView style={styles.screen}>
-      <View style={styles.card}>
-        <BackButton />
-        <Text style={styles.title}>Facial Verification</Text>
-        <Text style={styles.body}>
-          This step verifies that the visitor matches the submitted ID
-          information.
-        </Text>
-        <Text style={styles.note}>
-          Real OCR and facial recognition will be implemented in Capstone 2.
-        </Text>
-
-        <View style={styles.previewBox}>
-          {capturedUri && capturedUri.startsWith("file") ? (
-            <Image source={{ uri: capturedUri }} style={styles.previewImage} />
-          ) : (
-            <Text style={styles.previewText}>
-              {capturedUri ? "Prototype Sample Selected" : "Face Image Preview"}
-            </Text>
-          )}
-        </View>
-
-        {statusMessage ? <Text style={styles.status}>{statusMessage}</Text> : null}
-
-        {!permission?.granted && !showCamera ? (
-          <Text style={styles.permissionNote}>
-            Camera access is required for live capture, but you can still use the
-            prototype sample.
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.card}>
+          <Text style={styles.title}>Facial Verification</Text>
+          <Text style={styles.body}>
+            This step verifies that the visitor matches the submitted ID
+            information.
           </Text>
-        ) : null}
+          <Text style={styles.note}>
+            Real OCR and facial recognition will be implemented in Capstone 2.
+          </Text>
 
-        <View style={styles.buttonRow}>
-          <Pressable style={styles.secondaryButton} onPress={openCamera}>
-            <Text style={styles.secondaryText}>Open Camera</Text>
-          </Pressable>
-          <Pressable style={styles.secondaryButton} onPress={usePrototypeSample}>
-            <Text style={styles.secondaryText}>Use Prototype Sample</Text>
-          </Pressable>
-        </View>
+          <View style={styles.previewBox}>
+            {capturedUri && capturedUri.startsWith("file") ? (
+              <Image source={{ uri: capturedUri }} style={styles.previewImage} />
+            ) : (
+              <Text style={styles.previewText}>
+                {capturedUri ? "Prototype Sample Selected" : "Face Image Preview"}
+              </Text>
+            )}
+          </View>
 
-        {showCamera ? (
-          <View style={styles.cameraCard}>
-            <CameraView ref={cameraRef} style={styles.camera} facing="front" />
-            <Pressable style={styles.primaryButton} onPress={capturePhoto}>
-              <Text style={styles.primaryText}>Capture Photo</Text>
+          {statusMessage ? <Text style={styles.status}>{statusMessage}</Text> : null}
+
+          {!permission?.granted && !showCamera ? (
+            <Text style={styles.permissionNote}>
+              Camera access is required for live capture, but you can still use the
+              prototype sample.
+            </Text>
+          ) : null}
+
+          <View style={styles.buttonRow}>
+            <Pressable style={styles.secondaryButton} onPress={openCamera}>
+              <Text style={styles.secondaryText}>Open Camera</Text>
+            </Pressable>
+            <Pressable style={styles.secondaryButton} onPress={usePrototypeSample}>
+              <Text style={styles.secondaryText}>Use Prototype Sample</Text>
             </Pressable>
           </View>
-        ) : null}
 
-        {capturedUri ? (
-          <Pressable style={styles.secondaryButton} onPress={retakePhoto}>
-            <Text style={styles.secondaryText}>Retake Photo</Text>
+          {showCamera ? (
+            <View style={styles.cameraCard}>
+              <CameraView
+                key={cameraSessionKey}
+                ref={cameraRef}
+                style={styles.camera}
+                facing="front"
+                onCameraReady={() => setCameraReady(true)}
+                onMountError={(error) => {
+                  setCameraReady(false);
+                  setShowCamera(false);
+                  setStatusMessage(`Unable to start camera: ${error.message}`);
+                }}
+              />
+              <Pressable
+                style={[styles.primaryButton, !cameraReady && styles.primaryButtonDisabled]}
+                onPress={capturePhoto}
+                disabled={!cameraReady}
+              >
+                <Text style={styles.primaryText}>
+                  {cameraReady ? "Capture Photo" : "Starting Camera..."}
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
+
+          {capturedUri ? (
+            <Pressable style={styles.secondaryButton} onPress={retakePhoto}>
+              <Text style={styles.secondaryText}>Retake Photo</Text>
+            </Pressable>
+          ) : null}
+
+          <View style={styles.statusRow}>
+            <Text style={styles.statusLabel}>Status</Text>
+            <Text style={styles.statusValue}>{status}</Text>
+          </View>
+
+          <Pressable
+            style={[styles.primaryButton, submitting && styles.primaryButtonDisabled]}
+            onPress={handleSubmit}
+            disabled={submitting}
+          >
+            <Text style={styles.primaryText}>
+              {submitting ? "Submitting..." : "Submit for Guard Verification"}
+            </Text>
           </Pressable>
-        ) : null}
-
-        <View style={styles.statusRow}>
-          <Text style={styles.statusLabel}>Status</Text>
-          <Text style={styles.statusValue}>{status}</Text>
         </View>
-
-        <Pressable
-          style={[styles.primaryButton, submitting && styles.primaryButtonDisabled]}
-          onPress={handleSubmit}
-          disabled={submitting}
-        >
-          <Text style={styles.primaryText}>
-            {submitting ? "Submitting..." : "Submit for Guard Verification"}
-          </Text>
-        </Pressable>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -214,9 +251,10 @@ export default function FacialVerificationScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    justifyContent: "center",
-    padding: 24,
     backgroundColor: "#eef2ff"
+  },
+  content: {
+    padding: 24
   },
   card: {
     backgroundColor: "#ffffff",
