@@ -10,7 +10,10 @@ import {
 import { useFocusEffect } from "expo-router";
 import BackButton from "../../src/components/BackButton";
 import { getAllVisitors } from "../../src/repositories/VisitorRepository";
-import type { VisitorRegistration } from "../../src/types/VisitorRegistration";
+import {
+  PURPOSE_OPTIONS,
+  type VisitorRegistration
+} from "../../src/types/VisitorRegistration";
 
 type MetricCardProps = {
   label: string;
@@ -64,16 +67,12 @@ export default function ReportsScreen() {
   }, [visitors]);
 
   const purposeCounts = useMemo(() => {
-    const counts = {
-      Inquiries: 0,
-      Enrollment: 0,
-      "Tuition Fee Payment": 0,
-      "Other Payments": 0,
-      Others: 0
-    };
+    const counts = Object.fromEntries(
+      PURPOSE_OPTIONS.map((purpose) => [purpose, 0])
+    ) as Record<(typeof PURPOSE_OPTIONS)[number], number>;
 
     visitors.forEach((visitor) => {
-      const purpose = visitor.purposeOfVisit as keyof typeof counts;
+      const purpose = visitor.purposeOfVisit as (typeof PURPOSE_OPTIONS)[number];
       if (purpose in counts) {
         counts[purpose] += 1;
       }

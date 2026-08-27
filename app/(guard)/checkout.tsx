@@ -14,11 +14,11 @@ import { useFocusEffect } from "expo-router";
 import BackButton from "../../src/components/BackButton";
 import {
   completeCheckout,
-  getCheckoutRequests
+  getCheckoutRequests,
+  getVisitorPassByVisitorId
 } from "../../src/services/PrototypeRegistrationStore";
 import { getExpirationStatus } from "../../src/services/ExpirationService";
 import { parseQRValue } from "../../src/services/QRService";
-import { getVisitorById } from "../../src/repositories/VisitorRepository";
 import type {
   FaceCheckoutVerificationStatus,
   VisitorRegistration
@@ -68,12 +68,7 @@ export default function CheckoutVerificationScreen() {
       return requests;
     }
 
-    return requests.filter((request) => {
-      return (
-        request.fullName.toLowerCase().includes(query) ||
-        request.visitorPassNumber.toLowerCase().includes(query)
-      );
-    });
+    return requests.filter((request) => matchesManualQuery(request, query));
   }, [manualQuery, requests]);
 
   const handleSelect = (
@@ -123,17 +118,27 @@ export default function CheckoutVerificationScreen() {
     try {
       const payload = parseQRValue(data);
       if (!payload?.visitorId || !payload.visitorPassNumber) {
+        setScannerState("idle");
         Alert.alert("Invalid or expired QR.");
         return;
       }
 
-      const visitor = await getVisitorById(payload.visitorId);
+      const visitor = await getVisitorPassByVisitorId(payload.visitorId);
       if (
         !visitor ||
         visitor.registrationStatus !== "Active" ||
         visitor.visitorPassNumber !== payload.visitorPassNumber
       ) {
+        setScannerState("idle");
         Alert.alert("Invalid or expired QR.");
+        return;
+      }
+
+      if (visitor.checkoutStatus !== "Checkout Requested") {
+        setScannerState("idle");
+        Alert.alert(
+          "This visitor has not requested checkout yet. Ask them to request checkout first."
+        );
         return;
       }
 
@@ -152,11 +157,13 @@ export default function CheckoutVerificationScreen() {
         Alert.alert(
           "Your visitor pass has expired. Please proceed to the guard for review."
         );
+      } else {
+        setScanMessage("QR scanned successfully.");
       }
 
-      setScanMessage("QR scanned successfully.");
       setScannerState("idle");
     } catch {
+      setScannerState("idle");
       Alert.alert("Invalid or expired QR.");
     } finally {
       setScannerBusy(false);
@@ -164,18 +171,13 @@ export default function CheckoutVerificationScreen() {
   };
 
   const manualLookup = async () => {
-    const query = manualQuery.trim();
+    const query = manualQuery.trim().toLowerCase();
     if (!query) {
       setScanMessage("Enter a name or pass number to search manually.");
       return;
     }
 
-    const found = requests.find((request) => {
-      return (
-        request.fullName.toLowerCase().includes(query.toLowerCase()) ||
-        request.visitorPassNumber.toLowerCase().includes(query.toLowerCase())
-      );
-    });
+    const found = requests.find((request) => matchesManualQuery(request, query));
 
     if (!found) {
       setScanMessage("No matching checkout request found.");
@@ -339,6 +341,13 @@ export default function CheckoutVerificationScreen() {
         </View>
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function matchesManualQuery(request: VisitorRegistration, lowerCaseQuery: string) {
+  return (
+    request.fullName.toLowerCase().includes(lowerCaseQuery) ||
+    request.visitorPassNumber.toLowerCase().includes(lowerCaseQuery)
   );
 }
 

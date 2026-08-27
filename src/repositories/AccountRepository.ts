@@ -1,12 +1,16 @@
 import { executeSqlAsync, initDb } from "../database/db";
 import { hashPassword, verifyPassword } from "../services/PasswordService";
-import type { AccountStatus, AccountType, UserAccount } from "../types/UserAccount";
+import type { UserAccount } from "../types/UserAccount";
 
 const DEFAULT_GUARD_USERNAME = "guard01";
 const DEFAULT_GUARD_PASSWORD = "guard123";
 
 function rows(result: any) {
   return (result?.rows?._array ?? []) as any[];
+}
+
+function isDuplicateAccountError(err: unknown) {
+  return err instanceof Error && /UNIQUE constraint failed/i.test(err.message);
 }
 
 function mapAccount(row: any): UserAccount {
@@ -24,18 +28,7 @@ function mapAccount(row: any): UserAccount {
   };
 }
 
-async function ensureDefaultGuardAccount() {
-  const result = await executeSqlAsync(
-    "SELECT * FROM user_accounts WHERE accountType = ? AND username = ? LIMIT 1",
-    ["guard", DEFAULT_GUARD_USERNAME]
-  );
-
-  if (rows(result).length > 0) {
-    return;
-  }
-
-  const now = new Date().toISOString();
-  const passwordDigest = await hashPassword(DEFAULT_GUARD_PASSWORD);
+async function insertAccount(account: UserAccount) {
   await executeSqlAsync(
     `INSERT INTO user_accounts (
       id,
@@ -50,18 +43,49 @@ async function ensureDefaultGuardAccount() {
       updatedAt
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
-      `guard-${DEFAULT_GUARD_USERNAME}`,
-      "guard",
-      "Demo Guard Account",
-      "",
-      "",
-      DEFAULT_GUARD_USERNAME,
-      passwordDigest,
-      "Active",
-      now,
-      now,
+      account.id,
+      account.accountType,
+      account.fullName,
+      account.email,
+      account.contactNumber,
+      account.username,
+      account.passwordDigest,
+      account.accountStatus,
+      account.createdAt,
+      account.updatedAt,
     ]
   );
+}
+
+let defaultGuardAccountSeeded = false;
+
+async function ensureDefaultGuardAccount() {
+  if (defaultGuardAccountSeeded) return;
+
+  const result = await executeSqlAsync(
+    "SELECT * FROM user_accounts WHERE accountType = ? AND username = ? LIMIT 1",
+    ["guard", DEFAULT_GUARD_USERNAME]
+  );
+
+  if (rows(result).length > 0) {
+    defaultGuardAccountSeeded = true;
+    return;
+  }
+
+  const now = new Date().toISOString();
+  await insertAccount({
+    id: `guard-${DEFAULT_GUARD_USERNAME}`,
+    accountType: "guard",
+    fullName: "Demo Guard Account",
+    email: "",
+    contactNumber: "",
+    username: DEFAULT_GUARD_USERNAME,
+    passwordDigest: await hashPassword(DEFAULT_GUARD_PASSWORD),
+    accountStatus: "Active",
+    createdAt: now,
+    updatedAt: now,
+  });
+  defaultGuardAccountSeeded = true;
 }
 
 async function findAccountByEmail(email: string) {
@@ -117,32 +141,14 @@ export async function createVisitorAccount(input: {
     updatedAt: now,
   };
 
-  await executeSqlAsync(
-    `INSERT INTO user_accounts (
-      id,
-      accountType,
-      fullName,
-      email,
-      contactNumber,
-      username,
-      passwordDigest,
-      accountStatus,
-      createdAt,
-      updatedAt
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      account.id,
-      account.accountType,
-      account.fullName,
-      account.email,
-      account.contactNumber,
-      account.username,
-      account.passwordDigest,
-      account.accountStatus,
-      account.createdAt,
-      account.updatedAt,
-    ]
-  );
+  try {
+    await insertAccount(account);
+  } catch (err) {
+    if (isDuplicateAccountError(err)) {
+      throw new Error("An account already exists for this email.");
+    }
+    throw err;
+  }
 
   return account;
 }
@@ -185,92 +191,3 @@ export async function authenticateGuard(username: string, password: string) {
   return account;
 }
 
-export async function getGuardAccounts() {
-  await initDb();
-  await ensureDefaultGuardAccount();
-  const result = await executeSqlAsync(
-    "SELECT * FROM user_accounts WHERE accountType = ? ORDER BY createdAt DESC",
-    ["guard"]
-  );
-  return rows(result).map(mapAccount);
-}
-
-export async function createGuardAccount(input: {
-  fullName: string;
-  username: string;
-  password: string;
-  accountStatus: AccountStatus;
-}) {
-  await initDb();
-  await ensureDefaultGuardAccount();
-
-  const duplicate = await executeSqlAsync(
-    "SELECT id FROM user_accounts WHERE LOWER(username) = LOWER(?) LIMIT 1",
-    [input.username.trim()]
-  );
-
-  if (rows(duplicate).length > 0) {
-    throw new Error("A guard account already exists for this username.");
-  }
-
-  const now = new Date().toISOString();
-  const account: UserAccount = {
-    id: `guard-${Date.now()}`,
-    accountType: "guard",
-    fullName: input.fullName.trim(),
-    email: "",
-    contactNumber: "",
-    username: input.username.trim(),
-    passwordDigest: await hashPassword(input.password),
-    accountStatus: input.accountStatus,
-    createdAt: now,
-    updatedAt: now,
-  };
-
-  await executeSqlAsync(
-    `INSERT INTO user_accounts (
-      id,
-      accountType,
-      fullName,
-      email,
-      contactNumber,
-      username,
-      passwordDigest,
-      accountStatus,
-      createdAt,
-      updatedAt
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      account.id,
-      account.accountType,
-      account.fullName,
-      account.email,
-      account.contactNumber,
-      account.username,
-      account.passwordDigest,
-      account.accountStatus,
-      account.createdAt,
-      account.updatedAt,
-    ]
-  );
-
-  return account;
-}
-
-export async function updateGuardAccountStatus(
-  id: string,
-  accountStatus: AccountStatus
-) {
-  await initDb();
-  await executeSqlAsync(
-    "UPDATE user_accounts SET accountStatus = ?, updatedAt = ? WHERE id = ? AND accountType = ?",
-    [accountStatus, new Date().toISOString(), id, "guard"]
-  );
-
-  const result = await executeSqlAsync(
-    "SELECT * FROM user_accounts WHERE id = ? LIMIT 1",
-    [id]
-  );
-  const [row] = rows(result);
-  return row ? mapAccount(row) : null;
-}

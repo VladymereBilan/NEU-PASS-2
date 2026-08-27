@@ -13,14 +13,7 @@ import BackButton from "../../src/components/BackButton";
 import { useRouter } from "expo-router";
 import { useRegistrationDraft } from "../../src/context/RegistrationDraftContext";
 import { FaceVerificationStatus } from "../../src/services/FaceVerificationService";
-
-const PURPOSE_OPTIONS = [
-  "Inquiries",
-  "Enrollment",
-  "Tuition Fee Payment",
-  "Other Payments",
-  "Others"
-];
+import { PURPOSE_OPTIONS } from "../../src/types/VisitorRegistration";
 
 type FormState = {
   fullName: string;

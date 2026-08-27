@@ -41,3 +41,15 @@ export const CREATE_USER_ACCOUNTS_TABLE = `
     updatedAt TEXT NOT NULL
   );
 `;
+
+// Partial unique indexes enforce one-account-per-email/username at the DB
+// level, closing the race window a SELECT-then-INSERT check can't (e.g. a
+// double-tapped submit firing two inserts before either commits).
+export const CREATE_USER_ACCOUNTS_INDEXES = `
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_user_accounts_visitor_email
+    ON user_accounts (email)
+    WHERE accountType = 'visitor' AND email <> '';
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_user_accounts_guard_username
+    ON user_accounts (username)
+    WHERE accountType = 'guard';
+`;

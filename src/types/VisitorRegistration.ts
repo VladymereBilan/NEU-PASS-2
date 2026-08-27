@@ -1,5 +1,13 @@
 import type { FaceVerificationStatusType } from "../services/FaceVerificationService";
 
+export const PURPOSE_OPTIONS = [
+  "Inquiries",
+  "Enrollment",
+  "Tuition Fee Payment",
+  "Other Payments",
+  "Others"
+] as const;
+
 export type RegistrationStatus = "Pending" | "Active" | "Rejected" | "Completed";
 
 export type QrStatus = "Active" | "Inactive" | "Used/Invalid";

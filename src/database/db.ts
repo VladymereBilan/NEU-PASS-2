@@ -1,5 +1,6 @@
 import * as SQLite from "expo-sqlite";
 import {
+  CREATE_USER_ACCOUNTS_INDEXES,
   CREATE_USER_ACCOUNTS_TABLE,
   CREATE_VISITOR_REGISTRATIONS_TABLE,
 } from "./schema";
@@ -62,6 +63,13 @@ export async function initDb() {
   db.execSync(CREATE_VISITOR_REGISTRATIONS_TABLE);
   db.execSync(CREATE_USER_ACCOUNTS_TABLE);
   await runMigrations();
+
+  try {
+    db.execSync(CREATE_USER_ACCOUNTS_INDEXES);
+  } catch {
+    // Existing installs with pre-existing duplicate emails/usernames would
+    // fail to build the index; don't block app startup over it.
+  }
 
   initialized = true;
 }
