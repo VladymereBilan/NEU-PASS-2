@@ -1,7 +1,6 @@
 import { useCallback, useState } from "react";
 import { Alert, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "expo-router";
-import BackButton from "../../src/components/BackButton";
 import {
   getLatestApprovedOrActiveVisitor,
   requestCheckout
@@ -55,7 +54,6 @@ export default function VisitorCheckoutScreen() {
   return (
     <SafeAreaView style={styles.screen}>
       <View style={styles.card}>
-        <BackButton />
         <Text style={styles.title}>Request Checkout</Text>
 
         {loading ? (

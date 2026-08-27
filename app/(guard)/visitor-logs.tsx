@@ -1,7 +1,6 @@
 import { useCallback, useState } from "react";
 import { Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "expo-router";
-import BackButton from "../../src/components/BackButton";
 import { getAllRegistrations } from "../../src/services/PrototypeRegistrationStore";
 import type { VisitorRegistration } from "../../src/types/VisitorRegistration";
 
@@ -35,7 +34,6 @@ export default function VisitorLogsScreen() {
   return (
     <SafeAreaView style={styles.screen}>
       <View style={styles.card}>
-        <BackButton />
         <Text style={styles.title}>Visitor Logs</Text>
         <Pressable style={styles.refreshButton} onPress={() => void refresh()}>
           <Text style={styles.refreshText}>Refresh</Text>

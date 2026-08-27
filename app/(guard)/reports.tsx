@@ -8,7 +8,6 @@ import {
   View
 } from "react-native";
 import { useFocusEffect } from "expo-router";
-import BackButton from "../../src/components/BackButton";
 import { getAllVisitors } from "../../src/repositories/VisitorRepository";
 import {
   PURPOSE_OPTIONS,
@@ -118,7 +117,6 @@ export default function ReportsScreen() {
     <SafeAreaView style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.card}>
-          <BackButton />
           <Text style={styles.title}>Reports Dashboard</Text>
           <Pressable style={styles.refreshButton} onPress={() => void refresh()}>
             <Text style={styles.refreshText}>Refresh</Text>

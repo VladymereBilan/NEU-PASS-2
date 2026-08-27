@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   Alert,
   Image,
@@ -10,8 +10,7 @@ import {
   View
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import { useRouter } from "expo-router";
-import BackButton from "../../src/components/BackButton";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useRegistrationDraft } from "../../src/context/RegistrationDraftContext";
 
 export default function IdCaptureScreen() {
@@ -20,8 +19,18 @@ export default function IdCaptureScreen() {
   const cameraRef = useRef<any>(null);
   const [permission, requestPermission] = useCameraPermissions();
   const [showCamera, setShowCamera] = useState(false);
+  const [cameraReady, setCameraReady] = useState(false);
+  const [cameraSessionKey, setCameraSessionKey] = useState(0);
   const [capturedUri, setCapturedUri] = useState(draft?.idImageUri || "");
   const [statusMessage, setStatusMessage] = useState("");
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        setShowCamera(false);
+      };
+    }, [])
+  );
 
   const openCamera = async () => {
     // Real OCR and facial recognition will be implemented in Capstone 2.
@@ -31,6 +40,8 @@ export default function IdCaptureScreen() {
 
     if (result?.granted) {
       setStatusMessage("");
+      setCameraReady(false);
+      setCameraSessionKey((key) => key + 1);
       setShowCamera(true);
       return;
     }
@@ -42,6 +53,11 @@ export default function IdCaptureScreen() {
   };
 
   const capturePhoto = async () => {
+    if (!cameraReady || !cameraRef.current) {
+      setStatusMessage("Camera is still starting. Please wait a moment and try again.");
+      return;
+    }
+
     try {
       const photo = await cameraRef.current?.takePictureAsync({
         quality: 0.7,
@@ -64,6 +80,8 @@ export default function IdCaptureScreen() {
   const retakePhoto = () => {
     setCapturedUri("");
     updateDraft({ idImageUri: "" });
+    setCameraReady(false);
+    setCameraSessionKey((key) => key + 1);
     setShowCamera(true);
     setStatusMessage("");
   };
@@ -84,7 +102,6 @@ export default function IdCaptureScreen() {
     <SafeAreaView style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.card}>
-          <BackButton />
           <Text style={styles.title}>ID Capture</Text>
           <Text style={styles.body}>
             Capture or upload your valid ID for verification.
@@ -123,9 +140,26 @@ export default function IdCaptureScreen() {
 
           {showCamera ? (
             <View style={styles.cameraCard}>
-              <CameraView ref={cameraRef} style={styles.camera} facing="back" />
-              <Pressable style={styles.primaryButton} onPress={capturePhoto}>
-                <Text style={styles.primaryText}>Capture Photo</Text>
+              <CameraView
+                key={cameraSessionKey}
+                ref={cameraRef}
+                style={styles.camera}
+                facing="back"
+                onCameraReady={() => setCameraReady(true)}
+                onMountError={(error) => {
+                  setCameraReady(false);
+                  setShowCamera(false);
+                  setStatusMessage(`Unable to start camera: ${error.message}`);
+                }}
+              />
+              <Pressable
+                style={[styles.primaryButton, !cameraReady && styles.primaryButtonDisabled]}
+                onPress={capturePhoto}
+                disabled={!cameraReady}
+              >
+                <Text style={styles.primaryText}>
+                  {cameraReady ? "Capture Photo" : "Starting Camera..."}
+                </Text>
               </Pressable>
             </View>
           ) : null}
@@ -225,6 +259,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: "#111827",
     alignItems: "center"
+  },
+  primaryButtonDisabled: {
+    opacity: 0.7
   },
   primaryText: {
     color: "#ffffff",

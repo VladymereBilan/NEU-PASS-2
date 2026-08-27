@@ -8,7 +8,6 @@ import {
   View
 } from "react-native";
 import { useRouter } from "expo-router";
-import BackButton from "../../src/components/BackButton";
 import { useRegistrationDraft } from "../../src/context/RegistrationDraftContext";
 
 type OcrForm = {
@@ -77,7 +76,6 @@ export default function OcrReviewScreen() {
   return (
     <SafeAreaView style={styles.screen}>
       <View style={styles.card}>
-        <BackButton />
         <Text style={styles.title}>OCR Review</Text>
         <Text style={styles.body}>
           OCR extraction is prototype-only. Real OCR will be added in Capstone 2.

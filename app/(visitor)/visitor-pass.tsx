@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "expo-router";
 import QRCode from "react-native-qrcode-svg";
-import BackButton from "../../src/components/BackButton";
 import { getLatestApprovedOrActiveVisitor } from "../../src/services/PrototypeRegistrationStore";
 import { generateQRValue } from "../../src/services/QRService";
 import {
@@ -71,7 +70,6 @@ export default function VisitorPassScreen() {
   return (
     <SafeAreaView style={styles.screen}>
       <View style={styles.card}>
-        <BackButton />
         <Text style={styles.title}>My Visitor Pass</Text>
 
         {loading ? (

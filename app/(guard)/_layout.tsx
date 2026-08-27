@@ -9,5 +9,16 @@ export default function GuardLayout() {
     return <Redirect href="/" />;
   }
 
-  return <Stack />;
+  return (
+    <Stack
+      screenOptions={{
+        title: "Guard",
+        headerStyle: { backgroundColor: "#111827" },
+        headerTintColor: "#ffffff",
+        headerTitleStyle: { fontWeight: "600" }
+      }}
+    >
+      <Stack.Screen name="home" options={{ headerBackVisible: false }} />
+    </Stack>
+  );
 }

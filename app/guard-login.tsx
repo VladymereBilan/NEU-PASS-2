@@ -8,17 +8,21 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { Redirect, useRouter } from "expo-router";
 import { useAuth } from "../src/context/AuthContext";
 import { authenticateGuard } from "../src/repositories/AccountRepository";
 
 export default function GuardLoginScreen() {
   const router = useRouter();
-  const { signIn } = useAuth();
+  const { role, signIn } = useAuth();
   const [username, setUsername] = useState("guard01");
   const [password, setPassword] = useState("guard123");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  if (role === "guard") {
+    return <Redirect href="/(guard)/home" />;
+  }
 
   const handleLogin = async () => {
     if (!username.trim() || !password.trim()) {
