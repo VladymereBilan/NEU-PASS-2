@@ -9,6 +9,7 @@ import {
   completeCheckout as completeCheckoutRepo,
   createVisitor,
   getActiveVisitors as getActiveVisitorsRepo,
+  getActiveVisitorsByEmail,
   getAllVisitors as getAllVisitorsRepo,
   getCheckoutRequests as getCheckoutRequestsRepo,
   getPendingVisitors as getPendingVisitorsRepo,
@@ -33,8 +34,8 @@ export async function getActiveVisitors() {
   return getActiveVisitorsRepo();
 }
 
-export async function getLatestApprovedOrActiveVisitor() {
-  const active = await getActiveVisitorsRepo();
+export async function getLatestApprovedOrActiveVisitor(email: string) {
+  const active = await getActiveVisitorsByEmail(email);
 
   if (active.length === 0) {
     return null;

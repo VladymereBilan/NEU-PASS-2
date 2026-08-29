@@ -12,6 +12,9 @@ export default function PendingVerificationsScreen() {
   const [pending, setPending] = useState<VisitorRegistration[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [processing, setProcessing] = useState<
+    { id: string; action: "approve" | "reject" } | null
+  >(null);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -34,22 +37,30 @@ export default function PendingVerificationsScreen() {
   );
 
   const handleApprove = async (id: string) => {
+    if (processing) return;
     try {
+      setProcessing({ id, action: "approve" });
       await markVisitorActive(id);
       await refresh();
       Alert.alert("Visitor approved.");
     } catch (err) {
       Alert.alert("Unable to approve visitor.");
+    } finally {
+      setProcessing(null);
     }
   };
 
   const handleReject = async (id: string) => {
+    if (processing) return;
     try {
+      setProcessing({ id, action: "reject" });
       await rejectRegistration(id);
       await refresh();
       Alert.alert("Visitor rejected.");
     } catch (err) {
       Alert.alert("Unable to reject visitor.");
+    } finally {
+      setProcessing(null);
     }
   };
 
@@ -87,16 +98,34 @@ export default function PendingVerificationsScreen() {
 
               <View style={styles.actionRow}>
                 <Pressable
-                  style={[styles.actionButton, styles.approve]}
+                  style={[
+                    styles.actionButton,
+                    styles.approve,
+                    processing?.id === registration.id && styles.actionDisabled
+                  ]}
                   onPress={() => handleApprove(registration.id)}
+                  disabled={!!processing}
                 >
-                  <Text style={styles.actionText}>Approve</Text>
+                  <Text style={styles.actionText}>
+                    {processing?.id === registration.id && processing.action === "approve"
+                      ? "Approving..."
+                      : "Approve"}
+                  </Text>
                 </Pressable>
                 <Pressable
-                  style={[styles.actionButton, styles.reject]}
+                  style={[
+                    styles.actionButton,
+                    styles.reject,
+                    processing?.id === registration.id && styles.actionDisabled
+                  ]}
                   onPress={() => handleReject(registration.id)}
+                  disabled={!!processing}
                 >
-                  <Text style={styles.actionText}>Reject</Text>
+                  <Text style={styles.actionText}>
+                    {processing?.id === registration.id && processing.action === "reject"
+                      ? "Rejecting..."
+                      : "Reject"}
+                  </Text>
                 </Pressable>
               </View>
             </View>
@@ -172,6 +201,9 @@ const styles = StyleSheet.create({
   },
   reject: {
     backgroundColor: "#6b7280"
+  },
+  actionDisabled: {
+    opacity: 0.7
   },
   actionText: {
     color: "#ffffff",

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "expo-router";
 import QRCode from "react-native-qrcode-svg";
+import { useAuth } from "../../src/context/AuthContext";
 import { getLatestApprovedOrActiveVisitor } from "../../src/services/PrototypeRegistrationStore";
 import { generateQRValue } from "../../src/services/QRService";
 import {
@@ -11,6 +12,7 @@ import {
 import type { VisitorRegistration } from "../../src/types/VisitorRegistration";
 
 export default function VisitorPassScreen() {
+  const { email } = useAuth();
   const [pass, setPass] = useState<VisitorRegistration | null>(null);
   const [expirationStatus, setExpirationStatus] = useState("-");
   const [warningShown, setWarningShown] = useState(false);
@@ -18,17 +20,21 @@ export default function VisitorPassScreen() {
   const [error, setError] = useState("");
 
   const refresh = useCallback(async () => {
+    if (!email) {
+      setPass(null);
+      return;
+    }
     setLoading(true);
     setError("");
     try {
-      const latest = await getLatestApprovedOrActiveVisitor();
+      const latest = await getLatestApprovedOrActiveVisitor(email);
       setPass(latest);
     } catch (err) {
       setError("Unable to load visitor pass.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [email]);
 
   useFocusEffect(
     useCallback(() => {

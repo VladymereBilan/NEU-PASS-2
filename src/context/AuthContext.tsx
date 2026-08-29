@@ -4,7 +4,8 @@ type Role = "visitor" | "guard" | null;
 
 type AuthContextValue = {
   role: Role;
-  signIn: (nextRole: Exclude<Role, null>) => void;
+  email: string | null;
+  signIn: (nextRole: Exclude<Role, null>, email?: string) => void;
   signOut: () => void;
 };
 
@@ -12,14 +13,22 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<Role>(null);
+  const [email, setEmail] = useState<string | null>(null);
 
   const value = useMemo<AuthContextValue>(
     () => ({
       role,
-      signIn: (nextRole) => setRole(nextRole),
-      signOut: () => setRole(null)
+      email,
+      signIn: (nextRole, nextEmail) => {
+        setRole(nextRole);
+        setEmail(nextEmail ?? null);
+      },
+      signOut: () => {
+        setRole(null);
+        setEmail(null);
+      }
     }),
-    [role]
+    [role, email]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

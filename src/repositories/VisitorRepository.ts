@@ -132,6 +132,15 @@ export async function getActiveVisitors() {
   return rows(result).map(mapRow);
 }
 
+export async function getActiveVisitorsByEmail(email: string) {
+  await initDb();
+  const result = await executeSqlAsync(
+    "SELECT * FROM visitor_registrations WHERE registrationStatus = ? AND LOWER(email) = LOWER(?) ORDER BY timeIn DESC",
+    ["Active", email.trim()]
+  );
+  return rows(result).map(mapRow);
+}
+
 export async function getCheckoutRequests() {
   await initDb();
   const result = await executeSqlAsync(
@@ -153,14 +162,20 @@ export async function getCompletedVisitors() {
 export async function approveVisitor(id: string) {
   await initDb();
   const timeIn = new Date();
-  const visitorPassNumber = await generateVisitorPassNumber();
   const expirationTime = calculateExpirationTime(timeIn, await getPurpose(id));
 
+  // visitorPassNumber is computed by this same UPDATE statement (rather than
+  // a separate SELECT COUNT beforehand) so the read-and-assign is a single
+  // synchronous SQLite call with no `await` in between — two concurrent
+  // approveVisitor() calls (e.g. a double-tapped Approve button) can no
+  // longer interleave and be handed the same VP-### number.
   await executeSqlAsync(
     `UPDATE visitor_registrations
      SET registrationStatus = ?,
          timeIn = ?,
-         visitorPassNumber = ?,
+         visitorPassNumber = printf('VP-%03d', (
+           SELECT COUNT(*) FROM visitor_registrations WHERE visitorPassNumber != ''
+         ) + 1),
          expirationTime = ?,
          qrStatus = ?,
          checkoutStatus = ?,
@@ -171,7 +186,6 @@ export async function approveVisitor(id: string) {
     [
       "Active",
       timeIn.toISOString(),
-      visitorPassNumber,
       expirationTime,
       "Active",
       "None",
@@ -230,14 +244,6 @@ export async function completeCheckout(
 async function getPurpose(id: string) {
   const visitor = await getVisitorById(id);
   return visitor?.purposeOfVisit || "";
-}
-
-async function generateVisitorPassNumber() {
-  const result = await executeSqlAsync(
-    "SELECT COUNT(*) as count FROM visitor_registrations WHERE visitorPassNumber != ''"
-  );
-  const count = rows(result)[0]?.count ?? 0;
-  return `VP-${String(count + 1).padStart(3, "0")}`;
 }
 
 function calculateExpirationTime(timeIn: Date, purposeOfVisit: string) {

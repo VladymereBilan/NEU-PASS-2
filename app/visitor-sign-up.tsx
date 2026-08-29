@@ -44,8 +44,8 @@ export default function VisitorSignUpScreen() {
     try {
       setLoading(true);
       setError("");
-      await createVisitorAccount({ fullName, email, contactNumber, password });
-      signIn("visitor");
+      const account = await createVisitorAccount({ fullName, email, contactNumber, password });
+      signIn("visitor", account.email);
       router.replace("/(visitor)/home");
     } catch (exception) {
       const message = exception instanceof Error ? exception.message : "Unable to create account.";

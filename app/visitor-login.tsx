@@ -33,8 +33,8 @@ export default function VisitorLoginScreen() {
     try {
       setLoading(true);
       setError("");
-      await authenticateVisitor(email, password);
-      signIn("visitor");
+      const account = await authenticateVisitor(email, password);
+      signIn("visitor", account.email);
       router.replace("/(visitor)/home");
     } catch (exception) {
       const message = exception instanceof Error ? exception.message : "Unable to log in.";

@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { Alert, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "expo-router";
+import { useAuth } from "../../src/context/AuthContext";
 import {
   getLatestApprovedOrActiveVisitor,
   requestCheckout
@@ -8,23 +9,28 @@ import {
 import type { VisitorRegistration } from "../../src/types/VisitorRegistration";
 
 export default function VisitorCheckoutScreen() {
+  const { email } = useAuth();
   const [pass, setPass] = useState<VisitorRegistration | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const refresh = useCallback(async () => {
+    if (!email) {
+      setPass(null);
+      return;
+    }
     setLoading(true);
     setError("");
     try {
-      const latest = await getLatestApprovedOrActiveVisitor();
+      const latest = await getLatestApprovedOrActiveVisitor(email);
       setPass(latest);
     } catch (err) {
       setError("Unable to load visitor pass.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [email]);
 
   useFocusEffect(
     useCallback(() => {

@@ -10,6 +10,7 @@ import {
   View
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useAuth } from "../../src/context/AuthContext";
 import { useRegistrationDraft } from "../../src/context/RegistrationDraftContext";
 import { FaceVerificationStatus } from "../../src/services/FaceVerificationService";
 import { PURPOSE_OPTIONS } from "../../src/types/VisitorRegistration";
@@ -68,8 +69,12 @@ const ID_NUMBER_PATTERN = /^(?=.*\d)[A-Za-z0-9\-\s]+$/;
 
 export default function RegisterVisitScreen() {
   const router = useRouter();
+  const { email: accountEmail } = useAuth();
   const { startDraft } = useRegistrationDraft();
-  const [form, setForm] = useState<FormState>(initialState);
+  const [form, setForm] = useState<FormState>(() => ({
+    ...initialState,
+    email: accountEmail || ""
+  }));
   const [errors, setErrors] = useState<FormErrors>({});
   const [showPurposeOptions, setShowPurposeOptions] = useState(false);
   const [showIdTypeOptions, setShowIdTypeOptions] = useState(false);
