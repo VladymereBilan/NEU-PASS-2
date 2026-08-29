@@ -13,7 +13,13 @@ import { useRouter } from "expo-router";
 import { useAuth } from "../../src/context/AuthContext";
 import { useRegistrationDraft } from "../../src/context/RegistrationDraftContext";
 import { FaceVerificationStatus } from "../../src/services/FaceVerificationService";
-import { PURPOSE_OPTIONS } from "../../src/types/VisitorRegistration";
+import {
+  ID_NUMBER_PATTERN,
+  ID_TYPE_OPTIONS,
+  NAME_DIGIT_PATTERN,
+  NAME_LETTER_PATTERN,
+  PURPOSE_OPTIONS
+} from "../../src/types/VisitorRegistration";
 
 type FormState = {
   fullName: string;
@@ -41,31 +47,7 @@ const initialState: FormState = {
   agenda: ""
 };
 
-const ID_TYPE_OPTIONS = [
-  "Philippine National ID (PhilID / ePhilID)",
-  "Driver's License",
-  "Philippine Passport",
-  "UMID",
-  "PRC ID",
-  "SSS ID",
-  "GSIS ID",
-  "Voter's ID",
-  "Postal ID",
-  "Senior Citizen ID",
-  "PWD ID",
-  "PhilHealth ID",
-  "TIN ID",
-  "Pag-IBIG ID / Loyalty Card",
-  "Company / Employee ID",
-  "Barangay ID",
-  "Other Government-Issued ID",
-  "Other"
-];
-
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-const NAME_LETTER_PATTERN = /[A-Za-zÀ-ÖØ-öø-ÿ]/;
-const NAME_DIGIT_PATTERN = /\d/;
-const ID_NUMBER_PATTERN = /^(?=.*\d)[A-Za-z0-9\-\s]+$/;
 
 export default function RegisterVisitScreen() {
   const router = useRouter();

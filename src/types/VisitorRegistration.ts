@@ -8,6 +8,34 @@ export const PURPOSE_OPTIONS = [
   "Others"
 ] as const;
 
+export const ID_TYPE_OPTIONS = [
+  "Philippine National ID (PhilID / ePhilID)",
+  "Driver's License",
+  "Philippine Passport",
+  "UMID",
+  "PRC ID",
+  "SSS ID",
+  "GSIS ID",
+  "Voter's ID",
+  "Postal ID",
+  "Senior Citizen ID",
+  "PWD ID",
+  "PhilHealth ID",
+  "TIN ID",
+  "Pag-IBIG ID / Loyalty Card",
+  "Company / Employee ID",
+  "Barangay ID",
+  "Other Government-Issued ID",
+  "Other"
+] as const;
+
+// Shared with OcrService.ts's field-parsing heuristics, so both register.tsx's
+// manual-entry validation and OCR extraction judge "looks like a name" /
+// "looks like an ID number" the same way.
+export const NAME_LETTER_PATTERN = /[A-Za-zÀ-ÖØ-öø-ÿ]/;
+export const NAME_DIGIT_PATTERN = /\d/;
+export const ID_NUMBER_PATTERN = /^(?=.*\d)[A-Za-z0-9\-\s]+$/;
+
 export type RegistrationStatus = "Pending" | "Active" | "Rejected" | "Completed";
 
 export type QrStatus = "Active" | "Inactive" | "Used/Invalid";

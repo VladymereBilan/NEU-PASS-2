@@ -1,5 +1,6 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Image,
   Pressable,
@@ -19,6 +20,7 @@ import {
 } from "../../src/services/PrototypeRegistrationStore";
 import { getExpirationStatus } from "../../src/services/ExpirationService";
 import { getVisitorImageSignedUrl } from "../../src/lib/imageUpload";
+import { compareFaces } from "../../src/services/FaceMatchService";
 import { parseQRValue } from "../../src/services/QRService";
 import type {
   FaceCheckoutVerificationStatus,
@@ -43,6 +45,10 @@ export default function CheckoutVerificationScreen() {
   );
   const [scannerBusy, setScannerBusy] = useState(false);
   const [manualQuery, setManualQuery] = useState("");
+  const [liveCaptureFor, setLiveCaptureFor] = useState<string | null>(null);
+  const [matchingFor, setMatchingFor] = useState<string | null>(null);
+  const [matchScores, setMatchScores] = useState<Record<string, number | null>>({});
+  const liveCameraRef = useRef<any>(null);
 
   const loadFaceUrl = useCallback(async (registration: VisitorRegistration) => {
     const url = await getVisitorImageSignedUrl("visitor-faces", registration.faceImageUri).catch(
@@ -98,6 +104,43 @@ export default function CheckoutVerificationScreen() {
       Alert.alert("Checkout completed.");
     } catch {
       Alert.alert("Unable to complete checkout.");
+    }
+  };
+
+  const openLiveCapture = async (id: string) => {
+    const result = permission?.granted ? permission : await requestPermission();
+    if (!result?.granted) {
+      Alert.alert("Camera permission was denied. You can still select a status manually.");
+      return;
+    }
+    setLiveCaptureFor(id);
+  };
+
+  const captureLivePhoto = async (id: string) => {
+    if (!liveCameraRef.current) return;
+
+    try {
+      const photo = await liveCameraRef.current.takePictureAsync({
+        quality: 0.7,
+        skipProcessing: true
+      });
+      setLiveCaptureFor(null);
+      if (!photo?.uri) return;
+
+      const referenceUrl = faceUrls[id];
+      if (!referenceUrl) {
+        Alert.alert("No reference photo available for this visitor — please select a status manually.");
+        return;
+      }
+
+      setMatchingFor(id);
+      const result = await compareFaces(referenceUrl, photo.uri);
+      setMatchScores((prev) => ({ ...prev, [id]: result.score }));
+      handleSelect(id, result.suggestion);
+    } catch {
+      Alert.alert("Unable to compare faces. Please select a status manually.");
+    } finally {
+      setMatchingFor(null);
     }
   };
 
@@ -202,6 +245,48 @@ export default function CheckoutVerificationScreen() {
     setScanMessage("Manual visitor lookup loaded.");
   };
 
+  const renderFaceMatchControls = (id: string) => {
+    if (liveCaptureFor === id) {
+      return (
+        <View style={styles.cameraShell}>
+          <CameraView key={id} ref={liveCameraRef} style={styles.camera} facing="front" />
+          <Pressable style={styles.scanButton} onPress={() => void captureLivePhoto(id)}>
+            <Text style={styles.scanButtonText}>Capture</Text>
+          </Pressable>
+          <Pressable style={styles.secondaryButton} onPress={() => setLiveCaptureFor(null)}>
+            <Text style={styles.secondaryText}>Cancel</Text>
+          </Pressable>
+        </View>
+      );
+    }
+
+    if (matchingFor === id) {
+      return (
+        <View style={styles.matchingRow}>
+          <ActivityIndicator />
+          <Text style={styles.matchingText}>Comparing faces...</Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.matchSection}>
+        {matchScores[id] !== undefined ? (
+          <Text style={styles.matchSuggestion}>
+            {matchScores[id] === null
+              ? "Couldn't compare automatically — please review manually."
+              : `Suggested: ${selectedStatus[id] || "Manual Review"} (${Math.round(
+                  (matchScores[id] as number) * 100
+                )}% similarity) — please confirm.`}
+          </Text>
+        ) : null}
+        <Pressable style={styles.secondaryButton} onPress={() => void openLiveCapture(id)}>
+          <Text style={styles.secondaryText}>Capture Live Photo for Match</Text>
+        </Pressable>
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -278,6 +363,8 @@ export default function CheckoutVerificationScreen() {
                       <Image source={{ uri: faceUrls[request.id]! }} style={styles.thumbnail} />
                     ) : null}
 
+                    {renderFaceMatchControls(request.id)}
+
                     <Text style={styles.selectorLabel}>Face Verification</Text>
                     <View style={styles.selectorRow}>
                       {(["Matched", "Not Matched", "Manual Review"] as const).map(
@@ -329,6 +416,7 @@ export default function CheckoutVerificationScreen() {
               {faceUrls[scannedVisitor.id] ? (
                 <Image source={{ uri: faceUrls[scannedVisitor.id]! }} style={styles.thumbnail} />
               ) : null}
+              {renderFaceMatchControls(scannedVisitor.id)}
               <View style={styles.selectorRow}>
                 {(["Matched", "Not Matched", "Manual Review"] as const).map(
                   (status) => (
@@ -504,6 +592,25 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: "#e5e7eb",
     marginTop: 4
+  },
+  matchSection: {
+    gap: 8,
+    marginTop: 4
+  },
+  matchSuggestion: {
+    fontSize: 12,
+    color: "#111827",
+    fontWeight: "600"
+  },
+  matchingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 4
+  },
+  matchingText: {
+    fontSize: 13,
+    color: "#4b5563"
   },
   selectorLabel: {
     marginTop: 6,

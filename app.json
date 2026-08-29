@@ -6,10 +6,21 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "react-native-fast-tflite"
     ],
+    "android": {
+      "package": "com.vladymere.neupass"
+    },
     "assetBundlePatterns": [
       "**/*"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "ba330c28-7d63-407f-9689-4fba2e3f3e1e"
+      }
+    },
+    "owner": "vladymere"
   }
 }

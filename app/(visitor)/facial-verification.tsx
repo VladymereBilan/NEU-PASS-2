@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Image,
   Pressable,
@@ -16,6 +17,7 @@ import {
   type FaceVerificationStatusType,
   prototypeMode
 } from "../../src/services/FaceVerificationService";
+import { detectFaces } from "../../src/services/FaceDetectionService";
 import { addRegistration } from "../../src/services/PrototypeRegistrationStore";
 import { useRegistrationDraft } from "../../src/context/RegistrationDraftContext";
 import { uploadVisitorImage } from "../../src/lib/imageUpload";
@@ -34,6 +36,7 @@ export default function FacialVerificationScreen() {
     draft?.faceVerificationStatus || FaceVerificationStatus.Pending
   );
   const [submitting, setSubmitting] = useState(false);
+  const [checkingFace, setCheckingFace] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
 
   useFocusEffect(
@@ -85,7 +88,18 @@ export default function FacialVerificationScreen() {
       setShowCamera(false);
       setStatus(prototypeMode());
       updateDraft({ faceVerificationStatus: prototypeMode() });
-      setStatusMessage("Face image captured successfully.");
+
+      setCheckingFace(true);
+      const { skipped, faceCount } = await detectFaces(photo.uri);
+      setCheckingFace(false);
+
+      if (!skipped && faceCount === 0) {
+        setStatusMessage(
+          "No face was detected in this photo — you can retake it, or continue if this is expected."
+        );
+      } else {
+        setStatusMessage("Face image captured successfully.");
+      }
     } catch {
       Alert.alert("Unable to capture face image. Please try again.");
     }
@@ -171,7 +185,8 @@ export default function FacialVerificationScreen() {
             information.
           </Text>
           <Text style={styles.note}>
-            Real OCR and facial recognition will be implemented in Capstone 2.
+            Automatic face matching against your ID photo is still prototype-only — a guard
+            will manually confirm your identity.
           </Text>
 
           <View style={styles.previewBox}>
@@ -184,7 +199,14 @@ export default function FacialVerificationScreen() {
             )}
           </View>
 
-          {statusMessage ? <Text style={styles.status}>{statusMessage}</Text> : null}
+          {checkingFace ? (
+            <View style={styles.checkingRow}>
+              <ActivityIndicator />
+              <Text style={styles.scanningText}>Checking photo...</Text>
+            </View>
+          ) : statusMessage ? (
+            <Text style={styles.status}>{statusMessage}</Text>
+          ) : null}
 
           {!permission?.granted && !showCamera ? (
             <Text style={styles.permissionNote}>
@@ -311,6 +333,15 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#111827",
     fontWeight: "600"
+  },
+  checkingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8
+  },
+  scanningText: {
+    fontSize: 13,
+    color: "#4b5563"
   },
   permissionNote: {
     fontSize: 13,

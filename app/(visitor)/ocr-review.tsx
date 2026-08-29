@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Pressable,
   SafeAreaView,
   StyleSheet,
@@ -9,6 +10,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useRegistrationDraft } from "../../src/context/RegistrationDraftContext";
+import { extractIdFields } from "../../src/services/OcrService";
 
 type OcrForm = {
   fullName: string;
@@ -19,26 +21,64 @@ type OcrForm = {
 
 type OcrErrors = Partial<Record<keyof OcrForm, string>>;
 
-const sampleData: OcrForm = {
-  fullName: "Juan Dela Cruz",
-  address: "Quezon City",
-  idType: "School ID",
-  idNumber: "NEU-2026-0001"
-};
-
 export default function OcrReviewScreen() {
   const router = useRouter();
-  const { updateDraft } = useRegistrationDraft();
+  const { draft, updateDraft } = useRegistrationDraft();
   const [form, setForm] = useState<OcrForm>({
-    fullName: "",
-    address: "",
-    idType: "",
-    idNumber: ""
+    fullName: draft?.fullName ?? "",
+    address: draft?.address ?? "",
+    idType: draft?.idType ?? "",
+    idNumber: draft?.idNumber ?? ""
   });
   const [errors, setErrors] = useState<OcrErrors>({});
+  const [scanning, setScanning] = useState(true);
+  const [statusMessage, setStatusMessage] = useState("");
 
   useEffect(() => {
-    setForm(sampleData);
+    let active = true;
+
+    if (!draft) {
+      setScanning(false);
+      return;
+    }
+
+    extractIdFields(draft.idImageUri)
+      .then((result) => {
+        if (!active) return;
+
+        if (result.confidence === "none") {
+          setStatusMessage(
+            draft.idImageUri
+              ? "Couldn't read the ID photo automatically — please review the fields below."
+              : ""
+          );
+          return;
+        }
+
+        // OCR only ever overlays a field it actually found something for —
+        // whatever the visitor already typed in the previous step stays as
+        // the fallback for anything OCR missed.
+        setForm((prev) => ({
+          fullName: result.fields.fullName || prev.fullName,
+          address: result.fields.address || prev.address,
+          idType: result.fields.idType || prev.idType,
+          idNumber: result.fields.idNumber || prev.idNumber
+        }));
+        setStatusMessage("Detected from ID — please review and correct anything below.");
+      })
+      .catch(() => {
+        if (active) {
+          setStatusMessage("Couldn't read the ID photo automatically — please review the fields below.");
+        }
+      })
+      .finally(() => {
+        if (active) setScanning(false);
+      });
+
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const updateField = (key: keyof OcrForm, value: string) => {
@@ -78,8 +118,18 @@ export default function OcrReviewScreen() {
       <View style={styles.card}>
         <Text style={styles.title}>OCR Review</Text>
         <Text style={styles.body}>
-          OCR extraction is prototype-only. Real OCR will be added in Capstone 2.
+          Text detected from your ID is prefilled below — please review and correct anything
+          that's wrong before continuing.
         </Text>
+
+        {scanning ? (
+          <View style={styles.scanningRow}>
+            <ActivityIndicator />
+            <Text style={styles.scanningText}>Reading ID photo...</Text>
+          </View>
+        ) : statusMessage ? (
+          <Text style={styles.status}>{statusMessage}</Text>
+        ) : null}
 
         <View style={styles.field}>
           <Text style={styles.label}>Full Name</Text>
@@ -164,6 +214,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#4b5563",
     lineHeight: 20
+  },
+  scanningRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8
+  },
+  scanningText: {
+    fontSize: 13,
+    color: "#4b5563"
+  },
+  status: {
+    fontSize: 13,
+    color: "#111827",
+    fontWeight: "600"
   },
   field: {
     gap: 8

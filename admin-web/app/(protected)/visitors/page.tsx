@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/DataTable";
 import { createClient } from "@/lib/supabase/client";
+import { downloadCsv, toCsv } from "@/lib/csvExport";
 
 type VisitorRow = {
   id: string;
@@ -14,6 +15,16 @@ type VisitorRow = {
   qr_status: string;
   expiration_time: string | null;
 };
+
+const COLUMNS = [
+  "Visitor Name",
+  "Purpose",
+  "Status",
+  "Time In",
+  "Time Out",
+  "QR Status",
+  "Expiration Time"
+];
 
 function formatDate(value: string | null) {
   if (!value) return "-";
@@ -60,6 +71,12 @@ export default function VisitorsPage() {
     formatDate(visitor.expiration_time)
   ]);
 
+  const handleExport = () => {
+    const csv = toCsv(COLUMNS, rows);
+    const timestamp = new Date().toISOString().slice(0, 10);
+    downloadCsv(`neu-pass-visitors-${timestamp}.csv`, csv);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -69,17 +86,26 @@ export default function VisitorsPage() {
           placeholder="Search visitors"
           className="w-full rounded-2xl border border-white/10 bg-[rgba(13,23,40,0.92)] px-4 py-3 text-white outline-none placeholder:text-slate-500 lg:max-w-sm"
         />
-        <select
-          value={filter}
-          onChange={(event) => setFilter(event.target.value)}
-          className="rounded-2xl border border-white/10 bg-[rgba(13,23,40,0.92)] px-4 py-3 text-white outline-none"
-        >
-          <option value="All">All statuses</option>
-          <option value="Pending">Pending</option>
-          <option value="Active">Active</option>
-          <option value="Completed">Completed</option>
-          <option value="Rejected">Rejected</option>
-        </select>
+        <div className="flex gap-3">
+          <select
+            value={filter}
+            onChange={(event) => setFilter(event.target.value)}
+            className="rounded-2xl border border-white/10 bg-[rgba(13,23,40,0.92)] px-4 py-3 text-white outline-none"
+          >
+            <option value="All">All statuses</option>
+            <option value="Pending">Pending</option>
+            <option value="Active">Active</option>
+            <option value="Completed">Completed</option>
+            <option value="Rejected">Rejected</option>
+          </select>
+          <button
+            onClick={handleExport}
+            disabled={rows.length === 0}
+            className="whitespace-nowrap rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Export CSV
+          </button>
+        </div>
       </div>
 
       <div className="rounded-3xl border border-white/10 bg-[rgba(13,23,40,0.92)] p-5">
@@ -88,18 +114,7 @@ export default function VisitorsPage() {
         ) : rows.length === 0 ? (
           <div className="py-16 text-center text-slate-400">No visitor records found.</div>
         ) : (
-          <DataTable
-            columns={[
-              "Visitor Name",
-              "Purpose",
-              "Status",
-              "Time In",
-              "Time Out",
-              "QR Status",
-              "Expiration Time"
-            ]}
-            rows={rows}
-          />
+          <DataTable columns={COLUMNS} rows={rows} />
         )}
       </div>
     </div>
