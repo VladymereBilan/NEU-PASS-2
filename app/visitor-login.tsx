@@ -1,5 +1,6 @@
 import { useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Pressable,
   SafeAreaView,
@@ -10,15 +11,23 @@ import {
 } from "react-native";
 import { Redirect, useRouter } from "expo-router";
 import { useAuth } from "../src/context/AuthContext";
-import { authenticateVisitor } from "../src/repositories/AccountRepository";
+import { supabase } from "../src/lib/supabaseClient";
 
 export default function VisitorLoginScreen() {
   const router = useRouter();
-  const { role, signIn } = useAuth();
+  const { role, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  if (authLoading) {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <ActivityIndicator />
+      </SafeAreaView>
+    );
+  }
 
   if (role === "visitor") {
     return <Redirect href="/(visitor)/home" />;
@@ -33,8 +42,23 @@ export default function VisitorLoginScreen() {
     try {
       setLoading(true);
       setError("");
-      const account = await authenticateVisitor(email, password);
-      signIn("visitor", account.email);
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password
+      });
+      if (authError || !data.user) throw new Error(authError?.message ?? "Unable to log in.");
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("account_status")
+        .eq("id", data.user.id)
+        .maybeSingle();
+
+      if (profile?.account_status === "Blocked") {
+        await supabase.auth.signOut();
+        throw new Error("This visitor account is blocked.");
+      }
+
       router.replace("/(visitor)/home");
     } catch (exception) {
       const message = exception instanceof Error ? exception.message : "Unable to log in.";

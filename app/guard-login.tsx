@@ -1,5 +1,6 @@
 import { useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Pressable,
   SafeAreaView,
@@ -10,15 +11,24 @@ import {
 } from "react-native";
 import { Redirect, useRouter } from "expo-router";
 import { useAuth } from "../src/context/AuthContext";
-import { authenticateGuard } from "../src/repositories/AccountRepository";
+import { guardUsernameToEmail } from "../src/lib/guardAuth";
+import { supabase } from "../src/lib/supabaseClient";
 
 export default function GuardLoginScreen() {
   const router = useRouter();
-  const { role, signIn } = useAuth();
+  const { role, loading: authLoading } = useAuth();
   const [username, setUsername] = useState("guard01");
   const [password, setPassword] = useState("guard123");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  if (authLoading) {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <ActivityIndicator />
+      </SafeAreaView>
+    );
+  }
 
   if (role === "guard") {
     return <Redirect href="/(guard)/home" />;
@@ -33,8 +43,23 @@ export default function GuardLoginScreen() {
     try {
       setLoading(true);
       setError("");
-      await authenticateGuard(username, password);
-      signIn("guard");
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: guardUsernameToEmail(username),
+        password
+      });
+      if (authError || !data.user) throw new Error("Invalid guard username or password.");
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("account_status")
+        .eq("id", data.user.id)
+        .maybeSingle();
+
+      if (profile?.account_status === "Blocked") {
+        await supabase.auth.signOut();
+        throw new Error("This guard account is blocked by admin.");
+      }
+
       router.replace("/(guard)/home");
     } catch (exception) {
       const message = exception instanceof Error ? exception.message : "Unable to log in.";

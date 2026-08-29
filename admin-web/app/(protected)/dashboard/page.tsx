@@ -1,8 +1,16 @@
 import { MetricCard } from "@/components/MetricCard";
-import { getReportStats } from "@/lib/sample-data";
+import { computeReportStats, type VisitorRow } from "@/lib/reportStats";
+import { createClient } from "@/lib/supabase/server";
 
-export default function DashboardPage() {
-  const stats = getReportStats();
+export default async function DashboardPage() {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("visitor_registrations")
+    .select(
+      "id, full_name, purpose_of_visit, registration_status, checkout_status, qr_status, time_in, time_out, expiration_time, created_at"
+    );
+
+  const stats = computeReportStats((data ?? []) as VisitorRow[]);
 
   return (
     <div className="space-y-6">

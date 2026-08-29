@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import {
   Alert,
+  Image,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -17,6 +18,7 @@ import {
   getVisitorPassByVisitorId
 } from "../../src/services/PrototypeRegistrationStore";
 import { getExpirationStatus } from "../../src/services/ExpirationService";
+import { getVisitorImageSignedUrl } from "../../src/lib/imageUpload";
 import { parseQRValue } from "../../src/services/QRService";
 import type {
   FaceCheckoutVerificationStatus,
@@ -27,6 +29,7 @@ type ScannerState = "idle" | "camera";
 
 export default function CheckoutVerificationScreen() {
   const [requests, setRequests] = useState<VisitorRegistration[]>([]);
+  const [faceUrls, setFaceUrls] = useState<Record<string, string | null>>({});
   const [selectedStatus, setSelectedStatus] = useState<
     Record<string, FaceCheckoutVerificationStatus>
   >({});
@@ -41,18 +44,26 @@ export default function CheckoutVerificationScreen() {
   const [scannerBusy, setScannerBusy] = useState(false);
   const [manualQuery, setManualQuery] = useState("");
 
+  const loadFaceUrl = useCallback(async (registration: VisitorRegistration) => {
+    const url = await getVisitorImageSignedUrl("visitor-faces", registration.faceImageUri).catch(
+      () => null
+    );
+    setFaceUrls((prev) => ({ ...prev, [registration.id]: url }));
+  }, []);
+
   const refresh = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
       const data = await getCheckoutRequests();
       setRequests(data);
+      void Promise.all(data.map(loadFaceUrl));
     } catch {
       setError("Unable to load checkout requests.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loadFaceUrl]);
 
   useFocusEffect(
     useCallback(() => {
@@ -263,6 +274,10 @@ export default function CheckoutVerificationScreen() {
                       Checkout Requested: {formatDate(request.checkoutRequestedAt)}
                     </Text>
 
+                    {faceUrls[request.id] ? (
+                      <Image source={{ uri: faceUrls[request.id]! }} style={styles.thumbnail} />
+                    ) : null}
+
                     <Text style={styles.selectorLabel}>Face Verification</Text>
                     <View style={styles.selectorRow}>
                       {(["Matched", "Not Matched", "Manual Review"] as const).map(
@@ -311,6 +326,9 @@ export default function CheckoutVerificationScreen() {
                 Expiration: {formatDate(scannedVisitor.expirationTime)}
               </Text>
               <Text style={styles.itemText}>QR Status: {scannedVisitor.qrStatus}</Text>
+              {faceUrls[scannedVisitor.id] ? (
+                <Image source={{ uri: faceUrls[scannedVisitor.id]! }} style={styles.thumbnail} />
+              ) : null}
               <View style={styles.selectorRow}>
                 {(["Matched", "Not Matched", "Manual Review"] as const).map(
                   (status) => (
@@ -479,6 +497,13 @@ const styles = StyleSheet.create({
   itemText: {
     fontSize: 13,
     color: "#374151"
+  },
+  thumbnail: {
+    width: 120,
+    height: 120,
+    borderRadius: 8,
+    backgroundColor: "#e5e7eb",
+    marginTop: 4
   },
   selectorLabel: {
     marginTop: 6,

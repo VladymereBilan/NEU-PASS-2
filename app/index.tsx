@@ -1,10 +1,18 @@
-import { Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
 import { Redirect, useRouter } from "expo-router";
 import { useAuth } from "../src/context/AuthContext";
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { role } = useAuth();
+  const { role, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <ActivityIndicator />
+      </SafeAreaView>
+    );
+  }
 
   if (role === "visitor") {
     return <Redirect href="/(visitor)/home" />;

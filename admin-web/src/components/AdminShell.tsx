@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard" },
@@ -12,19 +13,15 @@ const navItems = [
   { href: "/audit-logs", label: "Audit Logs" }
 ];
 
-export function AdminShell({ children }: { children: React.ReactNode }) {
+export function AdminShell({
+  children,
+  adminUsername
+}: {
+  children: React.ReactNode;
+  adminUsername: string;
+}) {
   const pathname = usePathname();
   const router = useRouter();
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    const token = window.localStorage.getItem("neu-pass-admin-auth");
-    if (!token) {
-      router.replace("/login");
-      return;
-    }
-    setReady(true);
-  }, [router]);
 
   const title = useMemo(() => {
     if (pathname.includes("/visitors")) return "Visitor Monitoring";
@@ -34,18 +31,12 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     return "Dashboard";
   }, [pathname]);
 
-  const signOut = () => {
-    window.localStorage.removeItem("neu-pass-admin-auth");
+  const signOut = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
     router.push("/login");
+    router.refresh();
   };
-
-  if (!ready) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-slate-300">
-        Loading admin session...
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen text-slate-100">
@@ -79,7 +70,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             })}
           </nav>
           <button
-            onClick={signOut}
+            onClick={() => void signOut()}
             className="mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-slate-100 hover:bg-white/10"
           >
             Sign out
@@ -96,10 +87,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             </div>
             <div className="flex items-center gap-3">
               <div className="hidden rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300 md:block">
-                admin01
+                {adminUsername}
               </div>
               <button
-                onClick={signOut}
+                onClick={() => void signOut()}
                 className="rounded-full bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-300"
               >
                 Logout

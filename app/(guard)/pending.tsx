@@ -1,15 +1,19 @@
 import { useCallback, useState } from "react";
-import { Alert, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "expo-router";
 import {
   getPendingRegistrations,
   markVisitorActive,
   rejectRegistration
 } from "../../src/services/PrototypeRegistrationStore";
+import { getVisitorImageSignedUrl } from "../../src/lib/imageUpload";
 import type { VisitorRegistration } from "../../src/types/VisitorRegistration";
+
+type ImageUrls = { idUrl: string | null; faceUrl: string | null };
 
 export default function PendingVerificationsScreen() {
   const [pending, setPending] = useState<VisitorRegistration[]>([]);
+  const [imageUrls, setImageUrls] = useState<Record<string, ImageUrls>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [processing, setProcessing] = useState<
@@ -22,6 +26,17 @@ export default function PendingVerificationsScreen() {
     try {
       const data = await getPendingRegistrations();
       setPending(data);
+
+      const entries = await Promise.all(
+        data.map(async (registration) => {
+          const [idUrl, faceUrl] = await Promise.all([
+            getVisitorImageSignedUrl("visitor-ids", registration.idImageUri).catch(() => null),
+            getVisitorImageSignedUrl("visitor-faces", registration.faceImageUri).catch(() => null)
+          ]);
+          return [registration.id, { idUrl, faceUrl }] as const;
+        })
+      );
+      setImageUrls(Object.fromEntries(entries));
     } catch (err) {
       setError("Unable to load pending registrations.");
     } finally {
@@ -71,9 +86,6 @@ export default function PendingVerificationsScreen() {
         <Pressable style={styles.refreshButton} onPress={() => void refresh()}>
           <Text style={styles.refreshText}>Refresh</Text>
         </Pressable>
-        <Text style={styles.note}>
-          Prototype data is temporary. SQLite will be added in a later phase.
-        </Text>
 
         {loading ? (
           <Text style={styles.body}>Loading pending registrations...</Text>
@@ -95,6 +107,35 @@ export default function PendingVerificationsScreen() {
                 Face Status: {registration.faceVerificationStatus}
               </Text>
               <Text style={styles.itemText}>Status: Pending</Text>
+
+              <View style={styles.imageRow}>
+                <View style={styles.imageSlot}>
+                  <Text style={styles.imageLabel}>ID Photo</Text>
+                  {imageUrls[registration.id]?.idUrl ? (
+                    <Image
+                      source={{ uri: imageUrls[registration.id]!.idUrl! }}
+                      style={styles.thumbnail}
+                    />
+                  ) : (
+                    <Text style={styles.imagePlaceholder}>
+                      {registration.idImageUri ? "Prototype sample" : "No image"}
+                    </Text>
+                  )}
+                </View>
+                <View style={styles.imageSlot}>
+                  <Text style={styles.imageLabel}>Face Photo</Text>
+                  {imageUrls[registration.id]?.faceUrl ? (
+                    <Image
+                      source={{ uri: imageUrls[registration.id]!.faceUrl! }}
+                      style={styles.thumbnail}
+                    />
+                  ) : (
+                    <Text style={styles.imagePlaceholder}>
+                      {registration.faceImageUri ? "Prototype sample" : "No image"}
+                    </Text>
+                  )}
+                </View>
+              </View>
 
               <View style={styles.actionRow}>
                 <Pressable
@@ -184,6 +225,35 @@ const styles = StyleSheet.create({
   itemText: {
     fontSize: 13,
     color: "#374151"
+  },
+  imageRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 4
+  },
+  imageSlot: {
+    flex: 1,
+    gap: 4
+  },
+  imageLabel: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#6b7280"
+  },
+  thumbnail: {
+    width: "100%",
+    height: 100,
+    borderRadius: 8,
+    backgroundColor: "#e5e7eb"
+  },
+  imagePlaceholder: {
+    height: 100,
+    borderRadius: 8,
+    backgroundColor: "#e5e7eb",
+    color: "#6b7280",
+    fontSize: 12,
+    textAlign: "center",
+    textAlignVertical: "center"
   },
   actionRow: {
     flexDirection: "row",

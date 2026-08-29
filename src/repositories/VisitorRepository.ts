@@ -1,4 +1,4 @@
-import { executeSqlAsync, initDb } from "../database/db";
+import { supabase } from "../lib/supabaseClient";
 import type {
   FaceCheckoutVerificationStatus,
   VisitorRegistration
@@ -7,253 +7,174 @@ import type {
 function mapRow(row: any): VisitorRegistration {
   return {
     id: row.id,
-    fullName: row.fullName,
+    fullName: row.full_name,
     address: row.address,
-    contactNumber: row.contactNumber,
+    contactNumber: row.contact_number,
     email: row.email,
-    idType: row.idType,
-    idNumber: row.idNumber,
-    idImageUri: row.idImageUri || "",
-    purposeOfVisit: row.purposeOfVisit,
-    otherAgenda: row.otherAgenda || "",
-    consentAccepted: row.consentAccepted === 1,
-    ocrReviewed: row.ocrReviewed === 1,
-    faceVerificationStatus: row.faceVerificationStatus,
-    faceImageUri: row.faceImageUri || "",
-    registrationStatus: row.registrationStatus,
-    timeIn: row.timeIn || "",
-    visitorPassNumber: row.visitorPassNumber || "",
-    qrStatus: row.qrStatus,
-    expirationTime: row.expirationTime || "",
-    checkoutStatus: row.checkoutStatus,
-    checkoutRequestedAt: row.checkoutRequestedAt || "",
-    timeOut: row.timeOut || "",
-    faceCheckoutVerificationStatus: row.faceCheckoutVerificationStatus || "",
-    createdAt: row.createdAt
+    idType: row.id_type,
+    idNumber: row.id_number,
+    idImageUri: row.id_image_path || "",
+    purposeOfVisit: row.purpose_of_visit,
+    otherAgenda: row.other_agenda || "",
+    consentAccepted: !!row.consent_accepted,
+    ocrReviewed: !!row.ocr_reviewed,
+    faceVerificationStatus: row.face_verification_status,
+    faceImageUri: row.face_image_path || "",
+    registrationStatus: row.registration_status,
+    timeIn: row.time_in || "",
+    visitorPassNumber: row.visitor_pass_number || "",
+    qrStatus: row.qr_status,
+    expirationTime: row.expiration_time || "",
+    checkoutStatus: row.checkout_status,
+    checkoutRequestedAt: row.checkout_requested_at || "",
+    timeOut: row.time_out || "",
+    faceCheckoutVerificationStatus: row.face_checkout_verification_status || "",
+    createdAt: row.created_at
   };
 }
 
-function rows(result: any) {
-  return (result?.rows?._array ?? []) as any[];
+// Postgres ILIKE treats "_" and "%" as wildcards; escape them so an
+// email-address lookup (which commonly contains "_") only ever matches
+// exactly, case-insensitively, and can't unintentionally match other rows.
+function escapeIlike(value: string) {
+  return value.replace(/[%_]/g, (match) => `\\${match}`);
+}
+
+function unwrap<T>(data: T | null, error: { message: string } | null): T {
+  if (error) throw new Error(error.message);
+  if (data === null) throw new Error("No data returned.");
+  return data;
 }
 
 export async function createVisitor(visitor: VisitorRegistration) {
-  await initDb();
-  await executeSqlAsync(
-    `INSERT INTO visitor_registrations (
-      id,
-      fullName,
-      address,
-      contactNumber,
-      email,
-      idType,
-      idNumber,
-      idImageUri,
-      purposeOfVisit,
-      otherAgenda,
-      consentAccepted,
-      ocrReviewed,
-      faceVerificationStatus,
-      faceImageUri,
-      registrationStatus,
-      visitorPassNumber,
-      qrStatus,
-      expirationTime,
-      checkoutStatus,
-      checkoutRequestedAt,
-      timeIn,
-      timeOut,
-      faceCheckoutVerificationStatus,
-      createdAt
-    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-    [
-      visitor.id,
-      visitor.fullName,
-      visitor.address,
-      visitor.contactNumber,
-      visitor.email,
-      visitor.idType,
-      visitor.idNumber,
-      visitor.idImageUri,
-      visitor.purposeOfVisit,
-      visitor.otherAgenda,
-      visitor.consentAccepted ? 1 : 0,
-      visitor.ocrReviewed ? 1 : 0,
-      visitor.faceVerificationStatus,
-      visitor.faceImageUri,
-      visitor.registrationStatus,
-      visitor.visitorPassNumber,
-      visitor.qrStatus,
-      visitor.expirationTime,
-      visitor.checkoutStatus,
-      visitor.checkoutRequestedAt,
-      visitor.timeIn,
-      visitor.timeOut,
-      visitor.faceCheckoutVerificationStatus,
-      visitor.createdAt
-    ]
-  );
-  return visitor;
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) {
+    throw new Error("You must be signed in to register a visit.");
+  }
+
+  const { data, error } = await supabase
+    .from("visitor_registrations")
+    .insert({
+      visitor_user_id: userData.user.id,
+      full_name: visitor.fullName,
+      address: visitor.address,
+      contact_number: visitor.contactNumber,
+      email: visitor.email,
+      id_type: visitor.idType,
+      id_number: visitor.idNumber,
+      id_image_path: visitor.idImageUri || null,
+      purpose_of_visit: visitor.purposeOfVisit,
+      other_agenda: visitor.otherAgenda || null,
+      consent_accepted: visitor.consentAccepted,
+      ocr_reviewed: visitor.ocrReviewed,
+      face_verification_status: visitor.faceVerificationStatus,
+      face_image_path: visitor.faceImageUri || null
+    })
+    .select()
+    .single();
+
+  return mapRow(unwrap(data, error));
 }
 
 export async function getVisitorById(id: string) {
-  await initDb();
-  const result = await executeSqlAsync(
-    "SELECT * FROM visitor_registrations WHERE id = ?",
-    [id]
-  );
-  const [row] = rows(result);
-  return row ? mapRow(row) : null;
+  const { data, error } = await supabase
+    .from("visitor_registrations")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return data ? mapRow(data) : null;
 }
 
 export async function getAllVisitors() {
-  await initDb();
-  const result = await executeSqlAsync(
-    "SELECT * FROM visitor_registrations ORDER BY createdAt DESC"
-  );
-  return rows(result).map(mapRow);
+  const { data, error } = await supabase
+    .from("visitor_registrations")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return (data || []).map(mapRow);
 }
 
 export async function getPendingVisitors() {
-  await initDb();
-  const result = await executeSqlAsync(
-    "SELECT * FROM visitor_registrations WHERE registrationStatus = ? ORDER BY createdAt DESC",
-    ["Pending"]
-  );
-  return rows(result).map(mapRow);
+  const { data, error } = await supabase
+    .from("visitor_registrations")
+    .select("*")
+    .eq("registration_status", "Pending")
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return (data || []).map(mapRow);
 }
 
 export async function getActiveVisitors() {
-  await initDb();
-  const result = await executeSqlAsync(
-    "SELECT * FROM visitor_registrations WHERE registrationStatus = ? ORDER BY timeIn DESC",
-    ["Active"]
-  );
-  return rows(result).map(mapRow);
+  const { data, error } = await supabase
+    .from("visitor_registrations")
+    .select("*")
+    .eq("registration_status", "Active")
+    .order("time_in", { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return (data || []).map(mapRow);
 }
 
 export async function getActiveVisitorsByEmail(email: string) {
-  await initDb();
-  const result = await executeSqlAsync(
-    "SELECT * FROM visitor_registrations WHERE registrationStatus = ? AND LOWER(email) = LOWER(?) ORDER BY timeIn DESC",
-    ["Active", email.trim()]
-  );
-  return rows(result).map(mapRow);
+  const { data, error } = await supabase
+    .from("visitor_registrations")
+    .select("*")
+    .eq("registration_status", "Active")
+    .ilike("email", escapeIlike(email.trim()))
+    .order("time_in", { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return (data || []).map(mapRow);
 }
 
 export async function getCheckoutRequests() {
-  await initDb();
-  const result = await executeSqlAsync(
-    "SELECT * FROM visitor_registrations WHERE checkoutStatus = ? ORDER BY checkoutRequestedAt DESC",
-    ["Checkout Requested"]
-  );
-  return rows(result).map(mapRow);
+  const { data, error } = await supabase
+    .from("visitor_registrations")
+    .select("*")
+    .eq("checkout_status", "Checkout Requested")
+    .order("checkout_requested_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return (data || []).map(mapRow);
 }
 
 export async function getCompletedVisitors() {
-  await initDb();
-  const result = await executeSqlAsync(
-    "SELECT * FROM visitor_registrations WHERE checkoutStatus = ? ORDER BY timeOut DESC",
-    ["Completed"]
-  );
-  return rows(result).map(mapRow);
+  const { data, error } = await supabase
+    .from("visitor_registrations")
+    .select("*")
+    .eq("checkout_status", "Completed")
+    .order("time_out", { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return (data || []).map(mapRow);
 }
 
 export async function approveVisitor(id: string) {
-  await initDb();
-  const timeIn = new Date();
-  const expirationTime = calculateExpirationTime(timeIn, await getPurpose(id));
-
-  // visitorPassNumber is computed by this same UPDATE statement (rather than
-  // a separate SELECT COUNT beforehand) so the read-and-assign is a single
-  // synchronous SQLite call with no `await` in between — two concurrent
-  // approveVisitor() calls (e.g. a double-tapped Approve button) can no
-  // longer interleave and be handed the same VP-### number.
-  await executeSqlAsync(
-    `UPDATE visitor_registrations
-     SET registrationStatus = ?,
-         timeIn = ?,
-         visitorPassNumber = printf('VP-%03d', (
-           SELECT COUNT(*) FROM visitor_registrations WHERE visitorPassNumber != ''
-         ) + 1),
-         expirationTime = ?,
-         qrStatus = ?,
-         checkoutStatus = ?,
-         checkoutRequestedAt = ?,
-         timeOut = ?,
-         faceCheckoutVerificationStatus = ?
-     WHERE id = ?`,
-    [
-      "Active",
-      timeIn.toISOString(),
-      expirationTime,
-      "Active",
-      "None",
-      "",
-      "",
-      "",
-      id
-    ]
-  );
-  return getVisitorById(id);
+  const { data, error } = await supabase.rpc("approve_visitor", { p_id: id });
+  return mapRow(unwrap(data, error));
 }
 
 export async function rejectVisitor(id: string) {
-  await initDb();
-  await executeSqlAsync(
-    "UPDATE visitor_registrations SET registrationStatus = ? WHERE id = ?",
-    ["Rejected", id]
-  );
-  return getVisitorById(id);
+  const { data, error } = await supabase.rpc("reject_visitor", { p_id: id });
+  return mapRow(unwrap(data, error));
 }
 
 export async function requestCheckout(id: string) {
-  await initDb();
-  await executeSqlAsync(
-    "UPDATE visitor_registrations SET checkoutStatus = ?, checkoutRequestedAt = ? WHERE id = ?",
-    ["Checkout Requested", new Date().toISOString(), id]
-  );
-  return getVisitorById(id);
+  const { data, error } = await supabase.rpc("request_checkout", { p_id: id });
+  return mapRow(unwrap(data, error));
 }
 
 export async function completeCheckout(
   id: string,
   verificationStatus: FaceCheckoutVerificationStatus
 ) {
-  await initDb();
-  await executeSqlAsync(
-    `UPDATE visitor_registrations
-     SET checkoutStatus = ?,
-         registrationStatus = ?,
-         timeOut = ?,
-         qrStatus = ?,
-         faceCheckoutVerificationStatus = ?
-     WHERE id = ?`,
-    [
-      "Completed",
-      "Completed",
-      new Date().toISOString(),
-      "Used/Invalid",
-      verificationStatus,
-      id
-    ]
-  );
-  return getVisitorById(id);
-}
-
-async function getPurpose(id: string) {
-  const visitor = await getVisitorById(id);
-  return visitor?.purposeOfVisit || "";
-}
-
-function calculateExpirationTime(timeIn: Date, purposeOfVisit: string) {
-  const fourPmPurposes = [
-    "Enrollment",
-    "Tuition Fee Payment",
-    "Other Payments"
-  ];
-  const hours = fourPmPurposes.includes(purposeOfVisit) ? 16 : 18;
-  const expiration = new Date(timeIn);
-  expiration.setHours(hours, 0, 0, 0);
-  return expiration.toISOString();
+  const { data, error } = await supabase.rpc("complete_checkout", {
+    p_id: id,
+    p_face_status: verificationStatus || null
+  });
+  return mapRow(unwrap(data, error));
 }

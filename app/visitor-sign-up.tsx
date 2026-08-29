@@ -9,12 +9,10 @@ import {
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { useAuth } from "../src/context/AuthContext";
-import { createVisitorAccount } from "../src/repositories/AccountRepository";
+import { supabase } from "../src/lib/supabaseClient";
 
 export default function VisitorSignUpScreen() {
   const router = useRouter();
-  const { signIn } = useAuth();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [contactNumber, setContactNumber] = useState("");
@@ -44,8 +42,17 @@ export default function VisitorSignUpScreen() {
     try {
       setLoading(true);
       setError("");
-      const account = await createVisitorAccount({ fullName, email, contactNumber, password });
-      signIn("visitor", account.email);
+      const { error: authError } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          data: {
+            full_name: fullName.trim(),
+            contact_number: contactNumber.trim()
+          }
+        }
+      });
+      if (authError) throw new Error(authError.message);
       router.replace("/(visitor)/home");
     } catch (exception) {
       const message = exception instanceof Error ? exception.message : "Unable to create account.";

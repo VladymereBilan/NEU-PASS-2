@@ -3,11 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   createGuardAccount,
-  loadGuardAccounts,
+  listGuardAccounts,
+  setGuardAccountStatus,
   type GuardAccount,
-  type GuardAccountStatus,
-  updateGuardAccountStatus
-} from "@/lib/guard-account-store";
+  type GuardAccountStatus
+} from "@/actions/guard-accounts";
 
 export default function UsersPage() {
   const [accounts, setAccounts] = useState<GuardAccount[]>([]);
@@ -21,7 +21,7 @@ export default function UsersPage() {
 
   useEffect(() => {
     const bootstrap = async () => {
-      const data = await loadGuardAccounts();
+      const data = await listGuardAccounts();
       setAccounts(data);
       setLoading(false);
     };
@@ -48,13 +48,8 @@ export default function UsersPage() {
 
     try {
       setError("");
-      const next = await createGuardAccount({
-        fullName,
-        username,
-        password,
-        accountStatus
-      });
-      setAccounts(next);
+      await createGuardAccount({ fullName, username, password, accountStatus });
+      setAccounts(await listGuardAccounts());
       setFullName("");
       setUsername("");
       setPassword("");
@@ -67,8 +62,8 @@ export default function UsersPage() {
   const toggleStatus = async (account: GuardAccount) => {
     const nextStatus: GuardAccountStatus =
       account.accountStatus === "Active" ? "Blocked" : "Active";
-    const next = await updateGuardAccountStatus(account.id, nextStatus);
-    setAccounts(next);
+    await setGuardAccountStatus(account.id, nextStatus);
+    setAccounts(await listGuardAccounts());
   };
 
   return (

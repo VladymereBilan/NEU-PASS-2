@@ -1,8 +1,16 @@
 import { MetricCard } from "@/components/MetricCard";
-import { getReportStats } from "@/lib/sample-data";
+import { computeReportStats, type VisitorRow } from "@/lib/reportStats";
+import { createClient } from "@/lib/supabase/server";
 
-export default function ReportsPage() {
-  const stats = getReportStats();
+export default async function ReportsPage() {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("visitor_registrations")
+    .select(
+      "id, full_name, purpose_of_visit, registration_status, checkout_status, qr_status, time_in, time_out, expiration_time, created_at"
+    );
+
+  const stats = computeReportStats((data ?? []) as VisitorRow[]);
 
   return (
     <div className="space-y-6">
@@ -44,7 +52,7 @@ export default function ReportsPage() {
 
       <Panel title="Expired QR Count">
         <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-slate-300">
-          {stats.expiredQrPasses} expired QR pass{stats.expiredQrPasses === 1 ? "" : "es"} recorded in the prototype dataset.
+          {stats.expiredQrPasses} expired QR pass{stats.expiredQrPasses === 1 ? "" : "es"} recorded.
         </div>
       </Panel>
     </div>

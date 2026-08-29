@@ -25,3 +25,6 @@ Thumbs.db
 
 # Expo generated
 expo-env.d.ts
+
+# TypeScript incremental build cache
+*.tsbuildinfo

@@ -7,8 +7,8 @@ export default function VisitorHomeScreen() {
   const router = useRouter();
   const { signOut } = useAuth();
 
-  const handleSignOut = () => {
-    signOut();
+  const handleSignOut = async () => {
+    await signOut();
     router.replace("/");
   };
 

@@ -18,6 +18,7 @@ import {
 } from "../../src/services/FaceVerificationService";
 import { addRegistration } from "../../src/services/PrototypeRegistrationStore";
 import { useRegistrationDraft } from "../../src/context/RegistrationDraftContext";
+import { uploadVisitorImage } from "../../src/lib/imageUpload";
 import type { VisitorRegistration } from "../../src/types/VisitorRegistration";
 
 export default function FacialVerificationScreen() {
@@ -115,35 +116,40 @@ export default function FacialVerificationScreen() {
       return;
     }
 
-    const registration: VisitorRegistration = {
-      id: `REG-${Date.now()}`,
-      fullName: draft.fullName,
-      address: draft.address,
-      contactNumber: draft.contactNumber,
-      email: draft.email,
-      idType: draft.idType,
-      idNumber: draft.idNumber,
-      idImageUri: draft.idImageUri,
-      purposeOfVisit: draft.purposeOfVisit,
-      otherAgenda: draft.otherAgenda,
-      consentAccepted: draft.consentAccepted,
-      ocrReviewed: draft.ocrReviewed,
-      faceVerificationStatus: draft.faceVerificationStatus || status,
-      faceImageUri: draft.faceImageUri,
-      registrationStatus: "Pending",
-      timeIn: "",
-      visitorPassNumber: "",
-      qrStatus: "Inactive",
-      expirationTime: "",
-      checkoutStatus: "None",
-      checkoutRequestedAt: "",
-      timeOut: "",
-      faceCheckoutVerificationStatus: "",
-      createdAt: new Date().toISOString()
-    };
-
     try {
       setSubmitting(true);
+      const [idImagePath, faceImagePath] = await Promise.all([
+        uploadVisitorImage("visitor-ids", draft.idImageUri),
+        uploadVisitorImage("visitor-faces", draft.faceImageUri)
+      ]);
+
+      const registration: VisitorRegistration = {
+        id: `REG-${Date.now()}`,
+        fullName: draft.fullName,
+        address: draft.address,
+        contactNumber: draft.contactNumber,
+        email: draft.email,
+        idType: draft.idType,
+        idNumber: draft.idNumber,
+        idImageUri: idImagePath,
+        purposeOfVisit: draft.purposeOfVisit,
+        otherAgenda: draft.otherAgenda,
+        consentAccepted: draft.consentAccepted,
+        ocrReviewed: draft.ocrReviewed,
+        faceVerificationStatus: draft.faceVerificationStatus || status,
+        faceImageUri: faceImagePath,
+        registrationStatus: "Pending",
+        timeIn: "",
+        visitorPassNumber: "",
+        qrStatus: "Inactive",
+        expirationTime: "",
+        checkoutStatus: "None",
+        checkoutRequestedAt: "",
+        timeOut: "",
+        faceCheckoutVerificationStatus: "",
+        createdAt: new Date().toISOString()
+      };
+
       await addRegistration(registration);
       clearDraft();
       Alert.alert("Registration submitted for guard verification.");

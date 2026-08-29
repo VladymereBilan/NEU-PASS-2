@@ -2,21 +2,53 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { adminUsernameToEmail } from "@/lib/syntheticAuth";
 
 export default function LoginPage() {
   const router = useRouter();
   const [username, setUsername] = useState("admin01");
   const [password, setPassword] = useState("admin123");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const submit = (event: React.FormEvent) => {
+  const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (username === "admin01" && password === "admin123") {
-      window.localStorage.setItem("neu-pass-admin-auth", "demo-token");
-      router.push("/dashboard");
+    if (!username.trim() || !password.trim()) {
+      setError("Enter your username and password.");
       return;
     }
-    setError("Invalid demo credentials.");
+
+    setLoading(true);
+    setError("");
+
+    const supabase = createClient();
+    const { data, error: authError } = await supabase.auth.signInWithPassword({
+      email: adminUsernameToEmail(username),
+      password
+    });
+
+    if (authError || !data.user) {
+      setError("Invalid admin username or password.");
+      setLoading(false);
+      return;
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("account_type")
+      .eq("id", data.user.id)
+      .maybeSingle();
+
+    if (profile?.account_type !== "admin") {
+      await supabase.auth.signOut();
+      setError("This account is not an admin account.");
+      setLoading(false);
+      return;
+    }
+
+    router.push("/dashboard");
+    router.refresh();
   };
 
   return (
@@ -45,8 +77,12 @@ export default function LoginPage() {
 
         {error ? <p className="mt-4 text-sm text-red-300">{error}</p> : null}
 
-        <button className="mt-6 w-full rounded-2xl bg-cyan-400 px-4 py-3 font-semibold text-slate-950 hover:bg-cyan-300">
-          Sign in
+        <button
+          type="submit"
+          disabled={loading}
+          className="mt-6 w-full rounded-2xl bg-cyan-400 px-4 py-3 font-semibold text-slate-950 hover:bg-cyan-300 disabled:opacity-70"
+        >
+          {loading ? "Signing in..." : "Sign in"}
         </button>
 
         <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
