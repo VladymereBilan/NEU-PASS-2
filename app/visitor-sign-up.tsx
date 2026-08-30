@@ -64,11 +64,11 @@ export default function VisitorSignUpScreen() {
     <AuthScreen>
       <BrandHeader title="Visitor Sign Up" subtitle="Create your visitor account first." />
 
-      <AuthField label="Full Name" value={fullName} onChangeText={setFullName} />
-      <AuthField label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-      <AuthField label="Contact Number" value={contactNumber} onChangeText={setContactNumber} keyboardType="phone-pad" />
-      <AuthField label="Password" value={password} onChangeText={setPassword} secureTextEntry />
-      <AuthField label="Confirm Password" value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry />
+      <AuthField label="Full Name" value={fullName} onChangeText={setFullName} icon="account" />
+      <AuthField label="Email" value={email} onChangeText={setEmail} icon="email" keyboardType="email-address" autoCapitalize="none" />
+      <AuthField label="Contact Number" value={contactNumber} onChangeText={setContactNumber} icon="phone" keyboardType="phone-pad" />
+      <AuthField label="Password" value={password} onChangeText={setPassword} icon="lock" secureTextEntry />
+      <AuthField label="Confirm Password" value={confirmPassword} onChangeText={setConfirmPassword} icon="lock-check" secureTextEntry />
 
       {error ? <Text style={authStyles.error}>{error}</Text> : null}
 

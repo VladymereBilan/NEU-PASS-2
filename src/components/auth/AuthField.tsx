@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useState, type ComponentProps } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { NEU_COLORS } from "../../theme/brand";
 
 type Props = {
   label: string;
   value: string;
   onChangeText: (value: string) => void;
+  icon?: ComponentProps<typeof MaterialCommunityIcons>["name"];
   secureTextEntry?: boolean;
   keyboardType?: "default" | "email-address" | "phone-pad";
   autoCapitalize?: "none" | "sentences" | "words" | "characters";
@@ -19,6 +21,7 @@ export function AuthField({
   label,
   value,
   onChangeText,
+  icon,
   secureTextEntry,
   keyboardType,
   autoCapitalize = "none"
@@ -29,13 +32,22 @@ export function AuthField({
     <View>
       <Text style={styles.label}>{label}</Text>
       <View style={styles.inputRow}>
+        {icon ? (
+          <View style={styles.iconContainer}>
+            <MaterialCommunityIcons name={icon} size={18} color={NEU_COLORS.green} />
+          </View>
+        ) : null}
         <TextInput
           value={value}
           onChangeText={onChangeText}
           secureTextEntry={secureTextEntry && !revealed}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
-          style={[styles.input, secureTextEntry && styles.inputWithToggle]}
+          style={[
+            styles.input,
+            icon && styles.inputWithIcon,
+            secureTextEntry && styles.inputWithToggle
+          ]}
         />
         {secureTextEntry ? (
           <Pressable
@@ -62,6 +74,13 @@ const styles = StyleSheet.create({
     position: "relative",
     justifyContent: "center"
   },
+  iconContainer: {
+    position: "absolute",
+    left: 12,
+    top: "50%",
+    transform: [{ translateY: -9 }],
+    zIndex: 1
+  },
   input: {
     borderWidth: 1,
     borderColor: NEU_COLORS.border,
@@ -70,6 +89,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     color: NEU_COLORS.ink,
     backgroundColor: "#F9FBF9"
+  },
+  inputWithIcon: {
+    paddingLeft: 42
   },
   inputWithToggle: {
     paddingRight: 56

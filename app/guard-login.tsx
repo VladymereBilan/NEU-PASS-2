@@ -70,8 +70,8 @@ export default function GuardLoginScreen() {
     <AuthScreen>
       <BrandHeader title="Guard Login" subtitle="Admin-managed accounts only." />
 
-      <AuthField label="Username" value={username} onChangeText={setUsername} autoCapitalize="none" />
-      <AuthField label="Password" value={password} onChangeText={setPassword} secureTextEntry />
+      <AuthField label="Username" value={username} onChangeText={setUsername} icon="account" autoCapitalize="none" />
+      <AuthField label="Password" value={password} onChangeText={setPassword} icon="lock" secureTextEntry />
 
       {error ? <Text style={authStyles.error}>{error}</Text> : null}
 

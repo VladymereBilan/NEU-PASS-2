@@ -69,8 +69,8 @@ export default function VisitorLoginScreen() {
     <AuthScreen>
       <BrandHeader title="Visitor Login" subtitle="Use your registered email and password." />
 
-      <AuthField label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-      <AuthField label="Password" value={password} onChangeText={setPassword} secureTextEntry />
+      <AuthField label="Email" value={email} onChangeText={setEmail} icon="email" keyboardType="email-address" autoCapitalize="none" />
+      <AuthField label="Password" value={password} onChangeText={setPassword} icon="lock" secureTextEntry />
 
       {error ? <Text style={authStyles.error}>{error}</Text> : null}
 
