@@ -23,14 +23,14 @@ export default async function ReportsPage() {
 
       <div className="grid gap-6 xl:grid-cols-2">
         <Panel title="Daily Logs">
-          <div className="space-y-3 text-slate-300">
+          <div className="space-y-3">
             <Row label="Visitors today" value={stats.daily.visitorsToday} />
             <Row label="Completed today" value={stats.daily.completedToday} />
             <Row label="Active today" value={stats.daily.activeToday} />
           </div>
         </Panel>
         <Panel title="Monthly Logs">
-          <div className="space-y-3 text-slate-300">
+          <div className="space-y-3">
             <Row label="Visitors this month" value={stats.monthly.visitorsThisMonth} />
             <Row label="Completed this month" value={stats.monthly.completedThisMonth} />
           </div>
@@ -44,14 +44,14 @@ export default async function ReportsPage() {
               key={label}
               label={label}
               value={value}
-              accent={index % 2 === 0 ? "from-emerald-400 to-green-600" : "from-amber-400 to-lime-500"}
+              accent={index % 2 === 0 ? "from-[#0b6e3c] to-[#0e7f49]" : "from-[#f5b517] to-[#d89a1f]"}
             />
           ))}
         </div>
       </Panel>
 
       <Panel title="Expired QR Count">
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-slate-300">
+        <div className="rounded-2xl border border-[#d8e3dc] bg-[#f9fbf9] p-4 text-[#374151]">
           {stats.expiredQrPasses} expired QR pass{stats.expiredQrPasses === 1 ? "" : "es"} recorded.
         </div>
       </Panel>
@@ -61,8 +61,8 @@ export default async function ReportsPage() {
 
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-3xl border border-emerald-200/20 bg-[rgba(11,35,28,0.86)] p-6 shadow-[0_10px_28px_rgba(11,110,60,0.10)]">
-      <h2 className="text-lg font-semibold text-white">{title}</h2>
+    <section className="rounded-3xl border border-[#d8e3dc] bg-white p-6 shadow-[0_10px_28px_rgba(11,110,60,0.06)]">
+      <h2 className="text-lg font-bold text-[#111827]">{title}</h2>
       <div className="mt-5">{children}</div>
     </section>
   );
@@ -70,9 +70,9 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
 
 function Row({ label, value }: { label: string; value: number }) {
   return (
-    <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-      <span>{label}</span>
-      <span className="font-semibold text-white">{value}</span>
+    <div className="flex items-center justify-between rounded-2xl border border-[#d8e3dc] bg-[#f9fbf9] px-4 py-3">
+      <span className="text-[#374151]">{label}</span>
+      <span className="font-bold text-[#111827]">{value}</span>
     </div>
   );
 }

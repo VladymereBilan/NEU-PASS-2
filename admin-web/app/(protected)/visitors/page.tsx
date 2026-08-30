@@ -84,13 +84,13 @@ export default function VisitorsPage() {
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search visitors"
-          className="w-full rounded-2xl border border-emerald-200/20 bg-[rgba(255,255,255,0.08)] px-4 py-3 text-white outline-none placeholder:text-emerald-50/60 lg:max-w-sm"
+          className="w-full rounded-2xl border border-[#d8e3dc] bg-white px-4 py-3 text-[#111827] outline-none placeholder:text-[#6b7280] focus:border-[#0b6e3c] focus:ring-4 focus:ring-[#eaf5ee] lg:max-w-sm"
         />
         <div className="flex gap-3">
           <select
             value={filter}
             onChange={(event) => setFilter(event.target.value)}
-            className="rounded-2xl border border-emerald-200/20 bg-[rgba(255,255,255,0.08)] px-4 py-3 text-white outline-none"
+            className="rounded-2xl border border-[#d8e3dc] bg-white px-4 py-3 text-[#111827] outline-none focus:border-[#0b6e3c] focus:ring-4 focus:ring-[#eaf5ee]"
           >
             <option value="All">All statuses</option>
             <option value="Pending">Pending</option>
@@ -108,11 +108,11 @@ export default function VisitorsPage() {
         </div>
       </div>
 
-      <div className="rounded-3xl border border-white/10 bg-[rgba(13,23,40,0.92)] p-5">
+      <div className="rounded-3xl border border-[#d8e3dc] bg-white p-5">
         {loading ? (
-          <div className="py-16 text-center text-slate-400">Loading visitors...</div>
+          <div className="py-16 text-center text-[#4b5563]">Loading visitors...</div>
         ) : rows.length === 0 ? (
-          <div className="py-16 text-center text-slate-400">No visitor records found.</div>
+          <div className="py-16 text-center text-[#4b5563]">No visitor records found.</div>
         ) : (
           <DataTable columns={COLUMNS} rows={rows} />
         )}

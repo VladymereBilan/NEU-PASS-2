@@ -30,7 +30,7 @@ export default async function DashboardPage() {
                 key={label}
                 label={label}
                 value={value}
-                accent={index % 2 === 0 ? "from-emerald-400 to-green-600" : "from-amber-400 to-lime-500"}
+                accent={index % 2 === 0 ? "from-[#0b6e3c] to-[#0e7f49]" : "from-[#f5b517] to-[#d89a1f]"}
               />
             ))}
           </div>
@@ -52,8 +52,8 @@ export default async function DashboardPage() {
 
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-3xl border border-emerald-200/20 bg-[rgba(11,35,28,0.86)] p-6 shadow-[0_10px_28px_rgba(11,110,60,0.10)]">
-      <h2 className="text-lg font-semibold text-white">{title}</h2>
+    <section className="rounded-3xl border border-[#d8e3dc] bg-white p-6 shadow-[0_10px_28px_rgba(11,110,60,0.06)]">
+      <h2 className="text-lg font-bold text-[#111827]">{title}</h2>
       <div className="mt-5">{children}</div>
     </section>
   );
@@ -61,9 +61,9 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
 
 function MiniStat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-      <div className="text-2xl font-semibold text-white">{value}</div>
-      <div className="mt-1 text-sm text-slate-400">{label}</div>
+    <div className="rounded-2xl border border-[#d8e3dc] bg-[#f9fbf9] p-4">
+      <div className="text-2xl font-bold text-[#111827]">{value}</div>
+      <div className="mt-1 text-sm text-[#4b5563]">{label}</div>
     </div>
   );
 }

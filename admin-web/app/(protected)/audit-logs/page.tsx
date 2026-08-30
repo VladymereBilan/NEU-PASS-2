@@ -38,11 +38,11 @@ export default function AuditLogsPage() {
   }, [logs, search]);
 
   return (
-    <div className="rounded-3xl border border-emerald-200/20 bg-[rgba(11,35,28,0.86)] p-6 shadow-[0_10px_28px_rgba(11,110,60,0.10)]">
+    <div className="rounded-3xl border border-[#d8e3dc] bg-white p-6 shadow-[0_10px_28px_rgba(11,110,60,0.06)]">
       <div className="mb-5 flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold text-white">Audit Logs</h2>
-          <p className="text-sm text-slate-400">
+          <h2 className="text-lg font-bold text-[#111827]">Audit Logs</h2>
+          <p className="text-sm text-[#4b5563]">
             Admin actions and visitor workflow events, captured automatically.
           </p>
         </div>
@@ -50,26 +50,26 @@ export default function AuditLogsPage() {
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search logs"
-          className="w-full max-w-xs rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-slate-500"
+          className="w-full max-w-xs rounded-2xl border border-[#d8e3dc] bg-[#f9fbf9] px-4 py-3 text-[#111827] outline-none focus:border-[#0b6e3c] focus:ring-4 focus:ring-[#eaf5ee]"
         />
       </div>
 
       <div className="space-y-3">
         {loading ? (
-          <div className="py-10 text-center text-slate-400">Loading audit logs...</div>
+          <div className="py-10 text-center text-[#4b5563]">Loading audit logs...</div>
         ) : filtered.length === 0 ? (
-          <div className="py-10 text-center text-slate-400">No matching audit log entries.</div>
+          <div className="py-10 text-center text-[#4b5563]">No matching audit log entries.</div>
         ) : (
           filtered.map((log) => (
             <div
               key={log.id}
-              className="flex flex-col gap-1 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 md:flex-row md:items-center md:justify-between"
+              className="flex flex-col gap-1 rounded-2xl border border-[#d8e3dc] bg-[#f9fbf9] px-4 py-3 md:flex-row md:items-center md:justify-between"
             >
               <div>
-                <div className="text-white">{log.action}</div>
-                <div className="text-sm text-slate-400">Actor: {log.actor_label}</div>
+                <div className="font-medium text-[#111827]">{log.action}</div>
+                <div className="text-sm text-[#4b5563]">Actor: {log.actor_label}</div>
               </div>
-              <div className="text-sm text-slate-300">
+              <div className="text-sm text-[#374151]">
                 {new Date(log.created_at).toLocaleString()}
               </div>
             </div>

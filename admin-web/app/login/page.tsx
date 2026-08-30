@@ -8,8 +8,8 @@ import { adminUsernameToEmail } from "@/lib/syntheticAuth";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [username, setUsername] = useState("admin01");
-  const [password, setPassword] = useState("admin123");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -115,11 +115,6 @@ export default function LoginPage() {
           >
             {loading ? "Signing in..." : "Sign in"}
           </button>
-
-          <div className="mt-6 rounded-2xl border border-[#e4efe8] bg-[#f8fbf9] p-4 text-sm text-[#374151]">
-            <div className="font-semibold text-[#111827]">Demo credentials:</div>
-            <div className="mt-2 font-medium text-[#0b6e3c]">admin01 / admin123</div>
-          </div>
         </form>
       </div>
     </main>
@@ -157,7 +152,7 @@ function Field({
           type={type}
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className={`w-full rounded-2xl border border-[#d8e3dc] bg-[#f9fbf9] py-3.5 pl-11 pr-12 text-[#111827] outline-none transition placeholder:text-[#6b7280] focus:border-[#0b6e3c] focus:ring-4 focus:ring-[#eaf5ee] ${
+          className={`w-full rounded-2xl border border-[#d8e3dc] bg-[#f9fbf9] py-3.5 pl-11 text-[#111827] outline-none transition placeholder:text-[#6b7280] focus:border-[#0b6e3c] focus:ring-4 focus:ring-[#eaf5ee] ${
             label === "Password" ? "pr-12" : "pr-4"
           }`}
           placeholder={label}
