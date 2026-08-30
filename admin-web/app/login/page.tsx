@@ -10,6 +10,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [username, setUsername] = useState("admin01");
   const [password, setPassword] = useState("admin123");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -90,7 +91,15 @@ export default function LoginPage() {
 
           <div className="mt-7 space-y-4">
             <Field label="Username" value={username} onChange={setUsername} icon="user" />
-            <Field label="Password" type="password" value={password} onChange={setPassword} icon="lock" />
+            <Field
+              label="Password"
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={setPassword}
+              icon="lock"
+              showPassword={showPassword}
+              onTogglePassword={() => setShowPassword((value) => !value)}
+            />
           </div>
 
           {error ? (
@@ -122,13 +131,17 @@ function Field({
   value,
   onChange,
   type = "text",
-  icon
+  icon,
+  showPassword,
+  onTogglePassword
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   type?: string;
   icon?: "user" | "lock";
+  showPassword?: boolean;
+  onTogglePassword?: () => void;
 }) {
   const iconMarkup =
     icon === "user" ? "👤" : icon === "lock" ? "🔒" : "";
@@ -144,9 +157,30 @@ function Field({
           type={type}
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className="w-full rounded-2xl border border-[#d8e3dc] bg-[#f9fbf9] py-3.5 pl-11 pr-4 text-[#111827] outline-none transition placeholder:text-[#6b7280] focus:border-[#0b6e3c] focus:ring-4 focus:ring-[#eaf5ee]"
+          className={`w-full rounded-2xl border border-[#d8e3dc] bg-[#f9fbf9] py-3.5 pl-11 pr-12 text-[#111827] outline-none transition placeholder:text-[#6b7280] focus:border-[#0b6e3c] focus:ring-4 focus:ring-[#eaf5ee] ${
+            label === "Password" ? "pr-12" : "pr-4"
+          }`}
           placeholder={label}
         />
+        {label === "Password" && onTogglePassword ? (
+          <button
+            type="button"
+            onClick={onTogglePassword}
+            className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center justify-center rounded-lg p-2 transition hover:bg-[#edf7f0]"
+            aria-label={showPassword ? "Hide password" : "Show password"}
+          >
+            <span
+              className="text-lg"
+              style={{
+                filter: "drop-shadow(0 0 0 rgba(0,0,0,0))",
+                color: "#111827",
+                textShadow: "0 0 0 #111827"
+              }}
+            >
+              {showPassword ? "🙈" : "👁️"}
+            </span>
+          </button>
+        ) : null}
       </div>
     </label>
   );
