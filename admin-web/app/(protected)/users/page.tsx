@@ -17,12 +17,19 @@ export default function UsersPage() {
   const [guards, setGuards] = useState<GuardAccount[]>([]);
   const [admins, setAdmins] = useState<AdminAccount[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const refresh = async () => {
-    const [guardData, adminData] = await Promise.all([listGuardAccounts(), listAdminAccounts()]);
-    setGuards(guardData);
-    setAdmins(adminData);
-    setLoading(false);
+    try {
+      setError("");
+      const [guardData, adminData] = await Promise.all([listGuardAccounts(), listAdminAccounts()]);
+      setGuards(guardData);
+      setAdmins(adminData);
+    } catch (exception) {
+      setError(exception instanceof Error ? exception.message : "Unable to load accounts.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -31,6 +38,11 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-6">
+      {error ? (
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+          {error}
+        </div>
+      ) : null}
       <GuardAccountsSection guards={guards} loading={loading} onChanged={refresh} />
       <AdminAccountsSection admins={admins} loading={loading} onChanged={refresh} />
     </div>

@@ -34,6 +34,7 @@ function formatDate(value: string | null) {
 export default function VisitorsPage() {
   const [visitors, setVisitors] = useState<VisitorRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
 
@@ -45,8 +46,12 @@ export default function VisitorsPage() {
         "id, full_name, purpose_of_visit, registration_status, time_in, time_out, qr_status, expiration_time"
       )
       .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        setVisitors((data ?? []) as VisitorRow[]);
+      .then(({ data, error: fetchError }) => {
+        if (fetchError) {
+          setError("Unable to load visitors.");
+        } else {
+          setVisitors((data ?? []) as VisitorRow[]);
+        }
         setLoading(false);
       });
   }, []);
@@ -111,6 +116,8 @@ export default function VisitorsPage() {
       <div className="rounded-3xl border border-[#d8e3dc] bg-white p-5">
         {loading ? (
           <div className="py-16 text-center text-[#4b5563]">Loading visitors...</div>
+        ) : error ? (
+          <div className="py-16 text-center text-red-700">{error}</div>
         ) : rows.length === 0 ? (
           <div className="py-16 text-center text-[#4b5563]">No visitor records found.</div>
         ) : (

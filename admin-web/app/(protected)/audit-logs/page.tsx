@@ -13,6 +13,7 @@ type AuditLogRow = {
 export default function AuditLogsPage() {
   const [logs, setLogs] = useState<AuditLogRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [search, setSearch] = useState("");
 
   useEffect(() => {
@@ -22,8 +23,12 @@ export default function AuditLogsPage() {
       .select("id, action, actor_label, created_at")
       .order("created_at", { ascending: false })
       .limit(200)
-      .then(({ data }) => {
-        setLogs((data ?? []) as AuditLogRow[]);
+      .then(({ data, error: fetchError }) => {
+        if (fetchError) {
+          setError("Unable to load audit logs.");
+        } else {
+          setLogs((data ?? []) as AuditLogRow[]);
+        }
         setLoading(false);
       });
   }, []);
@@ -57,6 +62,8 @@ export default function AuditLogsPage() {
       <div className="space-y-3">
         {loading ? (
           <div className="py-10 text-center text-[#4b5563]">Loading audit logs...</div>
+        ) : error ? (
+          <div className="py-10 text-center text-red-700">{error}</div>
         ) : filtered.length === 0 ? (
           <div className="py-10 text-center text-[#4b5563]">No matching audit log entries.</div>
         ) : (
