@@ -33,6 +33,7 @@ export default function OcrReviewScreen() {
   const [errors, setErrors] = useState<OcrErrors>({});
   const [scanning, setScanning] = useState(true);
   const [statusMessage, setStatusMessage] = useState("");
+  const [primaryHovered, setPrimaryHovered] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -179,8 +180,17 @@ export default function OcrReviewScreen() {
           ) : null}
         </View>
 
-        <Pressable style={styles.primaryButton} onPress={handleSubmit}>
-          <Text style={styles.primaryText}>Continue</Text>
+        <Pressable
+          style={({ pressed }) => [
+            styles.primaryButton,
+            (pressed || primaryHovered) && styles.primaryButtonActive,
+            (pressed || primaryHovered) && styles.primaryButtonLift
+          ]}
+          onPress={handleSubmit}
+          onHoverIn={() => setPrimaryHovered(true)}
+          onHoverOut={() => setPrimaryHovered(false)}
+        >
+          <Text style={[styles.primaryText, (primaryHovered || false) && styles.primaryTextActive]}>Continue</Text>
         </Pressable>
       </View>
     </SafeAreaView>
@@ -258,9 +268,23 @@ const styles = StyleSheet.create({
     backgroundColor: "#111827",
     alignItems: "center"
   },
+  primaryButtonActive: {
+    backgroundColor: "#0F766E",
+    shadowColor: "#0F766E",
+    shadowOpacity: 0.28,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 12,
+    elevation: 4
+  },
+  primaryButtonLift: {
+    transform: [{ scale: 1.02 }]
+  },
   primaryText: {
     color: "#ffffff",
     fontSize: 16,
     fontWeight: "600"
+  },
+  primaryTextActive: {
+    color: "#EAF5EE"
   }
 });

@@ -106,10 +106,6 @@ export default function IdCaptureScreen() {
           <Text style={styles.body}>
             Capture or upload your valid ID for verification.
           </Text>
-          <Text style={styles.note}>
-            Real OCR and facial recognition will be implemented in Capstone 2.
-          </Text>
-
           <View style={styles.previewBox}>
             {capturedUri && capturedUri.startsWith("file") ? (
               <Image source={{ uri: capturedUri }} style={styles.previewImage} />
@@ -130,11 +126,17 @@ export default function IdCaptureScreen() {
           ) : null}
 
           <View style={styles.buttonRow}>
-            <Pressable style={styles.secondaryButton} onPress={openCamera}>
-              <Text style={styles.secondaryText}>Open Camera</Text>
+            <Pressable
+              style={({ pressed, hovered }) => [styles.secondaryButton, (pressed || hovered) && styles.secondaryButtonActive]}
+              onPress={openCamera}
+            >
+              <Text style={({ pressed, hovered }) => [styles.secondaryText, (pressed || hovered) && styles.secondaryTextActive]}>Open Camera</Text>
             </Pressable>
-            <Pressable style={styles.secondaryButton} onPress={usePrototypeSample}>
-              <Text style={styles.secondaryText}>Use Prototype Sample</Text>
+            <Pressable
+              style={({ pressed, hovered }) => [styles.secondaryButton, (pressed || hovered) && styles.secondaryButtonActive]}
+              onPress={usePrototypeSample}
+            >
+              <Text style={({ pressed, hovered }) => [styles.secondaryText, (pressed || hovered) && styles.secondaryTextActive]}>Use Prototype Sample</Text>
             </Pressable>
           </View>
 
@@ -153,7 +155,11 @@ export default function IdCaptureScreen() {
                 }}
               />
               <Pressable
-                style={[styles.primaryButton, !cameraReady && styles.primaryButtonDisabled]}
+                style={({ pressed, hovered }) => [
+                  styles.primaryButton,
+                  !cameraReady && styles.primaryButtonDisabled,
+                  (pressed || hovered) && !cameraReady ? null : (pressed || hovered) && styles.primaryButtonActive
+                ]}
                 onPress={capturePhoto}
                 disabled={!cameraReady}
               >
@@ -165,13 +171,23 @@ export default function IdCaptureScreen() {
           ) : null}
 
           {capturedUri ? (
-            <Pressable style={styles.secondaryButton} onPress={retakePhoto}>
-              <Text style={styles.secondaryText}>Retake Photo</Text>
+            <Pressable
+              style={({ pressed, hovered }) => [styles.secondaryButton, (pressed || hovered) && styles.secondaryButtonActive]}
+              onPress={retakePhoto}
+            >
+              <Text style={({ pressed, hovered }) => [styles.secondaryText, (pressed || hovered) && styles.secondaryTextActive]}>Retake Photo</Text>
             </Pressable>
           ) : null}
 
-          <Pressable style={styles.primaryButton} onPress={handleContinue}>
-            <Text style={styles.primaryText}>Continue to OCR Review</Text>
+          <Pressable
+            style={({ pressed, hovered }) => [
+              styles.primaryButton,
+              (pressed || hovered) && styles.primaryButtonActive,
+              (pressed || hovered) && styles.primaryButtonLift
+            ]}
+            onPress={handleContinue}
+          >
+            <Text style={[styles.primaryText, (true || false) && styles.primaryTextActive]}>Continue to OCR Review</Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -260,6 +276,17 @@ const styles = StyleSheet.create({
     backgroundColor: "#111827",
     alignItems: "center"
   },
+  primaryButtonActive: {
+    backgroundColor: "#0F766E",
+    shadowColor: "#0F766E",
+    shadowOpacity: 0.28,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 12,
+    elevation: 4
+  },
+  primaryButtonLift: {
+    transform: [{ scale: 1.02 }]
+  },
   primaryButtonDisabled: {
     opacity: 0.7
   },
@@ -267,6 +294,9 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontSize: 15,
     fontWeight: "600"
+  },
+  primaryTextActive: {
+    color: "#EAF5EE"
   },
   secondaryButton: {
     flex: 1,

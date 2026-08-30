@@ -18,6 +18,7 @@ export default function VisitorPassScreen() {
   const [warningShown, setWarningShown] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [secondaryHovered, setSecondaryHovered] = useState(false);
 
   const refresh = useCallback(async () => {
     if (!email) {
@@ -108,22 +109,28 @@ export default function VisitorPassScreen() {
             </Text>
 
             <Pressable
-              style={styles.secondaryButton}
+              style={({ pressed }) => [
+                styles.secondaryButton,
+                (pressed || secondaryHovered) && styles.secondaryButtonActive
+              ]}
               onPress={updateExpirationStatus}
+              onHoverIn={() => setSecondaryHovered(true)}
+              onHoverOut={() => setSecondaryHovered(false)}
             >
-              <Text style={styles.secondaryText}>Check Expiration Status</Text>
+              <Text style={[styles.secondaryText, (secondaryHovered || false) && styles.secondaryTextActive]}>Check Expiration Status</Text>
             </Pressable>
 
             <Pressable
-              style={styles.secondaryButton}
+              style={({ pressed }) => [
+                styles.secondaryButton,
+                (pressed || secondaryHovered) && styles.secondaryButtonActive
+              ]}
               onPress={() => void refresh()}
+              onHoverIn={() => setSecondaryHovered(true)}
+              onHoverOut={() => setSecondaryHovered(false)}
             >
-              <Text style={styles.secondaryText}>Refresh</Text>
+              <Text style={[styles.secondaryText, (secondaryHovered || false) && styles.secondaryTextActive]}>Refresh</Text>
             </Pressable>
-
-            <Text style={styles.note}>
-              Push notifications will be added in Capstone 2.
-            </Text>
 
             {isExpired ? (
               <Text style={styles.warning}>
@@ -200,10 +207,17 @@ const styles = StyleSheet.create({
     backgroundColor: "#e5e7eb",
     alignItems: "center"
   },
+  secondaryButtonActive: {
+    backgroundColor: "#DFF9EE",
+    transform: [{ scale: 1.01 }]
+  },
   secondaryText: {
     color: "#111827",
     fontSize: 14,
     fontWeight: "600"
+  },
+  secondaryTextActive: {
+    color: "#064A28"
   },
   note: {
     fontSize: 12,

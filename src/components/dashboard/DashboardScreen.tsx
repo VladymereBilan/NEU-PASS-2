@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NEU_COLORS } from "../../theme/brand";
@@ -13,6 +14,8 @@ type Props = {
 // branded header with sign-out, instead of each screen burying "Sign Out" as
 // just another full-width button in the same stack as everything else.
 export function DashboardScreen({ roleLabel, onSignOut, children }: Props) {
+  const [hovered, setHovered] = useState(false);
+
   return (
     <SafeAreaView style={styles.screen}>
       <View style={styles.header}>
@@ -25,8 +28,26 @@ export function DashboardScreen({ roleLabel, onSignOut, children }: Props) {
           <Text style={styles.appName}>NEU-Pass</Text>
           <Text style={styles.roleLabel}>{roleLabel}</Text>
         </View>
-        <Pressable style={styles.signOut} onPress={onSignOut} hitSlop={8}>
-          <Text style={styles.signOutText}>Sign Out</Text>
+        <Pressable
+          style={({ pressed }) => [
+            styles.signOut,
+            (pressed || hovered) && styles.signOutActive
+          ]}
+          onPress={onSignOut}
+          onHoverIn={() => setHovered(true)}
+          onHoverOut={() => setHovered(false)}
+          hitSlop={8}
+        >
+          <View style={styles.signOutContent}>
+            <MaterialCommunityIcons
+              name="door-open"
+              size={14}
+              color={NEU_COLORS.ink}
+            />
+            <Text style={[styles.signOutText, (hovered || false) && styles.signOutTextActive]}>
+              Sign Out
+            </Text>
+          </View>
         </Pressable>
       </View>
 
@@ -70,12 +91,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: NEU_COLORS.border
+    borderColor: NEU_COLORS.border,
+    backgroundColor: NEU_COLORS.card
+  },
+  signOutContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6
+  },
+  signOutActive: {
+    borderColor: NEU_COLORS.green,
+    backgroundColor: NEU_COLORS.greenTint
   },
   signOutText: {
     fontSize: 13,
     fontWeight: "700",
     color: NEU_COLORS.subtle
+  },
+  signOutTextActive: {
+    color: NEU_COLORS.greenDark
   },
   content: {
     padding: 20,

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { NEU_COLORS } from "../../theme/brand";
 
@@ -11,14 +12,21 @@ type Props = {
 // on the guard dashboard for queue sizes); omit it for actions that don't
 // have a meaningful count (e.g. the visitor's "Notifications").
 export function ActionTile({ label, count, onPress }: Props) {
+  const [hovered, setHovered] = useState(false);
+
   return (
-    <Pressable style={styles.tile} onPress={onPress}>
+    <Pressable
+      style={({ pressed }) => [styles.tile, (pressed || hovered) && styles.tileActive]}
+      onPress={onPress}
+      onHoverIn={() => setHovered(true)}
+      onHoverOut={() => setHovered(false)}
+    >
       {count !== undefined ? (
         <View style={styles.countRow}>
           <Text style={styles.count}>{count}</Text>
         </View>
       ) : null}
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.label, (hovered || false) && styles.labelActive]}>{label}</Text>
     </Pressable>
   );
 }
@@ -43,7 +51,19 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 6,
     minHeight: 84,
-    justifyContent: "flex-end"
+    justifyContent: "flex-end",
+    shadowColor: NEU_COLORS.green,
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 12,
+    elevation: 2
+  },
+  tileActive: {
+    borderColor: NEU_COLORS.green,
+    backgroundColor: NEU_COLORS.greenTint,
+    transform: [{ scale: 1.01 }],
+    shadowOpacity: 0.2,
+    shadowRadius: 16
   },
   countRow: {
     alignSelf: "flex-start"
@@ -57,5 +77,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
     color: NEU_COLORS.ink
+  },
+  labelActive: {
+    color: NEU_COLORS.greenDark
   }
 });

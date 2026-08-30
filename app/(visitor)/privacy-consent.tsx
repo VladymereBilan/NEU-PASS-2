@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Alert, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useRegistrationDraft } from "../../src/context/RegistrationDraftContext";
@@ -5,6 +6,8 @@ import { useRegistrationDraft } from "../../src/context/RegistrationDraftContext
 export default function PrivacyConsentScreen() {
   const router = useRouter();
   const { updateDraft } = useRegistrationDraft();
+  const [acceptHovered, setAcceptHovered] = useState(false);
+  const [declineHovered, setDeclineHovered] = useState(false);
 
   const handleAccept = () => {
     updateDraft({ consentAccepted: true });
@@ -34,11 +37,29 @@ export default function PrivacyConsentScreen() {
           </Text>
         </View>
         <View style={styles.buttonRow}>
-          <Pressable style={[styles.button, styles.accept]} onPress={handleAccept}>
-            <Text style={styles.buttonText}>Accept</Text>
+          <Pressable
+            style={({ pressed }) => [
+              styles.button,
+              styles.primaryDecision,
+              (pressed || acceptHovered) && styles.primaryDecisionActive
+            ]}
+            onPress={handleAccept}
+            onHoverIn={() => setAcceptHovered(true)}
+            onHoverOut={() => setAcceptHovered(false)}
+          >
+            <Text style={[styles.buttonText, (acceptHovered || false) && styles.buttonTextActive]}>Accept</Text>
           </Pressable>
-          <Pressable style={[styles.button, styles.decline]} onPress={handleDecline}>
-            <Text style={styles.buttonText}>Decline</Text>
+          <Pressable
+            style={({ pressed }) => [
+              styles.button,
+              styles.secondaryDecision,
+              (pressed || declineHovered) && styles.secondaryDecisionActive
+            ]}
+            onPress={handleDecline}
+            onHoverIn={() => setDeclineHovered(true)}
+            onHoverOut={() => setDeclineHovered(false)}
+          >
+            <Text style={[styles.buttonText, (declineHovered || false) && styles.buttonTextActive]}>Decline</Text>
           </Pressable>
         </View>
       </View>
@@ -96,15 +117,26 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center"
   },
-  accept: {
+  primaryDecision: {
     backgroundColor: "#111827"
   },
-  decline: {
-    backgroundColor: "#6b7280"
+  primaryDecisionActive: {
+    backgroundColor: "#0F766E",
+    transform: [{ scale: 1.01 }]
+  },
+  secondaryDecision: {
+    backgroundColor: "#111827"
+  },
+  secondaryDecisionActive: {
+    backgroundColor: "#0F766E",
+    transform: [{ scale: 1.01 }]
   },
   buttonText: {
     color: "#ffffff",
     fontSize: 15,
     fontWeight: "600"
+  },
+  buttonTextActive: {
+    color: "#EAF5EE"
   }
 });

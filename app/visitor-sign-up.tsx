@@ -10,6 +10,7 @@ import { authStyles } from "../src/components/auth/authStyles";
 export default function VisitorSignUpScreen() {
   const router = useRouter();
   const [isHovered, setIsHovered] = useState(false);
+  const [isLinkHovered, setIsLinkHovered] = useState(false);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [contactNumber, setContactNumber] = useState("");
@@ -87,8 +88,19 @@ export default function VisitorSignUpScreen() {
         <Text style={authStyles.primaryButtonText}>{loading ? "Creating..." : "Create Account"}</Text>
       </Pressable>
 
-      <Pressable style={authStyles.linkButton} onPress={() => router.push("/visitor-login")}>
-        <Text style={authStyles.linkText}>Already have an account? Sign in</Text>
+      <Pressable
+        style={({ pressed }) => [
+          authStyles.linkButton,
+          (isLinkHovered || pressed) && authStyles.linkButtonHover,
+          pressed && authStyles.linkButtonPressed
+        ]}
+        onPress={() => router.push("/visitor-login")}
+        onHoverIn={() => setIsLinkHovered(true)}
+        onHoverOut={() => setIsLinkHovered(false)}
+      >
+        <Text style={[authStyles.linkText, (isLinkHovered || false) && authStyles.linkTextHover]}>
+          Already have an account? Sign in
+        </Text>
       </Pressable>
     </AuthScreen>
   );

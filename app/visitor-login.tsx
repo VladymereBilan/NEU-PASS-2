@@ -12,6 +12,7 @@ export default function VisitorLoginScreen() {
   const router = useRouter();
   const { role, loading: authLoading } = useAuth();
   const [isHovered, setIsHovered] = useState(false);
+  const [isLinkHovered, setIsLinkHovered] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -89,8 +90,19 @@ export default function VisitorLoginScreen() {
         <Text style={authStyles.primaryButtonText}>{loading ? "Signing in..." : "Sign In"}</Text>
       </Pressable>
 
-      <Pressable style={authStyles.linkButton} onPress={() => router.push("/visitor-sign-up")}>
-        <Text style={authStyles.linkText}>Create a visitor account</Text>
+      <Pressable
+        style={({ pressed }) => [
+          authStyles.linkButton,
+          (isLinkHovered || pressed) && authStyles.linkButtonHover,
+          pressed && authStyles.linkButtonPressed
+        ]}
+        onPress={() => router.push("/visitor-sign-up")}
+        onHoverIn={() => setIsLinkHovered(true)}
+        onHoverOut={() => setIsLinkHovered(false)}
+      >
+        <Text style={[authStyles.linkText, (isLinkHovered || false) && authStyles.linkTextHover]}>
+          Create a visitor account
+        </Text>
       </Pressable>
     </AuthScreen>
   );

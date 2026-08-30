@@ -86,7 +86,11 @@ export default function VisitorCheckoutScreen() {
             <Text style={styles.itemText}>QR Status: {pass.qrStatus}</Text>
 
             <Pressable
-              style={[styles.button, submitting && styles.buttonDisabled]}
+              style={({ pressed, hovered }) => [
+                styles.button,
+                submitting && styles.buttonDisabled,
+                (pressed || hovered) && !submitting && styles.buttonActive
+              ]}
               onPress={handleRequest}
               disabled={submitting}
             >
@@ -95,8 +99,11 @@ export default function VisitorCheckoutScreen() {
               </Text>
             </Pressable>
 
-            <Pressable style={styles.secondaryButton} onPress={() => void refresh()}>
-              <Text style={styles.secondaryText}>Refresh</Text>
+            <Pressable
+              style={({ pressed, hovered }) => [styles.secondaryButton, (pressed || hovered) && styles.secondaryButtonActive]}
+              onPress={() => void refresh()}
+            >
+              <Text style={({ pressed, hovered }) => [styles.secondaryText, (pressed || hovered) && styles.secondaryTextActive]}>Refresh</Text>
             </Pressable>
           </View>
         )}
@@ -156,6 +163,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#111827",
     alignItems: "center"
   },
+  buttonActive: {
+    backgroundColor: "#0f766e",
+    transform: [{ scale: 1.01 }]
+  },
   buttonDisabled: {
     opacity: 0.7
   },
@@ -171,9 +182,16 @@ const styles = StyleSheet.create({
     backgroundColor: "#e5e7eb",
     alignItems: "center"
   },
+  secondaryButtonActive: {
+    backgroundColor: "#dfe8e5",
+    transform: [{ scale: 1.01 }]
+  },
   secondaryText: {
     color: "#111827",
     fontSize: 14,
     fontWeight: "600"
+  },
+  secondaryTextActive: {
+    color: "#064A28"
   }
 });
