@@ -11,6 +11,7 @@ import { authStyles } from "../src/components/auth/authStyles";
 export default function VisitorLoginScreen() {
   const router = useRouter();
   const { role, loading: authLoading } = useAuth();
+  const [isHovered, setIsHovered] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -74,8 +75,15 @@ export default function VisitorLoginScreen() {
       {error ? <Text style={authStyles.error}>{error}</Text> : null}
 
       <Pressable
-        style={[authStyles.primaryButton, loading && authStyles.primaryButtonDisabled]}
+        style={({ pressed }) => [
+          authStyles.primaryButton,
+          isHovered && authStyles.primaryButtonHover,
+          pressed && authStyles.primaryButtonPressed,
+          loading && authStyles.primaryButtonDisabled
+        ]}
         onPress={handleLogin}
+        onHoverIn={() => setIsHovered(true)}
+        onHoverOut={() => setIsHovered(false)}
         disabled={loading}
       >
         <Text style={authStyles.primaryButtonText}>{loading ? "Signing in..." : "Sign In"}</Text>

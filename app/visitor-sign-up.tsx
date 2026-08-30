@@ -9,6 +9,7 @@ import { authStyles } from "../src/components/auth/authStyles";
 
 export default function VisitorSignUpScreen() {
   const router = useRouter();
+  const [isHovered, setIsHovered] = useState(false);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [contactNumber, setContactNumber] = useState("");
@@ -72,8 +73,15 @@ export default function VisitorSignUpScreen() {
       {error ? <Text style={authStyles.error}>{error}</Text> : null}
 
       <Pressable
-        style={[authStyles.primaryButton, loading && authStyles.primaryButtonDisabled]}
+        style={({ pressed }) => [
+          authStyles.primaryButton,
+          isHovered && authStyles.primaryButtonHover,
+          pressed && authStyles.primaryButtonPressed,
+          loading && authStyles.primaryButtonDisabled
+        ]}
         onPress={handleSignUp}
+        onHoverIn={() => setIsHovered(true)}
+        onHoverOut={() => setIsHovered(false)}
         disabled={loading}
       >
         <Text style={authStyles.primaryButtonText}>{loading ? "Creating..." : "Create Account"}</Text>
