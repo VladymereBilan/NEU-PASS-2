@@ -5,12 +5,22 @@
     "scheme": "neu-pass",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/branding/neu-logo.webp",
+    "splash": {
+      "image": "./assets/branding/neu-logo.webp",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
     "plugins": [
       "expo-router",
       "react-native-fast-tflite"
     ],
     "android": {
-      "package": "com.vladymere.neupass"
+      "package": "com.vladymere.neupass",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/branding/neu-logo.webp",
+        "backgroundColor": "#ffffff"
+      }
     },
     "assetBundlePatterns": [
       "**/*"

@@ -12,6 +12,7 @@ import {
   getActiveVisitorsByEmail,
   getAllVisitors as getAllVisitorsRepo,
   getCheckoutRequests as getCheckoutRequestsRepo,
+  getLatestVisitorRegistrationByEmail,
   getPendingVisitors as getPendingVisitorsRepo,
   getVisitorById,
   rejectVisitor,
@@ -47,6 +48,10 @@ export async function getLatestApprovedOrActiveVisitor(email: string) {
       new Date(a.timeIn || a.createdAt).getTime()
     );
   })[0];
+}
+
+export async function getLatestVisitorRegistration(email: string) {
+  return getLatestVisitorRegistrationByEmail(email);
 }
 
 export async function getVisitorPassByVisitorId(id: string) {

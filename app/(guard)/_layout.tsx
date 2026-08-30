@@ -26,7 +26,7 @@ export default function GuardLayout() {
         headerTitleStyle: { fontWeight: "600" }
       }}
     >
-      <Stack.Screen name="home" options={{ headerBackVisible: false }} />
+      <Stack.Screen name="home" options={{ headerShown: false }} />
     </Stack>
   );
 }

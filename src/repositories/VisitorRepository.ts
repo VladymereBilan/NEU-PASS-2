@@ -131,6 +131,23 @@ export async function getActiveVisitorsByEmail(email: string) {
   return (data || []).map(mapRow);
 }
 
+// Unlike getActiveVisitorsByEmail (Active only), this returns the visitor's
+// most recent registration regardless of status — what the visitor home
+// dashboard needs to show "Pending approval" / "Rejected" states too, not
+// just an active pass.
+export async function getLatestVisitorRegistrationByEmail(email: string) {
+  const { data, error } = await supabase
+    .from("visitor_registrations")
+    .select("*")
+    .ilike("email", escapeIlike(email.trim()))
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return data ? mapRow(data) : null;
+}
+
 export async function getCheckoutRequests() {
   const { data, error } = await supabase
     .from("visitor_registrations")
