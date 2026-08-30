@@ -44,7 +44,7 @@ export default async function ReportsPage() {
               key={label}
               label={label}
               value={value}
-              accent={index % 2 === 0 ? "from-cyan-400 to-blue-500" : "from-violet-400 to-fuchsia-500"}
+              accent={index % 2 === 0 ? "from-emerald-400 to-green-600" : "from-amber-400 to-lime-500"}
             />
           ))}
         </div>
@@ -61,7 +61,7 @@ export default async function ReportsPage() {
 
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-3xl border border-white/10 bg-[rgba(13,23,40,0.92)] p-6 shadow-glow">
+    <section className="rounded-3xl border border-emerald-200/20 bg-[rgba(11,35,28,0.86)] p-6 shadow-[0_10px_28px_rgba(11,110,60,0.10)]">
       <h2 className="text-lg font-semibold text-white">{title}</h2>
       <div className="mt-5">{children}</div>
     </section>

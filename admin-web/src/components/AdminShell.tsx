@@ -39,15 +39,25 @@ export function AdminShell({
   };
 
   return (
-    <div className="min-h-screen text-slate-100">
+    <div
+      className="min-h-screen text-slate-100"
+      style={{
+        backgroundImage:
+          "linear-gradient(rgba(10, 30, 22, 0.52), rgba(10, 30, 22, 0.62)), url('/NEWERABG.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundAttachment: "fixed",
+        backgroundColor: "#edf7f0"
+      }}
+    >
       <div className="mx-auto flex min-h-screen w-full max-w-[1600px]">
-        <aside className="hidden w-72 border-r border-white/10 bg-[rgba(13,23,40,0.92)] p-6 lg:flex lg:flex-col">
+        <aside className="hidden w-72 border-r border-white/20 bg-white/15 p-6 shadow-[0_12px_32px_rgba(0,0,0,0.12)] backdrop-blur-md lg:flex lg:flex-col">
           <div className="mb-8">
-            <div className="text-xs uppercase tracking-[0.35em] text-cyan-300/80">
-              NEU-Pass
+            <div className="text-xs uppercase tracking-[0.35em] text-[#0b6e3c]">
+              NEU PASS
             </div>
-            <div className="mt-2 text-2xl font-semibold">Admin Console</div>
-            <div className="mt-2 text-sm text-slate-400">
+            <div className="mt-2 text-2xl font-semibold text-white">Admin Console</div>
+            <div className="mt-2 text-sm text-slate-200/90">
               Prototype web dashboard for operations and reporting.
             </div>
           </div>
@@ -60,8 +70,8 @@ export function AdminShell({
                   href={item.href}
                   className={`rounded-2xl px-4 py-3 text-sm font-medium transition ${
                     active
-                      ? "bg-cyan-400/15 text-cyan-200 ring-1 ring-cyan-300/30"
-                      : "text-slate-300 hover:bg-white/5"
+                      ? "bg-[#0b6e3c]/80 text-white ring-1 ring-[#0b6e3c]"
+                      : "text-white/80 hover:bg-white/10"
                   }`}
                 >
                   {item.label}
@@ -71,27 +81,27 @@ export function AdminShell({
           </nav>
           <button
             onClick={() => void signOut()}
-            className="mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-slate-100 hover:bg-white/10"
+            className="mt-4 rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-medium text-white hover:bg-white/15"
           >
             Sign out
           </button>
         </aside>
 
         <div className="flex min-h-screen flex-1 flex-col">
-          <header className="flex items-center justify-between border-b border-white/10 bg-[rgba(9,16,28,0.86)] px-5 py-4 backdrop-blur lg:px-8">
+          <header className="flex items-center justify-between border-b border-white/20 bg-white/10 px-5 py-4 shadow-[0_10px_24px_rgba(0,0,0,0.10)] backdrop-blur-md lg:px-8">
             <div>
-              <div className="text-xs uppercase tracking-[0.3em] text-slate-400">
+              <div className="text-xs uppercase tracking-[0.3em] text-slate-200">
                 Security Operations
               </div>
               <h1 className="text-2xl font-semibold text-white">{title}</h1>
             </div>
             <div className="flex items-center gap-3">
-              <div className="hidden rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300 md:block">
+              <div className="hidden rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm text-slate-100 md:block">
                 {adminUsername}
               </div>
               <button
                 onClick={() => void signOut()}
-                className="rounded-full bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-300"
+                className="rounded-full bg-[#0b6e3c] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0e7f49]"
               >
                 Logout
               </button>

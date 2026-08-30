@@ -98,7 +98,7 @@ export default function UsersPage() {
         <div className="mt-5 flex flex-wrap gap-3">
           <button
             onClick={handleCreate}
-            className="rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 hover:bg-cyan-300"
+            className="rounded-2xl bg-[#0b6e3c] px-4 py-3 text-sm font-semibold text-white hover:bg-[#0e7f49]"
           >
             Create Guard Account
           </button>
@@ -142,7 +142,7 @@ export default function UsersPage() {
                 className={`rounded-2xl px-4 py-3 text-sm font-semibold ${
                   account.accountStatus === "Active"
                     ? "bg-white/10 text-white hover:bg-white/15"
-                    : "bg-cyan-400 text-slate-950 hover:bg-cyan-300"
+                    : "bg-[#0b6e3c] text-white hover:bg-[#0e7f49]"
                 }`}
               >
                 {account.accountStatus === "Active" ? "Block" : "Unblock"}

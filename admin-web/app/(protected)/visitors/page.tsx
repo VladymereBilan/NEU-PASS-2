@@ -84,13 +84,13 @@ export default function VisitorsPage() {
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search visitors"
-          className="w-full rounded-2xl border border-white/10 bg-[rgba(13,23,40,0.92)] px-4 py-3 text-white outline-none placeholder:text-slate-500 lg:max-w-sm"
+          className="w-full rounded-2xl border border-emerald-200/20 bg-[rgba(255,255,255,0.08)] px-4 py-3 text-white outline-none placeholder:text-emerald-50/60 lg:max-w-sm"
         />
         <div className="flex gap-3">
           <select
             value={filter}
             onChange={(event) => setFilter(event.target.value)}
-            className="rounded-2xl border border-white/10 bg-[rgba(13,23,40,0.92)] px-4 py-3 text-white outline-none"
+            className="rounded-2xl border border-emerald-200/20 bg-[rgba(255,255,255,0.08)] px-4 py-3 text-white outline-none"
           >
             <option value="All">All statuses</option>
             <option value="Pending">Pending</option>
@@ -101,7 +101,7 @@ export default function VisitorsPage() {
           <button
             onClick={handleExport}
             disabled={rows.length === 0}
-            className="whitespace-nowrap rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
+            className="whitespace-nowrap rounded-2xl bg-[#0b6e3c] px-4 py-3 text-sm font-semibold text-white hover:bg-[#0e7f49] disabled:cursor-not-allowed disabled:opacity-50"
           >
             Export CSV
           </button>

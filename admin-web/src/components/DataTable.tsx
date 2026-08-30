@@ -6,7 +6,7 @@ export function DataTable({
   rows: Array<Array<string>>;
 }) {
   return (
-    <div className="overflow-hidden rounded-3xl border border-white/10 bg-[rgba(13,23,40,0.92)] shadow-glow">
+    <div className="overflow-hidden rounded-3xl border border-emerald-200/20 bg-[rgba(11,35,28,0.86)] shadow-[0_10px_28px_rgba(11,110,60,0.10)]">
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-white/10 text-left text-sm">
           <thead className="bg-white/5 text-slate-300">
