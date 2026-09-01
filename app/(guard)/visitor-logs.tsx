@@ -8,6 +8,7 @@ export default function VisitorLogsScreen() {
   const [completed, setCompleted] = useState<VisitorRegistration[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [refreshHovered, setRefreshHovered] = useState(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -35,8 +36,16 @@ export default function VisitorLogsScreen() {
     <SafeAreaView style={styles.screen}>
       <View style={styles.card}>
         <Text style={styles.title}>Visitor Logs</Text>
-        <Pressable style={styles.refreshButton} onPress={() => void refresh()}>
-          <Text style={styles.refreshText}>Refresh</Text>
+        <Pressable
+          style={({ pressed }) => [
+            styles.refreshButton,
+            (pressed || refreshHovered) && styles.refreshButtonActive
+          ]}
+          onPress={() => void refresh()}
+          onHoverIn={() => setRefreshHovered(true)}
+          onHoverOut={() => setRefreshHovered(false)}
+        >
+          <Text style={[styles.refreshText, (refreshHovered || false) && styles.refreshTextActive]}>Refresh</Text>
         </Pressable>
 
         {loading ? (
@@ -128,9 +137,16 @@ const styles = StyleSheet.create({
     backgroundColor: "#e5e7eb",
     alignItems: "center"
   },
+  refreshButtonActive: {
+    backgroundColor: "#DFF9EE",
+    transform: [{ scale: 1.01 }]
+  },
   refreshText: {
     color: "#111827",
     fontSize: 14,
     fontWeight: "600"
+  },
+  refreshTextActive: {
+    color: "#064A28"
   }
 });

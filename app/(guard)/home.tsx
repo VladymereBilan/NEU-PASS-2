@@ -61,6 +61,7 @@ export default function GuardHomeScreen() {
   const { signOut } = useAuth();
   const [counts, setCounts] = useState<Counts>({ pending: 0, active: 0, checkoutRequests: 0 });
   const [loading, setLoading] = useState(true);
+  const [ctaHovered, setCtaHovered] = useState(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -108,8 +109,15 @@ export default function GuardHomeScreen() {
           description={statusView.description}
         >
           <Pressable
-            style={[authStyles.primaryButton, styles.cardCta]}
+            style={({ pressed }) => [
+              authStyles.primaryButton,
+              styles.cardCta,
+              (pressed || ctaHovered) && authStyles.primaryButtonHover,
+              pressed && authStyles.primaryButtonPressed
+            ]}
             onPress={() => router.push(statusView.ctaRoute as never)}
+            onHoverIn={() => setCtaHovered(true)}
+            onHoverOut={() => setCtaHovered(false)}
           >
             <Text style={authStyles.primaryButtonText}>{statusView.ctaLabel}</Text>
           </Pressable>

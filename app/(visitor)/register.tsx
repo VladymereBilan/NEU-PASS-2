@@ -60,6 +60,9 @@ export default function RegisterVisitScreen() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [showPurposeOptions, setShowPurposeOptions] = useState(false);
   const [showIdTypeOptions, setShowIdTypeOptions] = useState(false);
+  const [idTypeHovered, setIdTypeHovered] = useState(false);
+  const [purposeHovered, setPurposeHovered] = useState(false);
+  const [submitHovered, setSubmitHovered] = useState(false);
 
   const isOthersSelected = useMemo(
     () => form.purpose === "Others",
@@ -206,8 +209,13 @@ export default function RegisterVisitScreen() {
           <View style={styles.field}>
             <Text style={styles.label}>ID Type</Text>
             <Pressable
-              style={styles.select}
+              style={({ pressed }) => [
+                styles.select,
+                (pressed || idTypeHovered || showIdTypeOptions) && styles.selectActive
+              ]}
               onPress={() => setShowIdTypeOptions((prev) => !prev)}
+              onHoverIn={() => setIdTypeHovered(true)}
+              onHoverOut={() => setIdTypeHovered(false)}
             >
               <Text style={form.idType ? styles.selectText : styles.placeholderText}>
                 {form.idType || "Select ID type"}
@@ -221,7 +229,10 @@ export default function RegisterVisitScreen() {
                 {ID_TYPE_OPTIONS.map((option) => (
                   <Pressable
                     key={option}
-                    style={styles.optionButton}
+                    style={({ pressed }) => [
+                      styles.optionButton,
+                      pressed && styles.optionButtonActive
+                    ]}
                     onPress={() => {
                       updateField("idType", option);
                       if (option !== "Other") {
@@ -271,8 +282,13 @@ export default function RegisterVisitScreen() {
           <View style={styles.field}>
             <Text style={styles.label}>Purpose of Visit</Text>
             <Pressable
-              style={styles.select}
+              style={({ pressed }) => [
+                styles.select,
+                (pressed || purposeHovered || showPurposeOptions) && styles.selectActive
+              ]}
               onPress={() => setShowPurposeOptions((prev) => !prev)}
+              onHoverIn={() => setPurposeHovered(true)}
+              onHoverOut={() => setPurposeHovered(false)}
             >
               <Text style={styles.selectText}>
                 {form.purpose || "Select purpose"}
@@ -286,7 +302,10 @@ export default function RegisterVisitScreen() {
                 {PURPOSE_OPTIONS.map((option) => (
                   <Pressable
                     key={option}
-                    style={styles.optionButton}
+                    style={({ pressed }) => [
+                      styles.optionButton,
+                      pressed && styles.optionButtonActive
+                    ]}
                     onPress={() => {
                       updateField("purpose", option);
                       if (option !== "Others") {
@@ -320,8 +339,16 @@ export default function RegisterVisitScreen() {
             </View>
           ) : null}
 
-          <Pressable style={styles.submitButton} onPress={handleSubmit}>
-            <Text style={styles.submitText}>Submit</Text>
+          <Pressable
+            style={({ pressed }) => [
+              styles.submitButton,
+              (pressed || submitHovered) && styles.submitButtonActive
+            ]}
+            onPress={handleSubmit}
+            onHoverIn={() => setSubmitHovered(true)}
+            onHoverOut={() => setSubmitHovered(false)}
+          >
+            <Text style={[styles.submitText, (submitHovered || false) && styles.submitTextActive]}>Submit</Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -386,6 +413,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between"
   },
+  selectActive: {
+    borderColor: "#0F766E",
+    backgroundColor: "#F0FDF4",
+    shadowColor: "#0F766E",
+    shadowOpacity: 0.18,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 8,
+    elevation: 3,
+    transform: [{ scale: 1.01 }]
+  },
   selectText: {
     fontSize: 14,
     color: "#111827"
@@ -410,7 +447,16 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6"
+    borderBottomColor: "#f3f4f6",
+    backgroundColor: "#ffffff"
+  },
+  optionButtonActive: {
+    backgroundColor: "#F0FDF4",
+    shadowColor: "#0F766E",
+    shadowOpacity: 0.16,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
+    transform: [{ scale: 1.01 }]
   },
   optionText: {
     fontSize: 14,
@@ -427,9 +473,16 @@ const styles = StyleSheet.create({
     backgroundColor: "#111827",
     alignItems: "center"
   },
+  submitButtonActive: {
+    backgroundColor: "#0F766E",
+    transform: [{ scale: 1.01 }]
+  },
   submitText: {
     color: "#ffffff",
     fontSize: 16,
     fontWeight: "600"
+  },
+  submitTextActive: {
+    color: "#EAF5EE"
   }
 });

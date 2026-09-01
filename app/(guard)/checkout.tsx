@@ -48,6 +48,10 @@ export default function CheckoutVerificationScreen() {
   const [liveCaptureFor, setLiveCaptureFor] = useState<string | null>(null);
   const [matchingFor, setMatchingFor] = useState<string | null>(null);
   const [matchScores, setMatchScores] = useState<Record<string, number | null>>({});
+  const [refreshHovered, setRefreshHovered] = useState(false);
+  const [scanHovered, setScanHovered] = useState(false);
+  const [secondaryHovered, setSecondaryHovered] = useState(false);
+  const [completeHovered, setCompleteHovered] = useState(false);
   const liveCameraRef = useRef<any>(null);
 
   const loadFaceUrl = useCallback(async (registration: VisitorRegistration) => {
@@ -250,11 +254,27 @@ export default function CheckoutVerificationScreen() {
       return (
         <View style={styles.cameraShell}>
           <CameraView key={id} ref={liveCameraRef} style={styles.camera} facing="front" />
-          <Pressable style={styles.scanButton} onPress={() => void captureLivePhoto(id)}>
-            <Text style={styles.scanButtonText}>Capture</Text>
+          <Pressable
+            style={({ pressed }) => [
+              styles.scanButton,
+              (pressed || scanHovered) && styles.scanButtonActive
+            ]}
+            onPress={() => void captureLivePhoto(id)}
+            onHoverIn={() => setScanHovered(true)}
+            onHoverOut={() => setScanHovered(false)}
+          >
+            <Text style={[styles.scanButtonText, (scanHovered || false) && styles.scanButtonTextActive]}>Capture</Text>
           </Pressable>
-          <Pressable style={styles.secondaryButton} onPress={() => setLiveCaptureFor(null)}>
-            <Text style={styles.secondaryText}>Cancel</Text>
+          <Pressable
+            style={({ pressed }) => [
+              styles.secondaryButton,
+              (pressed || secondaryHovered) && styles.secondaryButtonActive
+            ]}
+            onPress={() => setLiveCaptureFor(null)}
+            onHoverIn={() => setSecondaryHovered(true)}
+            onHoverOut={() => setSecondaryHovered(false)}
+          >
+            <Text style={[styles.secondaryText, (secondaryHovered || false) && styles.secondaryTextActive]}>Cancel</Text>
           </Pressable>
         </View>
       );
@@ -280,8 +300,16 @@ export default function CheckoutVerificationScreen() {
                 )}% similarity) — please confirm.`}
           </Text>
         ) : null}
-        <Pressable style={styles.secondaryButton} onPress={() => void openLiveCapture(id)}>
-          <Text style={styles.secondaryText}>Capture Live Photo for Match</Text>
+        <Pressable
+          style={({ pressed }) => [
+            styles.secondaryButton,
+            (pressed || secondaryHovered) && styles.secondaryButtonActive
+          ]}
+          onPress={() => void openLiveCapture(id)}
+          onHoverIn={() => setSecondaryHovered(true)}
+          onHoverOut={() => setSecondaryHovered(false)}
+        >
+          <Text style={[styles.secondaryText, (secondaryHovered || false) && styles.secondaryTextActive]}>Capture Live Photo for Match</Text>
         </Pressable>
       </View>
     );
@@ -292,12 +320,28 @@ export default function CheckoutVerificationScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.card}>
           <Text style={styles.title}>Checkout Verification</Text>
-          <Pressable style={styles.refreshButton} onPress={() => void refresh()}>
-            <Text style={styles.refreshText}>Refresh</Text>
+          <Pressable
+            style={({ pressed }) => [
+              styles.refreshButton,
+              (pressed || refreshHovered) && styles.refreshButtonActive
+            ]}
+            onPress={() => void refresh()}
+            onHoverIn={() => setRefreshHovered(true)}
+            onHoverOut={() => setRefreshHovered(false)}
+          >
+            <Text style={[styles.refreshText, (refreshHovered || false) && styles.refreshTextActive]}>Refresh</Text>
           </Pressable>
 
-          <Pressable style={styles.scanButton} onPress={openScanner}>
-            <Text style={styles.scanButtonText}>Scan Visitor QR</Text>
+          <Pressable
+            style={({ pressed }) => [
+              styles.scanButton,
+              (pressed || scanHovered) && styles.scanButtonActive
+            ]}
+            onPress={openScanner}
+            onHoverIn={() => setScanHovered(true)}
+            onHoverOut={() => setScanHovered(false)}
+          >
+            <Text style={[styles.scanButtonText, (scanHovered || false) && styles.scanButtonTextActive]}>Scan Visitor QR</Text>
           </Pressable>
 
           {scanMessage ? <Text style={styles.note}>{scanMessage}</Text> : null}
@@ -310,8 +354,16 @@ export default function CheckoutVerificationScreen() {
                 barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
                 onBarcodeScanned={handleBarcodeScanned}
               />
-              <Pressable style={styles.secondaryButton} onPress={closeScanner}>
-                <Text style={styles.secondaryText}>Close Scanner</Text>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.secondaryButton,
+                  (pressed || secondaryHovered) && styles.secondaryButtonActive
+                ]}
+                onPress={closeScanner}
+                onHoverIn={() => setSecondaryHovered(true)}
+                onHoverOut={() => setSecondaryHovered(false)}
+              >
+                <Text style={[styles.secondaryText, (secondaryHovered || false) && styles.secondaryTextActive]}>Close Scanner</Text>
               </Pressable>
             </View>
           ) : null}
@@ -324,8 +376,16 @@ export default function CheckoutVerificationScreen() {
               placeholder="Type a name or pass number"
               style={styles.searchBox}
             />
-            <Pressable style={styles.secondaryButton} onPress={manualLookup}>
-              <Text style={styles.secondaryText}>Search</Text>
+            <Pressable
+              style={({ pressed }) => [
+                styles.secondaryButton,
+                (pressed || secondaryHovered) && styles.secondaryButtonActive
+              ]}
+              onPress={manualLookup}
+              onHoverIn={() => setSecondaryHovered(true)}
+              onHoverOut={() => setSecondaryHovered(false)}
+            >
+              <Text style={[styles.secondaryText, (secondaryHovered || false) && styles.secondaryTextActive]}>Search</Text>
             </Pressable>
           </View>
 
@@ -385,10 +445,15 @@ export default function CheckoutVerificationScreen() {
                     </View>
 
                     <Pressable
-                      style={styles.completeButton}
+                      style={({ pressed }) => [
+                        styles.completeButton,
+                        (pressed || completeHovered) && styles.completeButtonActive
+                      ]}
                       onPress={() => handleComplete(request.id)}
+                      onHoverIn={() => setCompleteHovered(true)}
+                      onHoverOut={() => setCompleteHovered(false)}
                     >
-                      <Text style={styles.completeText}>Complete Checkout</Text>
+                      <Text style={[styles.completeText, (completeHovered || false) && styles.completeTextActive]}>Complete Checkout</Text>
                     </Pressable>
                   </View>
                 ))
@@ -435,10 +500,15 @@ export default function CheckoutVerificationScreen() {
                 )}
               </View>
               <Pressable
-                style={styles.completeButton}
+                style={({ pressed }) => [
+                  styles.completeButton,
+                  (pressed || completeHovered) && styles.completeButtonActive
+                ]}
                 onPress={() => handleComplete(scannedVisitor.id)}
+                onHoverIn={() => setCompleteHovered(true)}
+                onHoverOut={() => setCompleteHovered(false)}
               >
-                <Text style={styles.completeText}>Complete Checkout</Text>
+                <Text style={[styles.completeText, (completeHovered || false) && styles.completeTextActive]}>Complete Checkout</Text>
               </Pressable>
             </View>
           ) : null}
@@ -513,10 +583,17 @@ const styles = StyleSheet.create({
     backgroundColor: "#111827",
     alignItems: "center"
   },
+  scanButtonActive: {
+    backgroundColor: "#0F766E",
+    transform: [{ scale: 1.01 }]
+  },
   scanButtonText: {
     color: "#ffffff",
     fontSize: 15,
     fontWeight: "600"
+  },
+  scanButtonTextActive: {
+    color: "#EAF5EE"
   },
   refreshButton: {
     paddingVertical: 10,
@@ -524,10 +601,17 @@ const styles = StyleSheet.create({
     backgroundColor: "#e5e7eb",
     alignItems: "center"
   },
+  refreshButtonActive: {
+    backgroundColor: "#DFF9EE",
+    transform: [{ scale: 1.01 }]
+  },
   refreshText: {
     color: "#111827",
     fontSize: 14,
     fontWeight: "600"
+  },
+  refreshTextActive: {
+    color: "#064A28"
   },
   secondaryButton: {
     paddingVertical: 10,
@@ -535,10 +619,17 @@ const styles = StyleSheet.create({
     backgroundColor: "#e5e7eb",
     alignItems: "center"
   },
+  secondaryButtonActive: {
+    backgroundColor: "#DFF9EE",
+    transform: [{ scale: 1.01 }]
+  },
   secondaryText: {
     color: "#111827",
     fontSize: 14,
     fontWeight: "600"
+  },
+  secondaryTextActive: {
+    color: "#064A28"
   },
   searchRow: {
     flexDirection: "row",
@@ -647,9 +738,16 @@ const styles = StyleSheet.create({
     backgroundColor: "#111827",
     alignItems: "center"
   },
+  completeButtonActive: {
+    backgroundColor: "#0F766E",
+    transform: [{ scale: 1.01 }]
+  },
   completeText: {
     color: "#ffffff",
     fontSize: 14,
     fontWeight: "600"
+  },
+  completeTextActive: {
+    color: "#EAF5EE"
   }
 });

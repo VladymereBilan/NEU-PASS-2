@@ -79,12 +79,25 @@ export const authStyles = StyleSheet.create({
   },
   linkButton: {
     alignItems: "center",
-    paddingVertical: 8
+    paddingVertical: 8,
+    borderRadius: 8,
+    minHeight: 32
+  },
+  linkButtonHover: {
+    transform: [{ scale: 1.02 }]
+  },
+  linkButtonPressed: {
+    transform: [{ scale: 0.99 }]
   },
   linkText: {
     color: NEU_COLORS.green,
     fontSize: 13,
-    fontWeight: "700"
+    fontWeight: "700",
+    textDecorationLine: "underline"
+  },
+  linkTextHover: {
+    color: NEU_COLORS.greenDark,
+    textDecorationLine: "underline"
   },
   note: {
     marginTop: 4,

@@ -108,6 +108,7 @@ export default function VisitorHomeScreen() {
   const { email, signOut } = useAuth();
   const [pass, setPass] = useState<VisitorRegistration | null>(null);
   const [loading, setLoading] = useState(true);
+  const [ctaHovered, setCtaHovered] = useState(false);
 
   const refresh = useCallback(async () => {
     if (!email) {
@@ -152,8 +153,15 @@ export default function VisitorHomeScreen() {
           description={statusView.description}
         >
           <Pressable
-            style={[authStyles.primaryButton, styles.cardCta]}
+            style={({ pressed }) => [
+              authStyles.primaryButton,
+              styles.cardCta,
+              (pressed || ctaHovered) && authStyles.primaryButtonHover,
+              pressed && authStyles.primaryButtonPressed
+            ]}
             onPress={() => router.push(statusView.ctaRoute as never)}
+            onHoverIn={() => setCtaHovered(true)}
+            onHoverOut={() => setCtaHovered(false)}
           >
             <Text style={authStyles.primaryButtonText}>{statusView.ctaLabel}</Text>
           </Pressable>

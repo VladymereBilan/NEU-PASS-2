@@ -227,11 +227,17 @@ export default function FacialVerificationScreen() {
           ) : null}
 
           <View style={styles.buttonRow}>
-            <Pressable style={styles.secondaryButton} onPress={openCamera}>
-              <Text style={styles.secondaryText}>Open Camera</Text>
+            <Pressable
+              style={({ pressed, hovered }) => [styles.secondaryButton, (pressed || hovered) && styles.secondaryButtonActive]}
+              onPress={openCamera}
+            >
+              <Text style={({ pressed, hovered }) => [styles.secondaryText, (pressed || hovered) && styles.secondaryTextActive]}>Open Camera</Text>
             </Pressable>
-            <Pressable style={styles.secondaryButton} onPress={usePrototypeSample}>
-              <Text style={styles.secondaryText}>Use Prototype Sample</Text>
+            <Pressable
+              style={({ pressed, hovered }) => [styles.secondaryButton, (pressed || hovered) && styles.secondaryButtonActive]}
+              onPress={usePrototypeSample}
+            >
+              <Text style={({ pressed, hovered }) => [styles.secondaryText, (pressed || hovered) && styles.secondaryTextActive]}>Use Prototype Sample</Text>
             </Pressable>
           </View>
 
@@ -250,7 +256,11 @@ export default function FacialVerificationScreen() {
                 }}
               />
               <Pressable
-                style={[styles.primaryButton, !cameraReady && styles.primaryButtonDisabled]}
+                style={({ pressed, hovered }) => [
+                  styles.primaryButton,
+                  !cameraReady && styles.primaryButtonDisabled,
+                  (pressed || hovered) && !cameraReady ? null : (pressed || hovered) && styles.primaryButtonActive
+                ]}
                 onPress={capturePhoto}
                 disabled={!cameraReady}
               >
@@ -262,8 +272,11 @@ export default function FacialVerificationScreen() {
           ) : null}
 
           {capturedUri ? (
-            <Pressable style={styles.secondaryButton} onPress={retakePhoto}>
-              <Text style={styles.secondaryText}>Retake Photo</Text>
+            <Pressable
+              style={({ pressed, hovered }) => [styles.secondaryButton, (pressed || hovered) && styles.secondaryButtonActive]}
+              onPress={retakePhoto}
+            >
+              <Text style={({ pressed, hovered }) => [styles.secondaryText, (pressed || hovered) && styles.secondaryTextActive]}>Retake Photo</Text>
             </Pressable>
           ) : null}
 
@@ -273,7 +286,11 @@ export default function FacialVerificationScreen() {
           </View>
 
           <Pressable
-            style={[styles.primaryButton, submitting && styles.primaryButtonDisabled]}
+            style={({ pressed, hovered }) => [
+              styles.primaryButton,
+              submitting && styles.primaryButtonDisabled,
+              (pressed || hovered) && !submitting && styles.primaryButtonActive
+            ]}
             onPress={handleSubmit}
             disabled={submitting}
           >

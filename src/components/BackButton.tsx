@@ -9,8 +9,11 @@ export default function BackButton({ label = "Back" }: BackButtonProps) {
   const router = useRouter();
 
   return (
-    <Pressable style={styles.button} onPress={() => router.back()}>
-      <Text style={styles.text}>{label}</Text>
+    <Pressable
+      style={({ pressed, hovered }) => [styles.button, (pressed || hovered) && styles.buttonActive]}
+      onPress={() => router.back()}
+    >
+      <Text style={({ pressed, hovered }) => [styles.text, (pressed || hovered) && styles.textActive]}>{label}</Text>
     </Pressable>
   );
 }
@@ -23,9 +26,16 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: "#e5e7eb"
   },
+  buttonActive: {
+    backgroundColor: "#EAF5EE",
+    transform: [{ scale: 1.02 }]
+  },
   text: {
     color: "#111827",
     fontSize: 14,
     fontWeight: "600"
+  },
+  textActive: {
+    color: "#064A28"
   }
 });
