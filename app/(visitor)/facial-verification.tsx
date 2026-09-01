@@ -107,7 +107,8 @@ export default function FacialVerificationScreen() {
 
   const retakePhoto = () => {
     setCapturedUri("");
-    updateDraft({ faceImageUri: "" });
+    updateDraft({ faceImageUri: "", faceVerificationStatus: FaceVerificationStatus.Pending });
+    setStatus(FaceVerificationStatus.Pending);
     setCameraReady(false);
     setCameraSessionKey((key) => key + 1);
     setShowCamera(true);
@@ -127,6 +128,16 @@ export default function FacialVerificationScreen() {
     if (!draft) {
       Alert.alert("Registration draft not found. Please start again.");
       router.replace("/");
+      return;
+    }
+
+    if (!draft.idImageUri) {
+      Alert.alert("Missing ID photo. Please go back and capture your ID.");
+      return;
+    }
+
+    if (!capturedUri || !draft.faceImageUri) {
+      Alert.alert("Please capture or select a face photo before submitting.");
       return;
     }
 

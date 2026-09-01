@@ -40,7 +40,7 @@ export default function VisitorCheckoutScreen() {
   );
 
   const handleRequest = async () => {
-    if (!pass) {
+    if (!pass || pass.checkoutStatus === "Checkout Requested") {
       return;
     }
     try {
@@ -84,16 +84,23 @@ export default function VisitorCheckoutScreen() {
               Expiration: {formatDate(pass.expirationTime)}
             </Text>
             <Text style={styles.itemText}>QR Status: {pass.qrStatus}</Text>
+            <Text style={styles.itemText}>Checkout Status: {pass.checkoutStatus}</Text>
 
-            <Pressable
-              style={[styles.button, submitting && styles.buttonDisabled]}
-              onPress={handleRequest}
-              disabled={submitting}
-            >
-              <Text style={styles.buttonText}>
-                {submitting ? "Requesting..." : "Request Checkout"}
+            {pass.checkoutStatus === "Checkout Requested" ? (
+              <Text style={styles.body}>
+                Checkout already requested. Please proceed to the guard for verification.
               </Text>
-            </Pressable>
+            ) : (
+              <Pressable
+                style={[styles.button, submitting && styles.buttonDisabled]}
+                onPress={handleRequest}
+                disabled={submitting}
+              >
+                <Text style={styles.buttonText}>
+                  {submitting ? "Requesting..." : "Request Checkout"}
+                </Text>
+              </Pressable>
+            )}
 
             <Pressable style={styles.secondaryButton} onPress={() => void refresh()}>
               <Text style={styles.secondaryText}>Refresh</Text>

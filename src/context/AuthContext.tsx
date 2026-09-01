@@ -47,11 +47,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setRoleResolved(false);
     supabase
       .from("profiles")
-      .select("account_type")
+      .select("account_type, account_status")
       .eq("id", session.user.id)
       .maybeSingle()
-      .then(({ data }) => {
+      .then(async ({ data }) => {
         if (!active) return;
+
+        if (data?.account_status === "Blocked") {
+          await supabase.auth.signOut();
+          if (!active) return;
+          setRole(null);
+          setRoleResolved(true);
+          return;
+        }
+
         const accountType = data?.account_type;
         setRole(accountType === "visitor" || accountType === "guard" ? accountType : null);
         setRoleResolved(true);
@@ -59,6 +68,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       active = false;
+    };
+  }, [session]);
+
+  useEffect(() => {
+    if (!session) return;
+
+    const channel = supabase
+      .channel(`profile-status-${session.user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "profiles",
+          filter: `id=eq.${session.user.id}`
+        },
+        async (payload) => {
+          if (payload.new?.account_status === "Blocked") {
+            await supabase.auth.signOut();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
     };
   }, [session]);
 

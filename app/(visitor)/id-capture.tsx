@@ -95,6 +95,10 @@ export default function IdCaptureScreen() {
   };
 
   const handleContinue = () => {
+    if (!capturedUri) {
+      setStatusMessage("Please capture or select an ID photo before continuing.");
+      return;
+    }
     router.push("/(visitor)/ocr-review");
   };
 

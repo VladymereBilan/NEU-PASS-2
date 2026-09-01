@@ -4,11 +4,19 @@ import { createClient } from "@/lib/supabase/server";
 
 export default async function ReportsPage() {
   const supabase = await createClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("visitor_registrations")
     .select(
       "id, full_name, purpose_of_visit, registration_status, checkout_status, qr_status, time_in, time_out, expiration_time, created_at"
     );
+
+  if (error) {
+    return (
+      <div className="rounded-3xl border border-[#d8e3dc] bg-white p-6 shadow-[0_10px_28px_rgba(11,110,60,0.06)]">
+        <div className="py-10 text-center text-red-700">Unable to load report data.</div>
+      </div>
+    );
+  }
 
   const stats = computeReportStats((data ?? []) as VisitorRow[]);
 
