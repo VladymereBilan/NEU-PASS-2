@@ -7,6 +7,7 @@ import {
   requestCheckout
 } from "../../src/services/PrototypeRegistrationStore";
 import type { VisitorRegistration } from "../../src/types/VisitorRegistration";
+import type { PressableInteractionState } from "../../src/types/PressableState";
 
 export default function VisitorCheckoutScreen() {
   const { email } = useAuth();
@@ -92,7 +93,7 @@ export default function VisitorCheckoutScreen() {
               </Text>
             ) : (
               <Pressable
-                style={({ pressed, hovered }) => [
+                style={({ pressed, hovered }: PressableInteractionState) => [
                   styles.button,
                   submitting && styles.buttonDisabled,
                   (pressed || hovered) && !submitting && styles.buttonActive
@@ -107,10 +108,19 @@ export default function VisitorCheckoutScreen() {
             )}
 
             <Pressable
-              style={({ pressed, hovered }) => [styles.secondaryButton, (pressed || hovered) && styles.secondaryButtonActive]}
+              style={({ pressed, hovered }: PressableInteractionState) => [
+                styles.secondaryButton,
+                (pressed || hovered) && styles.secondaryButtonActive
+              ]}
               onPress={() => void refresh()}
             >
-              <Text style={({ pressed, hovered }) => [styles.secondaryText, (pressed || hovered) && styles.secondaryTextActive]}>Refresh</Text>
+              {({ pressed, hovered }: PressableInteractionState) => (
+                <Text
+                  style={[styles.secondaryText, (pressed || hovered) && styles.secondaryTextActive]}
+                >
+                  Refresh
+                </Text>
+              )}
             </Pressable>
           </View>
         )}

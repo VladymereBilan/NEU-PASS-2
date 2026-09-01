@@ -12,6 +12,7 @@ import {
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useRegistrationDraft } from "../../src/context/RegistrationDraftContext";
+import type { PressableInteractionState } from "../../src/types/PressableState";
 
 export default function IdCaptureScreen() {
   const router = useRouter();
@@ -131,16 +132,34 @@ export default function IdCaptureScreen() {
 
           <View style={styles.buttonRow}>
             <Pressable
-              style={({ pressed, hovered }) => [styles.secondaryButton, (pressed || hovered) && styles.secondaryButtonActive]}
+              style={({ pressed, hovered }: PressableInteractionState) => [
+                styles.secondaryButton,
+                (pressed || hovered) && styles.secondaryButtonActive
+              ]}
               onPress={openCamera}
             >
-              <Text style={({ pressed, hovered }) => [styles.secondaryText, (pressed || hovered) && styles.secondaryTextActive]}>Open Camera</Text>
+              {({ pressed, hovered }: PressableInteractionState) => (
+                <Text
+                  style={[styles.secondaryText, (pressed || hovered) && styles.secondaryTextActive]}
+                >
+                  Open Camera
+                </Text>
+              )}
             </Pressable>
             <Pressable
-              style={({ pressed, hovered }) => [styles.secondaryButton, (pressed || hovered) && styles.secondaryButtonActive]}
+              style={({ pressed, hovered }: PressableInteractionState) => [
+                styles.secondaryButton,
+                (pressed || hovered) && styles.secondaryButtonActive
+              ]}
               onPress={usePrototypeSample}
             >
-              <Text style={({ pressed, hovered }) => [styles.secondaryText, (pressed || hovered) && styles.secondaryTextActive]}>Use Prototype Sample</Text>
+              {({ pressed, hovered }: PressableInteractionState) => (
+                <Text
+                  style={[styles.secondaryText, (pressed || hovered) && styles.secondaryTextActive]}
+                >
+                  Use Prototype Sample
+                </Text>
+              )}
             </Pressable>
           </View>
 
@@ -159,7 +178,7 @@ export default function IdCaptureScreen() {
                 }}
               />
               <Pressable
-                style={({ pressed, hovered }) => [
+                style={({ pressed, hovered }: PressableInteractionState) => [
                   styles.primaryButton,
                   !cameraReady && styles.primaryButtonDisabled,
                   (pressed || hovered) && !cameraReady ? null : (pressed || hovered) && styles.primaryButtonActive
@@ -176,22 +195,35 @@ export default function IdCaptureScreen() {
 
           {capturedUri ? (
             <Pressable
-              style={({ pressed, hovered }) => [styles.secondaryButton, (pressed || hovered) && styles.secondaryButtonActive]}
+              style={({ pressed, hovered }: PressableInteractionState) => [
+                styles.secondaryButton,
+                (pressed || hovered) && styles.secondaryButtonActive
+              ]}
               onPress={retakePhoto}
             >
-              <Text style={({ pressed, hovered }) => [styles.secondaryText, (pressed || hovered) && styles.secondaryTextActive]}>Retake Photo</Text>
+              {({ pressed, hovered }: PressableInteractionState) => (
+                <Text
+                  style={[styles.secondaryText, (pressed || hovered) && styles.secondaryTextActive]}
+                >
+                  Retake Photo
+                </Text>
+              )}
             </Pressable>
           ) : null}
 
           <Pressable
-            style={({ pressed, hovered }) => [
+            style={({ pressed, hovered }: PressableInteractionState) => [
               styles.primaryButton,
               (pressed || hovered) && styles.primaryButtonActive,
               (pressed || hovered) && styles.primaryButtonLift
             ]}
             onPress={handleContinue}
           >
-            <Text style={[styles.primaryText, (true || false) && styles.primaryTextActive]}>Continue to OCR Review</Text>
+            {({ pressed, hovered }: PressableInteractionState) => (
+              <Text style={[styles.primaryText, (pressed || hovered) && styles.primaryTextActive]}>
+                Continue to OCR Review
+              </Text>
+            )}
           </Pressable>
         </View>
       </ScrollView>
@@ -309,10 +341,17 @@ const styles = StyleSheet.create({
     backgroundColor: "#e5e7eb",
     alignItems: "center"
   },
+  secondaryButtonActive: {
+    backgroundColor: "#dfe8e5",
+    transform: [{ scale: 1.01 }]
+  },
   secondaryText: {
     color: "#111827",
     fontSize: 13,
     fontWeight: "600",
     textAlign: "center"
+  },
+  secondaryTextActive: {
+    color: "#064A28"
   }
 });

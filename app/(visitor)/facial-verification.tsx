@@ -22,6 +22,7 @@ import { addRegistration } from "../../src/services/PrototypeRegistrationStore";
 import { useRegistrationDraft } from "../../src/context/RegistrationDraftContext";
 import { uploadVisitorImage } from "../../src/lib/imageUpload";
 import type { VisitorRegistration } from "../../src/types/VisitorRegistration";
+import type { PressableInteractionState } from "../../src/types/PressableState";
 
 export default function FacialVerificationScreen() {
   const router = useRouter();
@@ -228,16 +229,34 @@ export default function FacialVerificationScreen() {
 
           <View style={styles.buttonRow}>
             <Pressable
-              style={({ pressed, hovered }) => [styles.secondaryButton, (pressed || hovered) && styles.secondaryButtonActive]}
+              style={({ pressed, hovered }: PressableInteractionState) => [
+                styles.secondaryButton,
+                (pressed || hovered) && styles.secondaryButtonActive
+              ]}
               onPress={openCamera}
             >
-              <Text style={({ pressed, hovered }) => [styles.secondaryText, (pressed || hovered) && styles.secondaryTextActive]}>Open Camera</Text>
+              {({ pressed, hovered }: PressableInteractionState) => (
+                <Text
+                  style={[styles.secondaryText, (pressed || hovered) && styles.secondaryTextActive]}
+                >
+                  Open Camera
+                </Text>
+              )}
             </Pressable>
             <Pressable
-              style={({ pressed, hovered }) => [styles.secondaryButton, (pressed || hovered) && styles.secondaryButtonActive]}
+              style={({ pressed, hovered }: PressableInteractionState) => [
+                styles.secondaryButton,
+                (pressed || hovered) && styles.secondaryButtonActive
+              ]}
               onPress={usePrototypeSample}
             >
-              <Text style={({ pressed, hovered }) => [styles.secondaryText, (pressed || hovered) && styles.secondaryTextActive]}>Use Prototype Sample</Text>
+              {({ pressed, hovered }: PressableInteractionState) => (
+                <Text
+                  style={[styles.secondaryText, (pressed || hovered) && styles.secondaryTextActive]}
+                >
+                  Use Prototype Sample
+                </Text>
+              )}
             </Pressable>
           </View>
 
@@ -256,7 +275,7 @@ export default function FacialVerificationScreen() {
                 }}
               />
               <Pressable
-                style={({ pressed, hovered }) => [
+                style={({ pressed, hovered }: PressableInteractionState) => [
                   styles.primaryButton,
                   !cameraReady && styles.primaryButtonDisabled,
                   (pressed || hovered) && !cameraReady ? null : (pressed || hovered) && styles.primaryButtonActive
@@ -273,10 +292,19 @@ export default function FacialVerificationScreen() {
 
           {capturedUri ? (
             <Pressable
-              style={({ pressed, hovered }) => [styles.secondaryButton, (pressed || hovered) && styles.secondaryButtonActive]}
+              style={({ pressed, hovered }: PressableInteractionState) => [
+                styles.secondaryButton,
+                (pressed || hovered) && styles.secondaryButtonActive
+              ]}
               onPress={retakePhoto}
             >
-              <Text style={({ pressed, hovered }) => [styles.secondaryText, (pressed || hovered) && styles.secondaryTextActive]}>Retake Photo</Text>
+              {({ pressed, hovered }: PressableInteractionState) => (
+                <Text
+                  style={[styles.secondaryText, (pressed || hovered) && styles.secondaryTextActive]}
+                >
+                  Retake Photo
+                </Text>
+              )}
             </Pressable>
           ) : null}
 
@@ -286,7 +314,7 @@ export default function FacialVerificationScreen() {
           </View>
 
           <Pressable
-            style={({ pressed, hovered }) => [
+            style={({ pressed, hovered }: PressableInteractionState) => [
               styles.primaryButton,
               submitting && styles.primaryButtonDisabled,
               (pressed || hovered) && !submitting && styles.primaryButtonActive
@@ -394,6 +422,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#111827",
     alignItems: "center"
   },
+  primaryButtonActive: {
+    backgroundColor: "#0F766E",
+    shadowColor: "#0F766E",
+    shadowOpacity: 0.28,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 12,
+    elevation: 4
+  },
   primaryButtonDisabled: {
     opacity: 0.7
   },
@@ -409,11 +445,18 @@ const styles = StyleSheet.create({
     backgroundColor: "#e5e7eb",
     alignItems: "center"
   },
+  secondaryButtonActive: {
+    backgroundColor: "#dfe8e5",
+    transform: [{ scale: 1.01 }]
+  },
   secondaryText: {
     color: "#111827",
     fontSize: 13,
     fontWeight: "600",
     textAlign: "center"
+  },
+  secondaryTextActive: {
+    color: "#064A28"
   },
   statusRow: {
     flexDirection: "row",

@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text } from "react-native";
 import { useRouter } from "expo-router";
+import type { PressableInteractionState } from "../types/PressableState";
 
 type BackButtonProps = {
   label?: string;
@@ -10,10 +11,15 @@ export default function BackButton({ label = "Back" }: BackButtonProps) {
 
   return (
     <Pressable
-      style={({ pressed, hovered }) => [styles.button, (pressed || hovered) && styles.buttonActive]}
+      style={({ pressed, hovered }: PressableInteractionState) => [
+        styles.button,
+        (pressed || hovered) && styles.buttonActive
+      ]}
       onPress={() => router.back()}
     >
-      <Text style={({ pressed, hovered }) => [styles.text, (pressed || hovered) && styles.textActive]}>{label}</Text>
+      {({ pressed, hovered }: PressableInteractionState) => (
+        <Text style={[styles.text, (pressed || hovered) && styles.textActive]}>{label}</Text>
+      )}
     </Pressable>
   );
 }
