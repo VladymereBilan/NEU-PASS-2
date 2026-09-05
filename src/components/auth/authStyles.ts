@@ -1,47 +1,38 @@
 import { StyleSheet } from "react-native";
-import { NEU_COLORS } from "../../theme/brand";
+import { NEU_DARK } from "../../theme/brand";
 
 // Buttons/links/error text repeated identically across every auth screen.
 export const authStyles = StyleSheet.create({
   error: {
-    color: NEU_COLORS.error,
-    backgroundColor: NEU_COLORS.errorBg,
+    color: NEU_DARK.error,
+    backgroundColor: NEU_DARK.errorBg,
+    borderWidth: 1,
+    borderColor: NEU_DARK.errorBorder,
     fontSize: 13,
     fontWeight: "600",
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 8
+    borderRadius: 10
   },
   primaryButton: {
-    backgroundColor: NEU_COLORS.green,
+    backgroundColor: NEU_DARK.emeraldStrong,
     paddingVertical: 14,
     borderRadius: 12,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(11, 110, 60, 0.25)",
-    shadowColor: NEU_COLORS.green,
-    shadowOpacity: 0.2,
-    shadowOffset: { width: 0, height: 8 },
-    shadowRadius: 14,
-    elevation: 4
+    alignItems: "center"
   },
   primaryButtonHover: {
-    backgroundColor: "#0E7F49",
-    shadowOpacity: 0.34,
-    shadowRadius: 18,
+    backgroundColor: "#0EA271",
     transform: [{ scale: 1.01 }]
   },
   primaryButtonPressed: {
     transform: [{ scale: 0.985 }],
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    backgroundColor: NEU_COLORS.greenDark
+    backgroundColor: "#0C8A62"
   },
   primaryButtonDisabled: {
     opacity: 0.7
   },
   primaryButtonText: {
-    color: "#ffffff",
+    color: "#04150C",
     fontSize: 16,
     fontWeight: "700",
     letterSpacing: 0.2
@@ -50,29 +41,20 @@ export const authStyles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: NEU_COLORS.gold,
-    backgroundColor: "#FFFBEB",
-    alignItems: "center",
-    shadowColor: NEU_COLORS.gold,
-    shadowOpacity: 0.18,
-    shadowOffset: { width: 0, height: 8 },
-    shadowRadius: 12,
-    elevation: 3
+    borderColor: NEU_DARK.amber,
+    backgroundColor: NEU_DARK.amberSoft,
+    alignItems: "center"
   },
   secondaryButtonHover: {
-    backgroundColor: "#FFF4D6",
-    shadowOpacity: 0.28,
-    shadowRadius: 16,
+    backgroundColor: "rgba(251, 191, 36, 0.2)",
     transform: [{ scale: 1.01 }]
   },
   secondaryButtonPressed: {
     transform: [{ scale: 0.985 }],
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    backgroundColor: "#FDE8B1"
+    backgroundColor: "rgba(251, 191, 36, 0.28)"
   },
   secondaryButtonText: {
-    color: NEU_COLORS.goldDark,
+    color: NEU_DARK.amber,
     fontSize: 16,
     fontWeight: "700",
     letterSpacing: 0.2
@@ -90,19 +72,19 @@ export const authStyles = StyleSheet.create({
     transform: [{ scale: 0.99 }]
   },
   linkText: {
-    color: NEU_COLORS.green,
+    color: NEU_DARK.emerald,
     fontSize: 13,
     fontWeight: "700",
     textDecorationLine: "underline"
   },
   linkTextHover: {
-    color: NEU_COLORS.greenDark,
+    color: NEU_DARK.emeraldStrong,
     textDecorationLine: "underline"
   },
   note: {
     marginTop: 4,
     fontSize: 12,
-    color: NEU_COLORS.subtle,
+    color: NEU_DARK.textMuted,
     textAlign: "center"
   }
 });

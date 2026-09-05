@@ -1,15 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View
-} from "react-native";
+import { ActivityIndicator, Alert, Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useFocusEffect, useRouter } from "expo-router";
 import {
@@ -23,6 +13,8 @@ import { useRegistrationDraft } from "../../src/context/RegistrationDraftContext
 import { uploadVisitorImage } from "../../src/lib/imageUpload";
 import type { VisitorRegistration } from "../../src/types/VisitorRegistration";
 import type { PressableInteractionState } from "../../src/types/PressableState";
+import { FormScreen } from "../../src/components/FormScreen";
+import { NEU_DARK } from "../../src/theme/brand";
 
 export default function FacialVerificationScreen() {
   const router = useRouter();
@@ -188,193 +180,151 @@ export default function FacialVerificationScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.card}>
-          <Text style={styles.title}>Facial Verification</Text>
-          <Text style={styles.body}>
-            This step verifies that the visitor matches the submitted ID
-            information.
+    <FormScreen>
+      <Text style={styles.title}>Facial Verification</Text>
+      <Text style={styles.body}>
+        This step verifies that the visitor matches the submitted ID information.
+      </Text>
+      <Text style={styles.note}>
+        Automatic face matching against your ID photo is still prototype-only — a guard will
+        manually confirm your identity.
+      </Text>
+
+      <View style={styles.previewBox}>
+        {capturedUri && capturedUri.startsWith("file") ? (
+          <Image source={{ uri: capturedUri }} style={styles.previewImage} />
+        ) : (
+          <Text style={styles.previewText}>
+            {capturedUri ? "Prototype Sample Selected" : "Face Image Preview"}
           </Text>
-          <Text style={styles.note}>
-            Automatic face matching against your ID photo is still prototype-only — a guard
-            will manually confirm your identity.
-          </Text>
+        )}
+      </View>
 
-          <View style={styles.previewBox}>
-            {capturedUri && capturedUri.startsWith("file") ? (
-              <Image source={{ uri: capturedUri }} style={styles.previewImage} />
-            ) : (
-              <Text style={styles.previewText}>
-                {capturedUri ? "Prototype Sample Selected" : "Face Image Preview"}
-              </Text>
-            )}
-          </View>
+      {checkingFace ? (
+        <View style={styles.checkingRow}>
+          <ActivityIndicator color={NEU_DARK.emerald} />
+          <Text style={styles.scanningText}>Checking photo...</Text>
+        </View>
+      ) : statusMessage ? (
+        <Text style={styles.status}>{statusMessage}</Text>
+      ) : null}
 
-          {checkingFace ? (
-            <View style={styles.checkingRow}>
-              <ActivityIndicator />
-              <Text style={styles.scanningText}>Checking photo...</Text>
-            </View>
-          ) : statusMessage ? (
-            <Text style={styles.status}>{statusMessage}</Text>
-          ) : null}
+      {!permission?.granted && !showCamera ? (
+        <Text style={styles.permissionNote}>
+          Camera access is required for live capture, but you can still use the prototype sample.
+        </Text>
+      ) : null}
 
-          {!permission?.granted && !showCamera ? (
-            <Text style={styles.permissionNote}>
-              Camera access is required for live capture, but you can still use the
-              prototype sample.
-            </Text>
-          ) : null}
+      <View style={styles.buttonRow}>
+        <Pressable
+          style={({ pressed, hovered }: PressableInteractionState) => [
+            styles.secondaryButton,
+            (pressed || hovered) && styles.secondaryButtonActive
+          ]}
+          onPress={openCamera}
+        >
+          <Text style={styles.secondaryText}>Open Camera</Text>
+        </Pressable>
+        <Pressable
+          style={({ pressed, hovered }: PressableInteractionState) => [
+            styles.secondaryButton,
+            (pressed || hovered) && styles.secondaryButtonActive
+          ]}
+          onPress={usePrototypeSample}
+        >
+          <Text style={styles.secondaryText}>Use Prototype Sample</Text>
+        </Pressable>
+      </View>
 
-          <View style={styles.buttonRow}>
-            <Pressable
-              style={({ pressed, hovered }: PressableInteractionState) => [
-                styles.secondaryButton,
-                (pressed || hovered) && styles.secondaryButtonActive
-              ]}
-              onPress={openCamera}
-            >
-              {({ pressed, hovered }: PressableInteractionState) => (
-                <Text
-                  style={[styles.secondaryText, (pressed || hovered) && styles.secondaryTextActive]}
-                >
-                  Open Camera
-                </Text>
-              )}
-            </Pressable>
-            <Pressable
-              style={({ pressed, hovered }: PressableInteractionState) => [
-                styles.secondaryButton,
-                (pressed || hovered) && styles.secondaryButtonActive
-              ]}
-              onPress={usePrototypeSample}
-            >
-              {({ pressed, hovered }: PressableInteractionState) => (
-                <Text
-                  style={[styles.secondaryText, (pressed || hovered) && styles.secondaryTextActive]}
-                >
-                  Use Prototype Sample
-                </Text>
-              )}
-            </Pressable>
-          </View>
-
-          {showCamera ? (
-            <View style={styles.cameraCard}>
-              <CameraView
-                key={cameraSessionKey}
-                ref={cameraRef}
-                style={styles.camera}
-                facing="front"
-                onCameraReady={() => setCameraReady(true)}
-                onMountError={(error) => {
-                  setCameraReady(false);
-                  setShowCamera(false);
-                  setStatusMessage(`Unable to start camera: ${error.message}`);
-                }}
-              />
-              <Pressable
-                style={({ pressed, hovered }: PressableInteractionState) => [
-                  styles.primaryButton,
-                  !cameraReady && styles.primaryButtonDisabled,
-                  (pressed || hovered) && !cameraReady ? null : (pressed || hovered) && styles.primaryButtonActive
-                ]}
-                onPress={capturePhoto}
-                disabled={!cameraReady}
-              >
-                <Text style={styles.primaryText}>
-                  {cameraReady ? "Capture Photo" : "Starting Camera..."}
-                </Text>
-              </Pressable>
-            </View>
-          ) : null}
-
-          {capturedUri ? (
-            <Pressable
-              style={({ pressed, hovered }: PressableInteractionState) => [
-                styles.secondaryButton,
-                (pressed || hovered) && styles.secondaryButtonActive
-              ]}
-              onPress={retakePhoto}
-            >
-              {({ pressed, hovered }: PressableInteractionState) => (
-                <Text
-                  style={[styles.secondaryText, (pressed || hovered) && styles.secondaryTextActive]}
-                >
-                  Retake Photo
-                </Text>
-              )}
-            </Pressable>
-          ) : null}
-
-          <View style={styles.statusRow}>
-            <Text style={styles.statusLabel}>Status</Text>
-            <Text style={styles.statusValue}>{status}</Text>
-          </View>
-
+      {showCamera ? (
+        <View style={styles.cameraCard}>
+          <CameraView
+            key={cameraSessionKey}
+            ref={cameraRef}
+            style={styles.camera}
+            facing="front"
+            onCameraReady={() => setCameraReady(true)}
+            onMountError={(error) => {
+              setCameraReady(false);
+              setShowCamera(false);
+              setStatusMessage(`Unable to start camera: ${error.message}`);
+            }}
+          />
           <Pressable
             style={({ pressed, hovered }: PressableInteractionState) => [
               styles.primaryButton,
-              submitting && styles.primaryButtonDisabled,
-              (pressed || hovered) && !submitting && styles.primaryButtonActive
+              !cameraReady && styles.primaryButtonDisabled,
+              (pressed || hovered) && cameraReady && styles.primaryButtonActive
             ]}
-            onPress={handleSubmit}
-            disabled={submitting}
+            onPress={capturePhoto}
+            disabled={!cameraReady}
           >
             <Text style={styles.primaryText}>
-              {submitting ? "Submitting..." : "Submit for Guard Verification"}
+              {cameraReady ? "Capture Photo" : "Starting Camera..."}
             </Text>
           </Pressable>
         </View>
-      </ScrollView>
-    </SafeAreaView>
+      ) : null}
+
+      {capturedUri ? (
+        <Pressable
+          style={({ pressed, hovered }: PressableInteractionState) => [
+            styles.secondaryButton,
+            (pressed || hovered) && styles.secondaryButtonActive
+          ]}
+          onPress={retakePhoto}
+        >
+          <Text style={styles.secondaryText}>Retake Photo</Text>
+        </Pressable>
+      ) : null}
+
+      <View style={styles.statusRow}>
+        <Text style={styles.statusLabel}>Status</Text>
+        <Text style={styles.statusValue}>{status}</Text>
+      </View>
+
+      <Pressable
+        style={({ pressed, hovered }: PressableInteractionState) => [
+          styles.primaryButton,
+          submitting && styles.primaryButtonDisabled,
+          (pressed || hovered) && !submitting && styles.primaryButtonActive
+        ]}
+        onPress={handleSubmit}
+        disabled={submitting}
+      >
+        <Text style={styles.primaryText}>
+          {submitting ? "Submitting..." : "Submit for Guard Verification"}
+        </Text>
+      </Pressable>
+    </FormScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: "#eef2ff"
-  },
-  content: {
-    padding: 24
-  },
-  card: {
-    backgroundColor: "#ffffff",
-    padding: 24,
-    borderRadius: 16,
-    gap: 16,
-    shadowColor: "#000000",
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 12,
-    elevation: 3
-  },
   title: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#111827"
+    fontSize: 22,
+    fontWeight: "800",
+    color: NEU_DARK.white
   },
   body: {
     fontSize: 14,
-    color: "#4b5563",
+    color: NEU_DARK.textMuted,
     lineHeight: 20
   },
   note: {
     fontSize: 12,
-    color: "#6b7280",
+    color: NEU_DARK.textFaint,
     lineHeight: 18
   },
   previewBox: {
     height: 180,
     borderWidth: 1,
-    borderColor: "#d1d5db",
+    borderColor: NEU_DARK.border,
     borderStyle: "dashed",
-    borderRadius: 12,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#f9fafb",
+    backgroundColor: "rgba(255,255,255,0.04)",
     overflow: "hidden"
   },
   previewImage: {
@@ -383,11 +333,11 @@ const styles = StyleSheet.create({
   },
   previewText: {
     fontSize: 13,
-    color: "#6b7280"
+    color: NEU_DARK.textMuted
   },
   status: {
     fontSize: 13,
-    color: "#111827",
+    color: NEU_DARK.white,
     fontWeight: "600"
   },
   checkingRow: {
@@ -397,11 +347,11 @@ const styles = StyleSheet.create({
   },
   scanningText: {
     fontSize: 13,
-    color: "#4b5563"
+    color: NEU_DARK.textMuted
   },
   permissionNote: {
     fontSize: 13,
-    color: "#b45309",
+    color: NEU_DARK.amber,
     lineHeight: 19
   },
   buttonRow: {
@@ -413,70 +363,64 @@ const styles = StyleSheet.create({
   },
   camera: {
     height: 280,
-    borderRadius: 12,
+    borderRadius: 14,
     overflow: "hidden"
   },
   primaryButton: {
     paddingVertical: 12,
-    borderRadius: 10,
-    backgroundColor: "#111827",
+    borderRadius: 12,
+    backgroundColor: NEU_DARK.emeraldStrong,
     alignItems: "center"
   },
   primaryButtonActive: {
-    backgroundColor: "#0F766E",
-    shadowColor: "#0F766E",
-    shadowOpacity: 0.28,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 12,
-    elevation: 4
+    backgroundColor: "#0C8A62"
   },
   primaryButtonDisabled: {
-    opacity: 0.7
+    opacity: 0.6
   },
   primaryText: {
-    color: "#ffffff",
+    color: "#04150C",
     fontSize: 15,
-    fontWeight: "600"
+    fontWeight: "700"
   },
   secondaryButton: {
     flex: 1,
     paddingVertical: 12,
-    borderRadius: 10,
-    backgroundColor: "#e5e7eb",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: NEU_DARK.border,
+    backgroundColor: "rgba(255,255,255,0.05)",
     alignItems: "center"
   },
   secondaryButtonActive: {
-    backgroundColor: "#dfe8e5",
-    transform: [{ scale: 1.01 }]
+    borderColor: NEU_DARK.emerald,
+    backgroundColor: NEU_DARK.emeraldSoft
   },
   secondaryText: {
-    color: "#111827",
+    color: NEU_DARK.white,
     fontSize: 13,
     fontWeight: "600",
     textAlign: "center"
-  },
-  secondaryTextActive: {
-    color: "#064A28"
   },
   statusRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingVertical: 8,
-    borderRadius: 10,
-    backgroundColor: "#f9fafb",
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.04)",
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderColor: "#e5e7eb"
+    borderColor: NEU_DARK.border
   },
   statusLabel: {
     fontSize: 13,
-    fontWeight: "600",
-    color: "#374151"
+    fontWeight: "700",
+    color: NEU_DARK.textMuted
   },
   statusValue: {
     fontSize: 13,
-    fontWeight: "600",
-    color: "#111827"
+    fontWeight: "700",
+    color: NEU_DARK.white
   }
 });

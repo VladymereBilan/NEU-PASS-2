@@ -1,14 +1,13 @@
-import { Image, StyleSheet, Text, View } from "react-native";
-import { NEU_COLORS } from "../../theme/brand";
+import { StyleSheet, Text, View } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { NEU_DARK } from "../../theme/brand";
 
 export function BrandHeader({ title, subtitle }: { title: string; subtitle: string }) {
   return (
     <View style={styles.container}>
-      <Image
-        source={require("../../../assets/branding/neu-logo.webp")}
-        style={styles.logo}
-        resizeMode="contain"
-      />
+      <View style={styles.badge}>
+        <MaterialCommunityIcons name="shield-check-outline" size={30} color={NEU_DARK.emerald} />
+      </View>
       <Text style={styles.eyebrow}>NEW ERA UNIVERSITY</Text>
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.subtitle}>{subtitle}</Text>
@@ -22,26 +21,32 @@ const styles = StyleSheet.create({
     gap: 4,
     marginBottom: 8
   },
-  logo: {
-    width: 84,
-    height: 84,
+  badge: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: NEU_DARK.emeraldSoft,
+    borderWidth: 1,
+    borderColor: NEU_DARK.cardBorder,
     marginBottom: 10
   },
   eyebrow: {
     fontSize: 12,
     fontWeight: "700",
     letterSpacing: 1.4,
-    color: NEU_COLORS.green
+    color: NEU_DARK.emerald
   },
   title: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: "800",
-    color: NEU_COLORS.ink,
+    color: NEU_DARK.white,
     marginTop: 2
   },
   subtitle: {
     fontSize: 13,
-    color: NEU_COLORS.subtle,
+    color: NEU_DARK.textMuted,
     textAlign: "center",
     marginTop: 2
   }

@@ -13,6 +13,7 @@ export default function VisitorLoginScreen() {
   const { role, loading: authLoading } = useAuth();
   const [isHovered, setIsHovered] = useState(false);
   const [isLinkHovered, setIsLinkHovered] = useState(false);
+  const [isForgotHovered, setIsForgotHovered] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -72,6 +73,23 @@ export default function VisitorLoginScreen() {
 
       <AuthField label="Email" value={email} onChangeText={setEmail} icon="email" keyboardType="email-address" autoCapitalize="none" />
       <AuthField label="Password" value={password} onChangeText={setPassword} icon="lock" secureTextEntry />
+
+      <View style={{ alignItems: "flex-end" }}>
+        <Pressable
+          style={({ pressed }) => [
+            authStyles.linkButton,
+            (isForgotHovered || pressed) && authStyles.linkButtonHover,
+            pressed && authStyles.linkButtonPressed
+          ]}
+          onPress={() => router.push("/visitor-forgot-password")}
+          onHoverIn={() => setIsForgotHovered(true)}
+          onHoverOut={() => setIsForgotHovered(false)}
+        >
+          <Text style={[authStyles.linkText, isForgotHovered && authStyles.linkTextHover]}>
+            Forgot password?
+          </Text>
+        </Pressable>
+      </View>
 
       {error ? <Text style={authStyles.error}>{error}</Text> : null}
 

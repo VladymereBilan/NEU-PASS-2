@@ -1,7 +1,7 @@
 import { useState, type ComponentProps } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { NEU_COLORS } from "../../theme/brand";
+import { NEU_DARK } from "../../theme/brand";
 
 type Props = {
   label: string;
@@ -34,7 +34,7 @@ export function AuthField({
       <View style={styles.inputRow}>
         {icon ? (
           <View style={styles.iconContainer}>
-            <MaterialCommunityIcons name={icon} size={18} color={NEU_COLORS.green} />
+            <MaterialCommunityIcons name={icon} size={18} color={NEU_DARK.emerald} />
           </View>
         ) : null}
         <TextInput
@@ -43,6 +43,7 @@ export function AuthField({
           secureTextEntry={secureTextEntry && !revealed}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
+          placeholderTextColor={NEU_DARK.textFaint}
           style={[
             styles.input,
             icon && styles.inputWithIcon,
@@ -65,10 +66,12 @@ export function AuthField({
 
 const styles = StyleSheet.create({
   label: {
-    fontSize: 13,
-    color: "#374151",
-    marginBottom: 6,
-    fontWeight: "600"
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
+    color: NEU_DARK.textMuted,
+    marginBottom: 6
   },
   inputRow: {
     position: "relative",
@@ -83,12 +86,12 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: NEU_COLORS.border,
-    borderRadius: 10,
+    borderColor: NEU_DARK.border,
+    borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 12,
-    color: NEU_COLORS.ink,
-    backgroundColor: "#F9FBF9"
+    color: NEU_DARK.white,
+    backgroundColor: NEU_DARK.inputBg
   },
   inputWithIcon: {
     paddingLeft: 42
@@ -103,6 +106,6 @@ const styles = StyleSheet.create({
   toggleText: {
     fontSize: 13,
     fontWeight: "700",
-    color: NEU_COLORS.green
+    color: NEU_DARK.emerald
   }
 });

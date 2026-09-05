@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
-import { useFocusEffect } from "expo-router";
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { useFocusEffect, useRouter } from "expo-router";
 import QRCode from "react-native-qrcode-svg";
 import { useAuth } from "../../src/context/AuthContext";
 import { getLatestApprovedOrActiveVisitor } from "../../src/services/PrototypeRegistrationStore";
@@ -9,10 +9,21 @@ import {
   getExpirationStatus,
   shouldShowExpirationWarning
 } from "../../src/services/ExpirationService";
+import { DashboardScreen } from "../../src/components/dashboard/DashboardScreen";
+import type { BottomNavTab } from "../../src/components/dashboard/BottomNavBar";
+import { NEU_DARK } from "../../src/theme/brand";
 import type { VisitorRegistration } from "../../src/types/VisitorRegistration";
 
+const VISITOR_TABS: BottomNavTab[] = [
+  { key: "home", label: "Home", icon: "home-variant", route: "/(visitor)/home" },
+  { key: "visitor-pass", label: "My Pass", icon: "qrcode", route: "/(visitor)/visitor-pass" },
+  { key: "checkout", label: "Checkout", icon: "logout-variant", route: "/(visitor)/checkout" },
+  { key: "notifications", label: "Alerts", icon: "bell-outline", route: "/(visitor)/notifications" }
+];
+
 export default function VisitorPassScreen() {
-  const { email } = useAuth();
+  const router = useRouter();
+  const { email, signOut } = useAuth();
   const [pass, setPass] = useState<VisitorRegistration | null>(null);
   const [expirationStatus, setExpirationStatus] = useState("-");
   const [warningShown, setWarningShown] = useState(false);
@@ -74,80 +85,76 @@ export default function VisitorPassScreen() {
     return generateQRValue(pass.id, pass.visitorPassNumber || "");
   }, [pass]);
 
+  const handleSignOut = async () => {
+    await signOut();
+    router.replace("/");
+  };
+
+  const roleLabel = pass?.fullName ? `Visitor · ${pass.fullName}` : "Visitor";
+
   return (
-    <SafeAreaView style={styles.screen}>
-      <View style={styles.card}>
-        <Text style={styles.title}>My Visitor Pass</Text>
+    <DashboardScreen roleLabel={roleLabel} onSignOut={() => void handleSignOut()} tabs={VISITOR_TABS}>
+      <Text style={styles.screenTitle}>My Visitor Pass</Text>
 
-        {loading ? (
-          <Text style={styles.body}>Loading visitor pass...</Text>
-        ) : error ? (
-          <Text style={styles.body}>{error}</Text>
-        ) : !pass ? (
-          <Text style={styles.body}>
-            No active visitor pass found. Please wait for guard approval.
-          </Text>
-        ) : (
-          <View style={styles.passContent}>
-            <Text style={styles.itemTitle}>{pass.fullName}</Text>
-            <Text style={styles.itemText}>Purpose: {pass.purposeOfVisit}</Text>
-            {pass.purposeOfVisit === "Others" && pass.otherAgenda ? (
-              <Text style={styles.itemText}>
-                Other Agenda: {pass.otherAgenda}
-              </Text>
-            ) : null}
-            <Text style={styles.itemText}>
-              Visitor Pass: {pass.visitorPassNumber || "-"}
+      {loading ? (
+        <ActivityIndicator color={NEU_DARK.emerald} />
+      ) : error ? (
+        <Text style={styles.body}>{error}</Text>
+      ) : !pass ? (
+        <Text style={styles.body}>No active visitor pass found. Please wait for guard approval.</Text>
+      ) : (
+        <View style={styles.card}>
+          <Text style={styles.itemTitle}>{pass.fullName}</Text>
+          <Text style={styles.itemText}>Purpose: {pass.purposeOfVisit}</Text>
+          {pass.purposeOfVisit === "Others" && pass.otherAgenda ? (
+            <Text style={styles.itemText}>Other Agenda: {pass.otherAgenda}</Text>
+          ) : null}
+          <Text style={styles.itemText}>Visitor Pass: {pass.visitorPassNumber || "-"}</Text>
+          <Text style={styles.itemText}>Time In: {formatDate(pass.timeIn)}</Text>
+          <Text style={styles.itemText}>Expiration: {formatDate(pass.expirationTime)}</Text>
+          <Text style={styles.itemText}>QR Status: {pass.qrStatus}</Text>
+          <Text style={styles.itemText}>Expiration Status: {expirationStatus}</Text>
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.secondaryButton,
+              (pressed || secondaryHovered) && styles.secondaryButtonActive
+            ]}
+            onPress={updateExpirationStatus}
+            onHoverIn={() => setSecondaryHovered(true)}
+            onHoverOut={() => setSecondaryHovered(false)}
+          >
+            <Text style={styles.secondaryText}>Check Expiration Status</Text>
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.secondaryButton,
+              (pressed || secondaryHovered) && styles.secondaryButtonActive
+            ]}
+            onPress={() => void refresh()}
+            onHoverIn={() => setSecondaryHovered(true)}
+            onHoverOut={() => setSecondaryHovered(false)}
+          >
+            <Text style={styles.secondaryText}>Refresh</Text>
+          </Pressable>
+
+          {isExpired ? (
+            <Text style={styles.warning}>
+              Your visitor pass has expired. Please proceed to the guard for review.
             </Text>
-            <Text style={styles.itemText}>Time In: {formatDate(pass.timeIn)}</Text>
-            <Text style={styles.itemText}>
-              Expiration: {formatDate(pass.expirationTime)}
-            </Text>
-            <Text style={styles.itemText}>QR Status: {pass.qrStatus}</Text>
-            <Text style={styles.itemText}>
-              Expiration Status: {expirationStatus}
-            </Text>
+          ) : null}
 
-            <Pressable
-              style={({ pressed }) => [
-                styles.secondaryButton,
-                (pressed || secondaryHovered) && styles.secondaryButtonActive
-              ]}
-              onPress={updateExpirationStatus}
-              onHoverIn={() => setSecondaryHovered(true)}
-              onHoverOut={() => setSecondaryHovered(false)}
-            >
-              <Text style={[styles.secondaryText, (secondaryHovered || false) && styles.secondaryTextActive]}>Check Expiration Status</Text>
-            </Pressable>
-
-            <Pressable
-              style={({ pressed }) => [
-                styles.secondaryButton,
-                (pressed || secondaryHovered) && styles.secondaryButtonActive
-              ]}
-              onPress={() => void refresh()}
-              onHoverIn={() => setSecondaryHovered(true)}
-              onHoverOut={() => setSecondaryHovered(false)}
-            >
-              <Text style={[styles.secondaryText, (secondaryHovered || false) && styles.secondaryTextActive]}>Refresh</Text>
-            </Pressable>
-
-            {isExpired ? (
-              <Text style={styles.warning}>
-                Your visitor pass has expired. Please proceed to the guard for
-                review.
-              </Text>
-            ) : null}
-
-            <View style={styles.qrBox}>
-              <QRCode value={qrValue} size={180} />
-              <Text style={styles.qrTitle}>QR Code</Text>
-              <Text style={styles.qrValue}>{qrValue}</Text>
-            </View>
+          {/* QR codes need light-on-dark contrast to scan reliably, so this
+              box stays light regardless of the surrounding dark theme. */}
+          <View style={styles.qrBox}>
+            <QRCode value={qrValue} size={180} />
+            <Text style={styles.qrTitle}>QR Code</Text>
+            <Text style={styles.qrValue}>{qrValue}</Text>
           </View>
-        )}
-      </View>
-    </SafeAreaView>
+        </View>
+      )}
+    </DashboardScreen>
   );
 }
 
@@ -157,81 +164,60 @@ function formatDate(value: string) {
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    justifyContent: "center",
-    padding: 24,
-    backgroundColor: "#eef2ff"
-  },
-  card: {
-    backgroundColor: "#ffffff",
-    padding: 24,
-    borderRadius: 16,
-    gap: 12,
-    shadowColor: "#000000",
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 12,
-    elevation: 3
-  },
-  title: {
+  screenTitle: {
     fontSize: 20,
-    fontWeight: "700",
-    color: "#111827"
+    fontWeight: "800",
+    color: NEU_DARK.white
   },
   body: {
     fontSize: 14,
-    color: "#4b5563"
+    color: NEU_DARK.textMuted
   },
-  passContent: {
+  card: {
+    backgroundColor: NEU_DARK.card,
+    padding: 18,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: NEU_DARK.border,
     gap: 8
   },
   itemTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#111827"
+    color: NEU_DARK.white
   },
   itemText: {
     fontSize: 13,
-    color: "#374151"
+    color: NEU_DARK.textMuted
   },
   warning: {
     fontSize: 13,
-    color: "#b91c1c",
+    color: NEU_DARK.red,
     lineHeight: 19
   },
   secondaryButton: {
     marginTop: 4,
     paddingVertical: 12,
     borderRadius: 10,
-    backgroundColor: "#e5e7eb",
+    borderWidth: 1,
+    borderColor: NEU_DARK.border,
+    backgroundColor: "rgba(255,255,255,0.05)",
     alignItems: "center"
   },
   secondaryButtonActive: {
-    backgroundColor: "#DFF9EE",
-    transform: [{ scale: 1.01 }]
+    borderColor: NEU_DARK.emerald,
+    backgroundColor: NEU_DARK.emeraldSoft
   },
   secondaryText: {
-    color: "#111827",
+    color: NEU_DARK.white,
     fontSize: 14,
     fontWeight: "600"
   },
-  secondaryTextActive: {
-    color: "#064A28"
-  },
-  note: {
-    fontSize: 12,
-    color: "#6b7280",
-    lineHeight: 18
-  },
   qrBox: {
     marginTop: 8,
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderStyle: "dashed",
     borderRadius: 12,
     padding: 16,
-    backgroundColor: "#f9fafb",
+    backgroundColor: "#F9FAFB",
     gap: 6,
     alignItems: "center"
   },
@@ -241,8 +227,8 @@ const styles = StyleSheet.create({
     color: "#111827"
   },
   qrValue: {
-    fontSize: 12,
-    color: "#6b7280",
+    fontSize: 11,
+    color: "#6B7280",
     textAlign: "center"
   }
 });

@@ -1,14 +1,5 @@
 import { useMemo, useState } from "react";
-import {
-  Alert,
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View
-} from "react-native";
+import { Alert, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../src/context/AuthContext";
 import { useRegistrationDraft } from "../../src/context/RegistrationDraftContext";
@@ -20,6 +11,8 @@ import {
   NAME_LETTER_PATTERN,
   PURPOSE_OPTIONS
 } from "../../src/types/VisitorRegistration";
+import { FormScreen } from "../../src/components/FormScreen";
+import { NEU_DARK } from "../../src/theme/brand";
 
 type FormState = {
   fullName: string;
@@ -145,344 +138,285 @@ export default function RegisterVisitScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.card}>
-          <Text style={styles.title}>Register Visit</Text>
-          <Text style={styles.subtitle}>Provide your details below.</Text>
+    <FormScreen>
+      <Text style={styles.title}>Register Visit</Text>
+      <Text style={styles.subtitle}>Provide your details below.</Text>
 
-          <View style={styles.field}>
-            <Text style={styles.label}>Full Name</Text>
-            <TextInput
-              value={form.fullName}
-              onChangeText={(value) => updateField("fullName", value)}
-              placeholder="Juan Dela Cruz"
-              style={styles.input}
-            />
-            {errors.fullName ? (
-              <Text style={styles.error}>{errors.fullName}</Text>
-            ) : null}
+      <View style={styles.field}>
+        <Text style={styles.label}>Full Name</Text>
+        <TextInput
+          value={form.fullName}
+          onChangeText={(value) => updateField("fullName", value)}
+          placeholder="Juan Dela Cruz"
+          placeholderTextColor={NEU_DARK.textFaint}
+          style={styles.input}
+        />
+        {errors.fullName ? <Text style={styles.error}>{errors.fullName}</Text> : null}
+      </View>
+
+      <View style={styles.field}>
+        <Text style={styles.label}>Address</Text>
+        <TextInput
+          value={form.address}
+          onChangeText={(value) => updateField("address", value)}
+          placeholder="Full address"
+          placeholderTextColor={NEU_DARK.textFaint}
+          style={styles.input}
+        />
+        {errors.address ? <Text style={styles.error}>{errors.address}</Text> : null}
+      </View>
+
+      <View style={styles.field}>
+        <Text style={styles.label}>Contact Number</Text>
+        <TextInput
+          value={form.contactNumber}
+          onChangeText={(value) => updateField("contactNumber", value)}
+          placeholder="09xxxxxxxxx"
+          placeholderTextColor={NEU_DARK.textFaint}
+          keyboardType="phone-pad"
+          style={styles.input}
+        />
+        {errors.contactNumber ? <Text style={styles.error}>{errors.contactNumber}</Text> : null}
+      </View>
+
+      <View style={styles.field}>
+        <Text style={styles.label}>Email Address</Text>
+        <TextInput
+          value={form.email}
+          onChangeText={(value) => updateField("email", value)}
+          placeholder="name@email.com"
+          placeholderTextColor={NEU_DARK.textFaint}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          style={styles.input}
+        />
+        {errors.email ? <Text style={styles.error}>{errors.email}</Text> : null}
+      </View>
+
+      <View style={styles.field}>
+        <Text style={styles.label}>ID Type</Text>
+        <Pressable
+          style={({ pressed }) => [
+            styles.select,
+            (pressed || idTypeHovered || showIdTypeOptions) && styles.selectActive
+          ]}
+          onPress={() => setShowIdTypeOptions((prev) => !prev)}
+          onHoverIn={() => setIdTypeHovered(true)}
+          onHoverOut={() => setIdTypeHovered(false)}
+        >
+          <Text style={form.idType ? styles.selectText : styles.placeholderText}>
+            {form.idType || "Select ID type"}
+          </Text>
+          <Text style={styles.selectCaret}>{showIdTypeOptions ? "▲" : "▼"}</Text>
+        </Pressable>
+        {showIdTypeOptions ? (
+          <View style={styles.options}>
+            {ID_TYPE_OPTIONS.map((option) => (
+              <Pressable
+                key={option}
+                style={({ pressed }) => [styles.optionButton, pressed && styles.optionButtonActive]}
+                onPress={() => {
+                  updateField("idType", option);
+                  if (option !== "Other") {
+                    updateField("idDescription", "");
+                  }
+                  setShowIdTypeOptions(false);
+                }}
+              >
+                <Text style={styles.optionText}>{option}</Text>
+              </Pressable>
+            ))}
           </View>
+        ) : null}
+        {errors.idType ? <Text style={styles.error}>{errors.idType}</Text> : null}
+      </View>
 
-          <View style={styles.field}>
-            <Text style={styles.label}>Address</Text>
-            <TextInput
-              value={form.address}
-              onChangeText={(value) => updateField("address", value)}
-              placeholder="Full address"
-              style={styles.input}
-            />
-            {errors.address ? (
-              <Text style={styles.error}>{errors.address}</Text>
-            ) : null}
-          </View>
-
-          <View style={styles.field}>
-            <Text style={styles.label}>Contact Number</Text>
-            <TextInput
-              value={form.contactNumber}
-              onChangeText={(value) => updateField("contactNumber", value)}
-              placeholder="09xxxxxxxxx"
-              keyboardType="phone-pad"
-              style={styles.input}
-            />
-            {errors.contactNumber ? (
-              <Text style={styles.error}>{errors.contactNumber}</Text>
-            ) : null}
-          </View>
-
-          <View style={styles.field}>
-            <Text style={styles.label}>Email Address</Text>
-            <TextInput
-              value={form.email}
-              onChangeText={(value) => updateField("email", value)}
-              placeholder="name@email.com"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              style={styles.input}
-            />
-            {errors.email ? (
-              <Text style={styles.error}>{errors.email}</Text>
-            ) : null}
-          </View>
-
-          <View style={styles.field}>
-            <Text style={styles.label}>ID Type</Text>
-            <Pressable
-              style={({ pressed }) => [
-                styles.select,
-                (pressed || idTypeHovered || showIdTypeOptions) && styles.selectActive
-              ]}
-              onPress={() => setShowIdTypeOptions((prev) => !prev)}
-              onHoverIn={() => setIdTypeHovered(true)}
-              onHoverOut={() => setIdTypeHovered(false)}
-            >
-              <Text style={form.idType ? styles.selectText : styles.placeholderText}>
-                {form.idType || "Select ID type"}
-              </Text>
-              <Text style={styles.selectCaret}>
-                {showIdTypeOptions ? "▲" : "▼"}
-              </Text>
-            </Pressable>
-            {showIdTypeOptions ? (
-              <View style={styles.options}>
-                {ID_TYPE_OPTIONS.map((option) => (
-                  <Pressable
-                    key={option}
-                    style={({ pressed }) => [
-                      styles.optionButton,
-                      pressed && styles.optionButtonActive
-                    ]}
-                    onPress={() => {
-                      updateField("idType", option);
-                      if (option !== "Other") {
-                        updateField("idDescription", "");
-                      }
-                      setShowIdTypeOptions(false);
-                    }}
-                  >
-                    <Text style={styles.optionText}>{option}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            ) : null}
-            {errors.idType ? (
-              <Text style={styles.error}>{errors.idType}</Text>
-            ) : null}
-          </View>
-
-          {form.idType === "Other" ? (
-            <View style={styles.field}>
-              <Text style={styles.label}>Specify ID Type</Text>
-              <TextInput
-                value={form.idDescription}
-                onChangeText={(value) => updateField("idDescription", value)}
-                placeholder="e.g. Foreign passport or residence permit"
-                style={styles.input}
-              />
-              {errors.idDescription ? (
-                <Text style={styles.error}>{errors.idDescription}</Text>
-              ) : null}
-            </View>
-          ) : null}
-
-          <View style={styles.field}>
-            <Text style={styles.label}>ID Number</Text>
-            <TextInput
-              value={form.idNumber}
-              onChangeText={(value) => updateField("idNumber", value)}
-              placeholder="ID number"
-              style={styles.input}
-            />
-            {errors.idNumber ? (
-              <Text style={styles.error}>{errors.idNumber}</Text>
-            ) : null}
-          </View>
-
-          <View style={styles.field}>
-            <Text style={styles.label}>Purpose of Visit</Text>
-            <Pressable
-              style={({ pressed }) => [
-                styles.select,
-                (pressed || purposeHovered || showPurposeOptions) && styles.selectActive
-              ]}
-              onPress={() => setShowPurposeOptions((prev) => !prev)}
-              onHoverIn={() => setPurposeHovered(true)}
-              onHoverOut={() => setPurposeHovered(false)}
-            >
-              <Text style={styles.selectText}>
-                {form.purpose || "Select purpose"}
-              </Text>
-              <Text style={styles.selectCaret}>
-                {showPurposeOptions ? "▲" : "▼"}
-              </Text>
-            </Pressable>
-            {showPurposeOptions ? (
-              <View style={styles.options}>
-                {PURPOSE_OPTIONS.map((option) => (
-                  <Pressable
-                    key={option}
-                    style={({ pressed }) => [
-                      styles.optionButton,
-                      pressed && styles.optionButtonActive
-                    ]}
-                    onPress={() => {
-                      updateField("purpose", option);
-                      if (option !== "Others") {
-                        updateField("agenda", "");
-                      }
-                      setShowPurposeOptions(false);
-                    }}
-                  >
-                    <Text style={styles.optionText}>{option}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            ) : null}
-            {errors.purpose ? (
-              <Text style={styles.error}>{errors.purpose}</Text>
-            ) : null}
-          </View>
-
-          {isOthersSelected ? (
-            <View style={styles.field}>
-              <Text style={styles.label}>Please specify your agenda</Text>
-              <TextInput
-                value={form.agenda}
-                onChangeText={(value) => updateField("agenda", value)}
-                placeholder="Describe your agenda"
-                style={styles.input}
-              />
-              {errors.agenda ? (
-                <Text style={styles.error}>{errors.agenda}</Text>
-              ) : null}
-            </View>
-          ) : null}
-
-          <Pressable
-            style={({ pressed }) => [
-              styles.submitButton,
-              (pressed || submitHovered) && styles.submitButtonActive
-            ]}
-            onPress={handleSubmit}
-            onHoverIn={() => setSubmitHovered(true)}
-            onHoverOut={() => setSubmitHovered(false)}
-          >
-            <Text style={[styles.submitText, (submitHovered || false) && styles.submitTextActive]}>Submit</Text>
-          </Pressable>
+      {form.idType === "Other" ? (
+        <View style={styles.field}>
+          <Text style={styles.label}>Specify ID Type</Text>
+          <TextInput
+            value={form.idDescription}
+            onChangeText={(value) => updateField("idDescription", value)}
+            placeholder="e.g. Foreign passport or residence permit"
+            placeholderTextColor={NEU_DARK.textFaint}
+            style={styles.input}
+          />
+          {errors.idDescription ? <Text style={styles.error}>{errors.idDescription}</Text> : null}
         </View>
-      </ScrollView>
-    </SafeAreaView>
+      ) : null}
+
+      <View style={styles.field}>
+        <Text style={styles.label}>ID Number</Text>
+        <TextInput
+          value={form.idNumber}
+          onChangeText={(value) => updateField("idNumber", value)}
+          placeholder="ID number"
+          placeholderTextColor={NEU_DARK.textFaint}
+          style={styles.input}
+        />
+        {errors.idNumber ? <Text style={styles.error}>{errors.idNumber}</Text> : null}
+      </View>
+
+      <View style={styles.field}>
+        <Text style={styles.label}>Purpose of Visit</Text>
+        <Pressable
+          style={({ pressed }) => [
+            styles.select,
+            (pressed || purposeHovered || showPurposeOptions) && styles.selectActive
+          ]}
+          onPress={() => setShowPurposeOptions((prev) => !prev)}
+          onHoverIn={() => setPurposeHovered(true)}
+          onHoverOut={() => setPurposeHovered(false)}
+        >
+          <Text style={form.purpose ? styles.selectText : styles.placeholderText}>
+            {form.purpose || "Select purpose"}
+          </Text>
+          <Text style={styles.selectCaret}>{showPurposeOptions ? "▲" : "▼"}</Text>
+        </Pressable>
+        {showPurposeOptions ? (
+          <View style={styles.options}>
+            {PURPOSE_OPTIONS.map((option) => (
+              <Pressable
+                key={option}
+                style={({ pressed }) => [styles.optionButton, pressed && styles.optionButtonActive]}
+                onPress={() => {
+                  updateField("purpose", option);
+                  if (option !== "Others") {
+                    updateField("agenda", "");
+                  }
+                  setShowPurposeOptions(false);
+                }}
+              >
+                <Text style={styles.optionText}>{option}</Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
+        {errors.purpose ? <Text style={styles.error}>{errors.purpose}</Text> : null}
+      </View>
+
+      {isOthersSelected ? (
+        <View style={styles.field}>
+          <Text style={styles.label}>Please specify your agenda</Text>
+          <TextInput
+            value={form.agenda}
+            onChangeText={(value) => updateField("agenda", value)}
+            placeholder="Describe your agenda"
+            placeholderTextColor={NEU_DARK.textFaint}
+            style={styles.input}
+          />
+          {errors.agenda ? <Text style={styles.error}>{errors.agenda}</Text> : null}
+        </View>
+      ) : null}
+
+      <Pressable
+        style={({ pressed }) => [
+          styles.submitButton,
+          (pressed || submitHovered) && styles.submitButtonActive
+        ]}
+        onPress={handleSubmit}
+        onHoverIn={() => setSubmitHovered(true)}
+        onHoverOut={() => setSubmitHovered(false)}
+      >
+        <Text style={styles.submitText}>Submit</Text>
+      </Pressable>
+    </FormScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: "#eef2ff"
-  },
-  scrollContent: {
-    padding: 24
-  },
-  card: {
-    backgroundColor: "#ffffff",
-    padding: 24,
-    borderRadius: 16,
-    gap: 16,
-    shadowColor: "#000000",
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 12,
-    elevation: 3
-  },
   title: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#111827"
+    fontSize: 22,
+    fontWeight: "800",
+    color: NEU_DARK.white
   },
   subtitle: {
     fontSize: 14,
-    color: "#6b7280"
+    color: NEU_DARK.textMuted
   },
   field: {
     gap: 8
   },
   label: {
     fontSize: 13,
-    fontWeight: "600",
-    color: "#374151"
+    fontWeight: "700",
+    color: NEU_DARK.textMuted
   },
   input: {
     borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 10,
+    borderColor: NEU_DARK.border,
+    borderRadius: 12,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
     fontSize: 14,
-    backgroundColor: "#f9fafb",
-    color: "#111827"
+    backgroundColor: NEU_DARK.inputBg,
+    color: NEU_DARK.white
   },
   select: {
     borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 10,
+    borderColor: NEU_DARK.border,
+    borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 12,
-    backgroundColor: "#f9fafb",
+    backgroundColor: NEU_DARK.inputBg,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between"
   },
   selectActive: {
-    borderColor: "#0F766E",
-    backgroundColor: "#F0FDF4",
-    shadowColor: "#0F766E",
-    shadowOpacity: 0.18,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 8,
-    elevation: 3,
-    transform: [{ scale: 1.01 }]
+    borderColor: NEU_DARK.emerald,
+    backgroundColor: NEU_DARK.emeraldSoft
   },
   selectText: {
     fontSize: 14,
-    color: "#111827"
+    color: NEU_DARK.white
   },
   placeholderText: {
     fontSize: 14,
-    color: "#9ca3af"
+    color: NEU_DARK.textFaint
   },
   selectCaret: {
     fontSize: 12,
-    color: "#6b7280"
+    color: NEU_DARK.textMuted
   },
   options: {
     borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 10,
+    borderColor: NEU_DARK.border,
+    borderRadius: 12,
     marginTop: 8,
-    backgroundColor: "#ffffff",
+    backgroundColor: NEU_DARK.card,
     overflow: "hidden"
   },
   optionButton: {
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
-    backgroundColor: "#ffffff"
+    borderBottomColor: NEU_DARK.border
   },
   optionButtonActive: {
-    backgroundColor: "#F0FDF4",
-    shadowColor: "#0F766E",
-    shadowOpacity: 0.16,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
-    transform: [{ scale: 1.01 }]
+    backgroundColor: NEU_DARK.emeraldSoft
   },
   optionText: {
     fontSize: 14,
-    color: "#111827"
+    color: NEU_DARK.white
   },
   error: {
     fontSize: 12,
-    color: "#b91c1c"
+    color: NEU_DARK.red
   },
   submitButton: {
     marginTop: 4,
     paddingVertical: 14,
-    borderRadius: 10,
-    backgroundColor: "#111827",
+    borderRadius: 12,
+    backgroundColor: NEU_DARK.emeraldStrong,
     alignItems: "center"
   },
   submitButtonActive: {
-    backgroundColor: "#0F766E",
-    transform: [{ scale: 1.01 }]
+    backgroundColor: "#0C8A62"
   },
   submitText: {
-    color: "#ffffff",
+    color: "#04150C",
     fontSize: 16,
-    fontWeight: "600"
-  },
-  submitTextActive: {
-    color: "#EAF5EE"
+    fontWeight: "700"
   }
 });

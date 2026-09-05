@@ -5,10 +5,20 @@ import { useAuth } from "../../src/context/AuthContext";
 import { getLatestVisitorRegistration } from "../../src/services/PrototypeRegistrationStore";
 import { getExpirationStatus } from "../../src/services/ExpirationService";
 import { DashboardScreen } from "../../src/components/dashboard/DashboardScreen";
+import type { BottomNavTab } from "../../src/components/dashboard/BottomNavBar";
 import { StatusCard, type StatusTone } from "../../src/components/dashboard/StatusCard";
 import { ActionGrid, ActionTile } from "../../src/components/dashboard/ActionTile";
+import { Greeting } from "../../src/components/dashboard/Greeting";
 import { authStyles } from "../../src/components/auth/authStyles";
+import { NEU_DARK } from "../../src/theme/brand";
 import type { VisitorRegistration } from "../../src/types/VisitorRegistration";
+
+const VISITOR_TABS: BottomNavTab[] = [
+  { key: "home", label: "Home", icon: "home-variant", route: "/(visitor)/home" },
+  { key: "visitor-pass", label: "My Pass", icon: "qrcode", route: "/(visitor)/visitor-pass" },
+  { key: "checkout", label: "Checkout", icon: "logout-variant", route: "/(visitor)/checkout" },
+  { key: "notifications", label: "Alerts", icon: "bell-outline", route: "/(visitor)/notifications" }
+];
 
 type StatusView = {
   tone: StatusTone;
@@ -141,10 +151,14 @@ export default function VisitorHomeScreen() {
     router.replace("/");
   };
 
+  const roleLabel = pass?.fullName ? `Visitor · ${pass.fullName}` : "Visitor";
+
   return (
-    <DashboardScreen roleLabel="Visitor" onSignOut={() => void handleSignOut()}>
+    <DashboardScreen roleLabel={roleLabel} onSignOut={() => void handleSignOut()} tabs={VISITOR_TABS}>
+      <Greeting name={pass?.fullName} />
+
       {loading ? (
-        <ActivityIndicator />
+        <ActivityIndicator color={NEU_DARK.emerald} />
       ) : (
         <StatusCard
           tone={statusView.tone}
@@ -170,10 +184,34 @@ export default function VisitorHomeScreen() {
 
       <Text style={styles.sectionLabel}>Quick Actions</Text>
       <ActionGrid>
-        <ActionTile label="Register Visit" onPress={() => router.push("/(visitor)/register")} />
-        <ActionTile label="My Visitor Pass" onPress={() => router.push("/(visitor)/visitor-pass")} />
-        <ActionTile label="Request Checkout" onPress={() => router.push("/(visitor)/checkout")} />
-        <ActionTile label="Notifications" onPress={() => router.push("/(visitor)/notifications")} />
+        <ActionTile
+          label="Register Visit"
+          description="Submit a new visit request"
+          icon="note-plus-outline"
+          tint="green"
+          onPress={() => router.push("/(visitor)/register")}
+        />
+        <ActionTile
+          label="My Visitor Pass"
+          description="View your QR entry pass"
+          icon="qrcode"
+          tint="blue"
+          onPress={() => router.push("/(visitor)/visitor-pass")}
+        />
+        <ActionTile
+          label="Request Checkout"
+          description="Request to exit the campus"
+          icon="logout-variant"
+          tint="gold"
+          onPress={() => router.push("/(visitor)/checkout")}
+        />
+        <ActionTile
+          label="Notifications"
+          description="Updates on your requests"
+          icon="bell-outline"
+          tint="neutral"
+          onPress={() => router.push("/(visitor)/notifications")}
+        />
       </ActionGrid>
     </DashboardScreen>
   );
@@ -186,6 +224,6 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#374151"
+    color: NEU_DARK.textMuted
   }
 });

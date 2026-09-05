@@ -1,18 +1,11 @@
 import { useCallback, useRef, useState } from "react";
-import {
-  Alert,
-  Image,
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View
-} from "react-native";
+import { Alert, Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useRegistrationDraft } from "../../src/context/RegistrationDraftContext";
 import type { PressableInteractionState } from "../../src/types/PressableState";
+import { FormScreen } from "../../src/components/FormScreen";
+import { NEU_DARK } from "../../src/theme/brand";
 
 export default function IdCaptureScreen() {
   const router = useRouter();
@@ -104,176 +97,123 @@ export default function IdCaptureScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.card}>
-          <Text style={styles.title}>ID Capture</Text>
-          <Text style={styles.body}>
-            Capture or upload your valid ID for verification.
+    <FormScreen>
+      <Text style={styles.title}>ID Capture</Text>
+      <Text style={styles.body}>Capture or upload your valid ID for verification.</Text>
+      <View style={styles.previewBox}>
+        {capturedUri && capturedUri.startsWith("file") ? (
+          <Image source={{ uri: capturedUri }} style={styles.previewImage} />
+        ) : (
+          <Text style={styles.previewText}>
+            {capturedUri ? "Prototype Sample Selected" : "ID Image Preview"}
           </Text>
-          <View style={styles.previewBox}>
-            {capturedUri && capturedUri.startsWith("file") ? (
-              <Image source={{ uri: capturedUri }} style={styles.previewImage} />
-            ) : (
-              <Text style={styles.previewText}>
-                {capturedUri ? "Prototype Sample Selected" : "ID Image Preview"}
-              </Text>
-            )}
-          </View>
+        )}
+      </View>
 
-          {statusMessage ? <Text style={styles.status}>{statusMessage}</Text> : null}
+      {statusMessage ? <Text style={styles.status}>{statusMessage}</Text> : null}
 
-          {!permission?.granted && !showCamera ? (
-            <Text style={styles.permissionNote}>
-              Camera access is required for live capture, but you can still use
-              the prototype sample.
-            </Text>
-          ) : null}
+      {!permission?.granted && !showCamera ? (
+        <Text style={styles.permissionNote}>
+          Camera access is required for live capture, but you can still use the prototype sample.
+        </Text>
+      ) : null}
 
-          <View style={styles.buttonRow}>
-            <Pressable
-              style={({ pressed, hovered }: PressableInteractionState) => [
-                styles.secondaryButton,
-                (pressed || hovered) && styles.secondaryButtonActive
-              ]}
-              onPress={openCamera}
-            >
-              {({ pressed, hovered }: PressableInteractionState) => (
-                <Text
-                  style={[styles.secondaryText, (pressed || hovered) && styles.secondaryTextActive]}
-                >
-                  Open Camera
-                </Text>
-              )}
-            </Pressable>
-            <Pressable
-              style={({ pressed, hovered }: PressableInteractionState) => [
-                styles.secondaryButton,
-                (pressed || hovered) && styles.secondaryButtonActive
-              ]}
-              onPress={usePrototypeSample}
-            >
-              {({ pressed, hovered }: PressableInteractionState) => (
-                <Text
-                  style={[styles.secondaryText, (pressed || hovered) && styles.secondaryTextActive]}
-                >
-                  Use Prototype Sample
-                </Text>
-              )}
-            </Pressable>
-          </View>
+      <View style={styles.buttonRow}>
+        <Pressable
+          style={({ pressed, hovered }: PressableInteractionState) => [
+            styles.secondaryButton,
+            (pressed || hovered) && styles.secondaryButtonActive
+          ]}
+          onPress={openCamera}
+        >
+          <Text style={styles.secondaryText}>Open Camera</Text>
+        </Pressable>
+        <Pressable
+          style={({ pressed, hovered }: PressableInteractionState) => [
+            styles.secondaryButton,
+            (pressed || hovered) && styles.secondaryButtonActive
+          ]}
+          onPress={usePrototypeSample}
+        >
+          <Text style={styles.secondaryText}>Use Prototype Sample</Text>
+        </Pressable>
+      </View>
 
-          {showCamera ? (
-            <View style={styles.cameraCard}>
-              <CameraView
-                key={cameraSessionKey}
-                ref={cameraRef}
-                style={styles.camera}
-                facing="back"
-                onCameraReady={() => setCameraReady(true)}
-                onMountError={(error) => {
-                  setCameraReady(false);
-                  setShowCamera(false);
-                  setStatusMessage(`Unable to start camera: ${error.message}`);
-                }}
-              />
-              <Pressable
-                style={({ pressed, hovered }: PressableInteractionState) => [
-                  styles.primaryButton,
-                  !cameraReady && styles.primaryButtonDisabled,
-                  (pressed || hovered) && !cameraReady ? null : (pressed || hovered) && styles.primaryButtonActive
-                ]}
-                onPress={capturePhoto}
-                disabled={!cameraReady}
-              >
-                <Text style={styles.primaryText}>
-                  {cameraReady ? "Capture Photo" : "Starting Camera..."}
-                </Text>
-              </Pressable>
-            </View>
-          ) : null}
-
-          {capturedUri ? (
-            <Pressable
-              style={({ pressed, hovered }: PressableInteractionState) => [
-                styles.secondaryButton,
-                (pressed || hovered) && styles.secondaryButtonActive
-              ]}
-              onPress={retakePhoto}
-            >
-              {({ pressed, hovered }: PressableInteractionState) => (
-                <Text
-                  style={[styles.secondaryText, (pressed || hovered) && styles.secondaryTextActive]}
-                >
-                  Retake Photo
-                </Text>
-              )}
-            </Pressable>
-          ) : null}
-
+      {showCamera ? (
+        <View style={styles.cameraCard}>
+          <CameraView
+            key={cameraSessionKey}
+            ref={cameraRef}
+            style={styles.camera}
+            facing="back"
+            onCameraReady={() => setCameraReady(true)}
+            onMountError={(error) => {
+              setCameraReady(false);
+              setShowCamera(false);
+              setStatusMessage(`Unable to start camera: ${error.message}`);
+            }}
+          />
           <Pressable
             style={({ pressed, hovered }: PressableInteractionState) => [
               styles.primaryButton,
-              (pressed || hovered) && styles.primaryButtonActive,
-              (pressed || hovered) && styles.primaryButtonLift
+              !cameraReady && styles.primaryButtonDisabled,
+              (pressed || hovered) && cameraReady && styles.primaryButtonActive
             ]}
-            onPress={handleContinue}
+            onPress={capturePhoto}
+            disabled={!cameraReady}
           >
-            {({ pressed, hovered }: PressableInteractionState) => (
-              <Text style={[styles.primaryText, (pressed || hovered) && styles.primaryTextActive]}>
-                Continue to OCR Review
-              </Text>
-            )}
+            <Text style={styles.primaryText}>
+              {cameraReady ? "Capture Photo" : "Starting Camera..."}
+            </Text>
           </Pressable>
         </View>
-      </ScrollView>
-    </SafeAreaView>
+      ) : null}
+
+      {capturedUri ? (
+        <Pressable
+          style={({ pressed, hovered }: PressableInteractionState) => [
+            styles.secondaryButton,
+            (pressed || hovered) && styles.secondaryButtonActive
+          ]}
+          onPress={retakePhoto}
+        >
+          <Text style={styles.secondaryText}>Retake Photo</Text>
+        </Pressable>
+      ) : null}
+
+      <Pressable
+        style={({ pressed, hovered }: PressableInteractionState) => [
+          styles.primaryButton,
+          (pressed || hovered) && styles.primaryButtonActive
+        ]}
+        onPress={handleContinue}
+      >
+        <Text style={styles.primaryText}>Continue to OCR Review</Text>
+      </Pressable>
+    </FormScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: "#eef2ff"
-  },
-  content: {
-    padding: 24
-  },
-  card: {
-    backgroundColor: "#ffffff",
-    padding: 24,
-    borderRadius: 16,
-    gap: 16,
-    shadowColor: "#000000",
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 12,
-    elevation: 3
-  },
   title: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#111827"
+    fontSize: 22,
+    fontWeight: "800",
+    color: NEU_DARK.white
   },
   body: {
     fontSize: 14,
-    color: "#4b5563",
+    color: NEU_DARK.textMuted,
     lineHeight: 20
-  },
-  note: {
-    fontSize: 12,
-    color: "#6b7280",
-    lineHeight: 18
   },
   previewBox: {
     height: 180,
     borderWidth: 1,
-    borderColor: "#d1d5db",
+    borderColor: NEU_DARK.border,
     borderStyle: "dashed",
-    borderRadius: 12,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#f9fafb",
+    backgroundColor: "rgba(255,255,255,0.04)",
     overflow: "hidden"
   },
   previewImage: {
@@ -282,16 +222,16 @@ const styles = StyleSheet.create({
   },
   previewText: {
     fontSize: 13,
-    color: "#6b7280"
+    color: NEU_DARK.textMuted
   },
   status: {
     fontSize: 13,
-    color: "#111827",
+    color: NEU_DARK.white,
     fontWeight: "600"
   },
   permissionNote: {
     fontSize: 13,
-    color: "#b45309",
+    color: NEU_DARK.amber,
     lineHeight: 19
   },
   buttonRow: {
@@ -303,55 +243,43 @@ const styles = StyleSheet.create({
   },
   camera: {
     height: 280,
-    borderRadius: 12,
+    borderRadius: 14,
     overflow: "hidden"
   },
   primaryButton: {
     paddingVertical: 12,
-    borderRadius: 10,
-    backgroundColor: "#111827",
+    borderRadius: 12,
+    backgroundColor: NEU_DARK.emeraldStrong,
     alignItems: "center"
   },
   primaryButtonActive: {
-    backgroundColor: "#0F766E",
-    shadowColor: "#0F766E",
-    shadowOpacity: 0.28,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 12,
-    elevation: 4
-  },
-  primaryButtonLift: {
-    transform: [{ scale: 1.02 }]
+    backgroundColor: "#0C8A62"
   },
   primaryButtonDisabled: {
-    opacity: 0.7
+    opacity: 0.6
   },
   primaryText: {
-    color: "#ffffff",
+    color: "#04150C",
     fontSize: 15,
-    fontWeight: "600"
-  },
-  primaryTextActive: {
-    color: "#EAF5EE"
+    fontWeight: "700"
   },
   secondaryButton: {
     flex: 1,
     paddingVertical: 12,
-    borderRadius: 10,
-    backgroundColor: "#e5e7eb",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: NEU_DARK.border,
+    backgroundColor: "rgba(255,255,255,0.05)",
     alignItems: "center"
   },
   secondaryButtonActive: {
-    backgroundColor: "#dfe8e5",
-    transform: [{ scale: 1.01 }]
+    borderColor: NEU_DARK.emerald,
+    backgroundColor: NEU_DARK.emeraldSoft
   },
   secondaryText: {
-    color: "#111827",
+    color: NEU_DARK.white,
     fontSize: 13,
     fontWeight: "600",
     textAlign: "center"
-  },
-  secondaryTextActive: {
-    color: "#064A28"
   }
 });

@@ -1,16 +1,10 @@
 import { useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View
-} from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useRegistrationDraft } from "../../src/context/RegistrationDraftContext";
 import { extractIdFields } from "../../src/services/OcrService";
+import { FormScreen } from "../../src/components/FormScreen";
+import { NEU_DARK } from "../../src/theme/brand";
 
 type OcrForm = {
   fullName: string;
@@ -33,7 +27,6 @@ export default function OcrReviewScreen() {
   const [errors, setErrors] = useState<OcrErrors>({});
   const [scanning, setScanning] = useState(true);
   const [statusMessage, setStatusMessage] = useState("");
-  const [primaryHovered, setPrimaryHovered] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -115,114 +108,85 @@ export default function OcrReviewScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <View style={styles.card}>
-        <Text style={styles.title}>OCR Review</Text>
-        <Text style={styles.body}>
-          Text detected from your ID is prefilled below — please review and correct anything
-          that's wrong before continuing.
-        </Text>
+    <FormScreen>
+      <Text style={styles.title}>OCR Review</Text>
+      <Text style={styles.body}>
+        Text detected from your ID is prefilled below — please review and correct anything that's
+        wrong before continuing.
+      </Text>
 
-        {scanning ? (
-          <View style={styles.scanningRow}>
-            <ActivityIndicator />
-            <Text style={styles.scanningText}>Reading ID photo...</Text>
-          </View>
-        ) : statusMessage ? (
-          <Text style={styles.status}>{statusMessage}</Text>
-        ) : null}
-
-        <View style={styles.field}>
-          <Text style={styles.label}>Full Name</Text>
-          <TextInput
-            value={form.fullName}
-            onChangeText={(value) => updateField("fullName", value)}
-            style={styles.input}
-          />
-          {errors.fullName ? (
-            <Text style={styles.error}>{errors.fullName}</Text>
-          ) : null}
+      {scanning ? (
+        <View style={styles.scanningRow}>
+          <ActivityIndicator color={NEU_DARK.emerald} />
+          <Text style={styles.scanningText}>Reading ID photo...</Text>
         </View>
+      ) : statusMessage ? (
+        <Text style={styles.status}>{statusMessage}</Text>
+      ) : null}
 
-        <View style={styles.field}>
-          <Text style={styles.label}>Address</Text>
-          <TextInput
-            value={form.address}
-            onChangeText={(value) => updateField("address", value)}
-            style={styles.input}
-          />
-          {errors.address ? (
-            <Text style={styles.error}>{errors.address}</Text>
-          ) : null}
-        </View>
-
-        <View style={styles.field}>
-          <Text style={styles.label}>ID Type</Text>
-          <TextInput
-            value={form.idType}
-            onChangeText={(value) => updateField("idType", value)}
-            style={styles.input}
-          />
-          {errors.idType ? (
-            <Text style={styles.error}>{errors.idType}</Text>
-          ) : null}
-        </View>
-
-        <View style={styles.field}>
-          <Text style={styles.label}>ID Number</Text>
-          <TextInput
-            value={form.idNumber}
-            onChangeText={(value) => updateField("idNumber", value)}
-            style={styles.input}
-          />
-          {errors.idNumber ? (
-            <Text style={styles.error}>{errors.idNumber}</Text>
-          ) : null}
-        </View>
-
-        <Pressable
-          style={({ pressed }) => [
-            styles.primaryButton,
-            (pressed || primaryHovered) && styles.primaryButtonActive,
-            (pressed || primaryHovered) && styles.primaryButtonLift
-          ]}
-          onPress={handleSubmit}
-          onHoverIn={() => setPrimaryHovered(true)}
-          onHoverOut={() => setPrimaryHovered(false)}
-        >
-          <Text style={[styles.primaryText, (primaryHovered || false) && styles.primaryTextActive]}>Continue</Text>
-        </Pressable>
+      <View style={styles.field}>
+        <Text style={styles.label}>Full Name</Text>
+        <TextInput
+          value={form.fullName}
+          onChangeText={(value) => updateField("fullName", value)}
+          placeholderTextColor={NEU_DARK.textFaint}
+          style={styles.input}
+        />
+        {errors.fullName ? <Text style={styles.error}>{errors.fullName}</Text> : null}
       </View>
-    </SafeAreaView>
+
+      <View style={styles.field}>
+        <Text style={styles.label}>Address</Text>
+        <TextInput
+          value={form.address}
+          onChangeText={(value) => updateField("address", value)}
+          placeholderTextColor={NEU_DARK.textFaint}
+          style={styles.input}
+        />
+        {errors.address ? <Text style={styles.error}>{errors.address}</Text> : null}
+      </View>
+
+      <View style={styles.field}>
+        <Text style={styles.label}>ID Type</Text>
+        <TextInput
+          value={form.idType}
+          onChangeText={(value) => updateField("idType", value)}
+          placeholderTextColor={NEU_DARK.textFaint}
+          style={styles.input}
+        />
+        {errors.idType ? <Text style={styles.error}>{errors.idType}</Text> : null}
+      </View>
+
+      <View style={styles.field}>
+        <Text style={styles.label}>ID Number</Text>
+        <TextInput
+          value={form.idNumber}
+          onChangeText={(value) => updateField("idNumber", value)}
+          placeholderTextColor={NEU_DARK.textFaint}
+          style={styles.input}
+        />
+        {errors.idNumber ? <Text style={styles.error}>{errors.idNumber}</Text> : null}
+      </View>
+
+      <Pressable
+        style={({ pressed }) => [styles.primaryButton, pressed && styles.primaryButtonActive]}
+        onPress={handleSubmit}
+      >
+        <Text style={styles.primaryText}>Continue</Text>
+      </Pressable>
+    </FormScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    justifyContent: "center",
-    padding: 24,
-    backgroundColor: "#eef2ff"
-  },
-  card: {
-    backgroundColor: "#ffffff",
-    padding: 24,
-    borderRadius: 16,
-    gap: 16,
-    shadowColor: "#000000",
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 12,
-    elevation: 3
-  },
   title: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#111827"
+    fontSize: 22,
+    fontWeight: "800",
+    color: NEU_DARK.white
   },
   body: {
     fontSize: 14,
-    color: "#4b5563",
+    color: NEU_DARK.textMuted,
     lineHeight: 20
   },
   scanningRow: {
@@ -232,11 +196,11 @@ const styles = StyleSheet.create({
   },
   scanningText: {
     fontSize: 13,
-    color: "#4b5563"
+    color: NEU_DARK.textMuted
   },
   status: {
     fontSize: 13,
-    color: "#111827",
+    color: NEU_DARK.white,
     fontWeight: "600"
   },
   field: {
@@ -244,47 +208,36 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 13,
-    fontWeight: "600",
-    color: "#374151"
+    fontWeight: "700",
+    color: NEU_DARK.textMuted
   },
   input: {
     borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 10,
+    borderColor: NEU_DARK.border,
+    borderRadius: 12,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
     fontSize: 14,
-    backgroundColor: "#f9fafb",
-    color: "#111827"
+    backgroundColor: NEU_DARK.inputBg,
+    color: NEU_DARK.white
   },
   error: {
     fontSize: 12,
-    color: "#b91c1c"
+    color: NEU_DARK.red
   },
   primaryButton: {
     marginTop: 4,
     paddingVertical: 14,
-    borderRadius: 10,
-    backgroundColor: "#111827",
+    borderRadius: 12,
+    backgroundColor: NEU_DARK.emeraldStrong,
     alignItems: "center"
   },
   primaryButtonActive: {
-    backgroundColor: "#0F766E",
-    shadowColor: "#0F766E",
-    shadowOpacity: 0.28,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 12,
-    elevation: 4
-  },
-  primaryButtonLift: {
-    transform: [{ scale: 1.02 }]
+    backgroundColor: "#0C8A62"
   },
   primaryText: {
-    color: "#ffffff",
+    color: "#04150C",
     fontSize: 16,
-    fontWeight: "600"
-  },
-  primaryTextActive: {
-    color: "#EAF5EE"
+    fontWeight: "700"
   }
 });

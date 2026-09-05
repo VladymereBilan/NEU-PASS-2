@@ -27,6 +27,9 @@ export default function VisitorLayout() {
       }}
     >
       <Stack.Screen name="home" options={{ headerShown: false }} />
+      <Stack.Screen name="visitor-pass" options={{ headerShown: false }} />
+      <Stack.Screen name="checkout" options={{ headerShown: false }} />
+      <Stack.Screen name="notifications" options={{ headerShown: false }} />
     </Stack>
   );
 }

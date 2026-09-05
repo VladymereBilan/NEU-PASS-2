@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { Alert, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useRegistrationDraft } from "../../src/context/RegistrationDraftContext";
+import { FormScreen } from "../../src/components/FormScreen";
+import { NEU_DARK } from "../../src/theme/brand";
 
 export default function PrivacyConsentScreen() {
   const router = useRouter();
@@ -20,91 +22,72 @@ export default function PrivacyConsentScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <View style={styles.card}>
-        <Text style={styles.title}>Privacy Consent Form</Text>
-        <Text style={styles.body}>
-          NEU-Pass collects personal information and facial image for visitor
-          verification and campus security. This is in compliance with the Data
-          Privacy Act of 2012 (Republic Act No. 10173).
+    <FormScreen>
+      <Text style={styles.title}>Privacy Consent Form</Text>
+      <Text style={styles.body}>
+        NEU-Pass collects personal information and facial image for visitor verification and
+        campus security. This is in compliance with the Data Privacy Act of 2012 (Republic Act
+        No. 10173).
+      </Text>
+      <View style={styles.statementBox}>
+        <Text style={styles.statement}>
+          I voluntarily consent to the collection, processing, and storage of my personal
+          information and facial image for visitor verification, campus security, and access
+          management purposes in accordance with the Data Privacy Act of 2012 (Republic Act No.
+          10173).
         </Text>
-        <View style={styles.statementBox}>
-          <Text style={styles.statement}>
-            I voluntarily consent to the collection, processing, and storage of my
-            personal information and facial image for visitor verification, campus
-            security, and access management purposes in accordance with the Data
-            Privacy Act of 2012 (Republic Act No. 10173).
-          </Text>
-        </View>
-        <View style={styles.buttonRow}>
-          <Pressable
-            style={({ pressed }) => [
-              styles.button,
-              styles.primaryDecision,
-              (pressed || acceptHovered) && styles.primaryDecisionActive
-            ]}
-            onPress={handleAccept}
-            onHoverIn={() => setAcceptHovered(true)}
-            onHoverOut={() => setAcceptHovered(false)}
-          >
-            <Text style={[styles.buttonText, (acceptHovered || false) && styles.buttonTextActive]}>Accept</Text>
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [
-              styles.button,
-              styles.secondaryDecision,
-              (pressed || declineHovered) && styles.secondaryDecisionActive
-            ]}
-            onPress={handleDecline}
-            onHoverIn={() => setDeclineHovered(true)}
-            onHoverOut={() => setDeclineHovered(false)}
-          >
-            <Text style={[styles.buttonText, (declineHovered || false) && styles.buttonTextActive]}>Decline</Text>
-          </Pressable>
-        </View>
       </View>
-    </SafeAreaView>
+      <View style={styles.buttonRow}>
+        <Pressable
+          style={({ pressed }) => [
+            styles.button,
+            styles.primaryDecision,
+            (pressed || acceptHovered) && styles.primaryDecisionActive
+          ]}
+          onPress={handleAccept}
+          onHoverIn={() => setAcceptHovered(true)}
+          onHoverOut={() => setAcceptHovered(false)}
+        >
+          <Text style={styles.acceptText}>Accept</Text>
+        </Pressable>
+        <Pressable
+          style={({ pressed }) => [
+            styles.button,
+            styles.secondaryDecision,
+            (pressed || declineHovered) && styles.secondaryDecisionActive
+          ]}
+          onPress={handleDecline}
+          onHoverIn={() => setDeclineHovered(true)}
+          onHoverOut={() => setDeclineHovered(false)}
+        >
+          <Text style={styles.buttonText}>Decline</Text>
+        </Pressable>
+      </View>
+    </FormScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    justifyContent: "center",
-    padding: 24,
-    backgroundColor: "#eef2ff"
-  },
-  card: {
-    backgroundColor: "#ffffff",
-    padding: 24,
-    borderRadius: 16,
-    gap: 16,
-    shadowColor: "#000000",
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 12,
-    elevation: 3
-  },
   title: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#111827"
+    fontSize: 22,
+    fontWeight: "800",
+    color: NEU_DARK.white
   },
   body: {
     fontSize: 14,
-    color: "#4b5563",
+    color: NEU_DARK.textMuted,
     lineHeight: 20
   },
   statementBox: {
     borderWidth: 1,
-    borderColor: "#e5e7eb",
-    backgroundColor: "#f9fafb",
-    borderRadius: 12,
-    padding: 12
+    borderColor: NEU_DARK.border,
+    backgroundColor: "rgba(255,255,255,0.04)",
+    borderRadius: 14,
+    padding: 14
   },
   statement: {
     fontSize: 13,
-    color: "#111827",
+    color: NEU_DARK.textMuted,
     lineHeight: 19
   },
   buttonRow: {
@@ -114,29 +97,32 @@ const styles = StyleSheet.create({
   button: {
     flex: 1,
     paddingVertical: 12,
-    borderRadius: 10,
+    borderRadius: 12,
     alignItems: "center"
   },
   primaryDecision: {
-    backgroundColor: "#111827"
+    backgroundColor: NEU_DARK.emeraldStrong
   },
   primaryDecisionActive: {
-    backgroundColor: "#0F766E",
-    transform: [{ scale: 1.01 }]
+    backgroundColor: "#0C8A62"
   },
   secondaryDecision: {
-    backgroundColor: "#111827"
+    borderWidth: 1,
+    borderColor: NEU_DARK.border,
+    backgroundColor: "rgba(255,255,255,0.05)"
   },
   secondaryDecisionActive: {
-    backgroundColor: "#0F766E",
-    transform: [{ scale: 1.01 }]
+    borderColor: NEU_DARK.emerald,
+    backgroundColor: NEU_DARK.emeraldSoft
   },
   buttonText: {
-    color: "#ffffff",
+    color: NEU_DARK.white,
     fontSize: 15,
-    fontWeight: "600"
+    fontWeight: "700"
   },
-  buttonTextActive: {
-    color: "#EAF5EE"
+  acceptText: {
+    color: "#04150C",
+    fontSize: 15,
+    fontWeight: "700"
   }
 });

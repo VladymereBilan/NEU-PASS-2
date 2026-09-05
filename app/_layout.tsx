@@ -19,6 +19,7 @@ export default function RootLayout() {
             <Stack.Screen name="index" options={{ headerShown: false }} />
             <Stack.Screen name="visitor-login" options={{ headerShown: false }} />
             <Stack.Screen name="visitor-sign-up" options={{ headerShown: false }} />
+            <Stack.Screen name="visitor-forgot-password" options={{ headerShown: false }} />
             <Stack.Screen name="guard-login" options={{ headerShown: false }} />
             <Stack.Screen name="(visitor)" options={{ headerShown: false }} />
             <Stack.Screen name="(guard)" options={{ headerShown: false }} />

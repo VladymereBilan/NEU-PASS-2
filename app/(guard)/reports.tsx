@@ -1,18 +1,19 @@
 import { useCallback, useMemo, useState } from "react";
-import {
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View
-} from "react-native";
-import { useFocusEffect } from "expo-router";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useAuth } from "../../src/context/AuthContext";
 import { getAllVisitors } from "../../src/repositories/VisitorRepository";
-import {
-  PURPOSE_OPTIONS,
-  type VisitorRegistration
-} from "../../src/types/VisitorRegistration";
+import { DashboardScreen } from "../../src/components/dashboard/DashboardScreen";
+import type { BottomNavTab } from "../../src/components/dashboard/BottomNavBar";
+import { NEU_DARK } from "../../src/theme/brand";
+import { PURPOSE_OPTIONS, type VisitorRegistration } from "../../src/types/VisitorRegistration";
+
+const GUARD_TABS: BottomNavTab[] = [
+  { key: "home", label: "Home", icon: "home-variant", route: "/(guard)/home" },
+  { key: "pending", label: "Pending", icon: "account-clock-outline", route: "/(guard)/pending" },
+  { key: "active-visitors", label: "Active", icon: "account-group-outline", route: "/(guard)/active-visitors" },
+  { key: "reports", label: "Reports", icon: "chart-bar", route: "/(guard)/reports" }
+];
 
 type MetricCardProps = {
   label: string;
@@ -20,6 +21,8 @@ type MetricCardProps = {
 };
 
 export default function ReportsScreen() {
+  const router = useRouter();
+  const { email, signOut } = useAuth();
   const [visitors, setVisitors] = useState<VisitorRegistration[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -52,12 +55,9 @@ export default function ReportsScreen() {
     const now = new Date();
     return {
       totalVisitors: visitors.length,
-      activeVisitors: visitors.filter((v) => v.registrationStatus === "Active")
-        .length,
-      completedVisitors: visitors.filter((v) => v.checkoutStatus === "Completed")
-        .length,
-      pendingVisitors: visitors.filter((v) => v.registrationStatus === "Pending")
-        .length,
+      activeVisitors: visitors.filter((v) => v.registrationStatus === "Active").length,
+      completedVisitors: visitors.filter((v) => v.checkoutStatus === "Completed").length,
+      pendingVisitors: visitors.filter((v) => v.registrationStatus === "Pending").length,
       expiredQrPasses: visitors.filter((v) => {
         if (!v.expirationTime) return false;
         const expiration = new Date(v.expirationTime);
@@ -114,82 +114,76 @@ export default function ReportsScreen() {
     return { visitorsThisMonth, completedThisMonth };
   }, [monthStart, visitors]);
 
+  const handleSignOut = async () => {
+    await signOut();
+    router.replace("/");
+  };
+
+  const username = email ? email.split("@")[0] : null;
+  const roleLabel = username ? `Guard · ${username}` : "Guard";
+
   return (
-    <SafeAreaView style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.card}>
-          <Text style={styles.title}>Reports Dashboard</Text>
-          <Pressable
-            style={({ pressed }) => [
-              styles.refreshButton,
-              (pressed || refreshHovered) && styles.refreshButtonActive
-            ]}
-            onPress={() => void refresh()}
-            onHoverIn={() => setRefreshHovered(true)}
-            onHoverOut={() => setRefreshHovered(false)}
-          >
-            <Text style={[styles.refreshText, (refreshHovered || false) && styles.refreshTextActive]}>Refresh</Text>
-          </Pressable>
-          <Text style={styles.note}>
-            Exportable reports and full web-based admin dashboard will be
-            implemented in the next phase.
-          </Text>
+    <DashboardScreen roleLabel={roleLabel} onSignOut={() => void handleSignOut()} tabs={GUARD_TABS}>
+      <Text style={styles.title}>Reports Dashboard</Text>
+      <Pressable
+        style={({ pressed }) => [
+          styles.refreshButton,
+          (pressed || refreshHovered) && styles.refreshButtonActive
+        ]}
+        onPress={() => void refresh()}
+        onHoverIn={() => setRefreshHovered(true)}
+        onHoverOut={() => setRefreshHovered(false)}
+      >
+        <Text style={styles.refreshText}>Refresh</Text>
+      </Pressable>
+      <Text style={styles.note}>
+        Exportable reports and full web-based admin dashboard will be implemented in the next phase.
+      </Text>
 
-          {loading ? (
-            <Text style={styles.body}>Loading reports...</Text>
-          ) : error ? (
-            <Text style={styles.body}>{error}</Text>
-          ) : visitors.length === 0 ? (
-            <Text style={styles.body}>No visitor records found.</Text>
-          ) : (
-            <>
-              <View style={styles.summaryGrid}>
-                <MetricCard label="Total Visitors" value={summary.totalVisitors} />
-                <MetricCard label="Active Visitors" value={summary.activeVisitors} />
-                <MetricCard
-                  label="Completed Visitors"
-                  value={summary.completedVisitors}
-                />
-                <MetricCard label="Pending Visitors" value={summary.pendingVisitors} />
-                <MetricCard label="Expired QR Passes" value={summary.expiredQrPasses} />
-              </View>
+      {loading ? (
+        <Text style={styles.body}>Loading reports...</Text>
+      ) : error ? (
+        <Text style={styles.body}>{error}</Text>
+      ) : visitors.length === 0 ? (
+        <Text style={styles.body}>No visitor records found.</Text>
+      ) : (
+        <>
+          <View style={styles.summaryGrid}>
+            <MetricCard label="Total Visitors" value={summary.totalVisitors} />
+            <MetricCard label="Active Visitors" value={summary.activeVisitors} />
+            <MetricCard label="Completed Visitors" value={summary.completedVisitors} />
+            <MetricCard label="Pending Visitors" value={summary.pendingVisitors} />
+            <MetricCard label="Expired QR Passes" value={summary.expiredQrPasses} />
+          </View>
 
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Purpose Counts</Text>
-                <View style={styles.summaryGrid}>
-                  {Object.entries(purposeCounts).map(([label, value]) => (
-                    <MetricCard key={label} label={label} value={value} />
-                  ))}
-                </View>
-              </View>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Purpose Counts</Text>
+            <View style={styles.summaryGrid}>
+              {Object.entries(purposeCounts).map(([label, value]) => (
+                <MetricCard key={label} label={label} value={value} />
+              ))}
+            </View>
+          </View>
 
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Daily Logs</Text>
-                <View style={styles.summaryGrid}>
-                  <MetricCard label="Visitors Today" value={daily.visitorsToday} />
-                  <MetricCard label="Completed Today" value={daily.completedToday} />
-                  <MetricCard label="Active Today" value={daily.activeToday} />
-                </View>
-              </View>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Daily Logs</Text>
+            <View style={styles.summaryGrid}>
+              <MetricCard label="Visitors Today" value={daily.visitorsToday} />
+              <MetricCard label="Completed Today" value={daily.completedToday} />
+              <MetricCard label="Active Today" value={daily.activeToday} />
+            </View>
+          </View>
 
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Monthly Logs</Text>
-                <View style={styles.summaryGrid}>
-                  <MetricCard
-                    label="Visitors This Month"
-                    value={monthly.visitorsThisMonth}
-                  />
-                  <MetricCard
-                    label="Completed This Month"
-                    value={monthly.completedThisMonth}
-                  />
-                </View>
-              </View>
-            </>
-          )}
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Monthly Logs</Text>
+            <View style={styles.summaryGrid}>
+              <MetricCard label="Visitors This Month" value={monthly.visitorsThisMonth} />
+              <MetricCard label="Completed This Month" value={monthly.completedThisMonth} />
+            </View>
+          </View>
+        </>
+      )}
+    </DashboardScreen>
   );
 }
 
@@ -216,55 +210,36 @@ function startOfMonth(date: Date) {
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: "#ecfeff"
-  },
-  content: {
-    padding: 24
-  },
-  card: {
-    backgroundColor: "#ffffff",
-    padding: 24,
-    borderRadius: 16,
-    gap: 12,
-    shadowColor: "#000000",
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 12,
-    elevation: 3
-  },
   title: {
     fontSize: 22,
-    fontWeight: "700",
-    color: "#111827"
+    fontWeight: "800",
+    color: NEU_DARK.white
   },
   note: {
     fontSize: 12,
-    color: "#6b7280",
+    color: NEU_DARK.textFaint,
     lineHeight: 18
   },
   body: {
     fontSize: 14,
-    color: "#4b5563"
+    color: NEU_DARK.textMuted
   },
   refreshButton: {
     paddingVertical: 10,
     borderRadius: 10,
-    backgroundColor: "#e5e7eb",
+    borderWidth: 1,
+    borderColor: NEU_DARK.border,
+    backgroundColor: "rgba(255,255,255,0.05)",
     alignItems: "center"
   },
   refreshButtonActive: {
-    backgroundColor: "#DFF9EE",
-    transform: [{ scale: 1.01 }]
+    borderColor: NEU_DARK.emerald,
+    backgroundColor: NEU_DARK.emeraldSoft
   },
   refreshText: {
-    color: "#111827",
+    color: NEU_DARK.white,
     fontSize: 14,
     fontWeight: "600"
-  },
-  refreshTextActive: {
-    color: "#064A28"
   },
   summaryGrid: {
     flexDirection: "row",
@@ -275,19 +250,19 @@ const styles = StyleSheet.create({
     width: "48%",
     borderRadius: 14,
     padding: 14,
-    backgroundColor: "#f9fafb",
+    backgroundColor: NEU_DARK.card,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: NEU_DARK.border,
     gap: 6
   },
   metricValue: {
     fontSize: 22,
-    fontWeight: "700",
-    color: "#111827"
+    fontWeight: "800",
+    color: NEU_DARK.white
   },
   metricLabel: {
     fontSize: 12,
-    color: "#4b5563",
+    color: NEU_DARK.textMuted,
     lineHeight: 16
   },
   section: {
@@ -297,6 +272,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#111827"
+    color: NEU_DARK.white
   }
 });

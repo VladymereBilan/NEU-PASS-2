@@ -1,15 +1,15 @@
 import type { ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { NEU_COLORS } from "../../theme/brand";
+import { NEU_DARK } from "../../theme/brand";
 
 export type StatusTone = "neutral" | "pending" | "active" | "warning" | "danger";
 
 const TONE_COLORS: Record<StatusTone, { accent: string; badgeBg: string; badgeText: string }> = {
-  neutral: { accent: NEU_COLORS.border, badgeBg: "#F1F5F9", badgeText: NEU_COLORS.subtle },
-  pending: { accent: NEU_COLORS.gold, badgeBg: "#FFF7E0", badgeText: NEU_COLORS.goldDark },
-  active: { accent: NEU_COLORS.green, badgeBg: NEU_COLORS.greenTint, badgeText: NEU_COLORS.green },
-  warning: { accent: "#D97706", badgeBg: "#FFF7ED", badgeText: "#B45309" },
-  danger: { accent: NEU_COLORS.error, badgeBg: NEU_COLORS.errorBg, badgeText: NEU_COLORS.error }
+  neutral: { accent: NEU_DARK.border, badgeBg: "rgba(255,255,255,0.08)", badgeText: NEU_DARK.textMuted },
+  pending: { accent: NEU_DARK.amber, badgeBg: NEU_DARK.amberSoft, badgeText: NEU_DARK.amber },
+  active: { accent: NEU_DARK.emerald, badgeBg: NEU_DARK.emeraldSoft, badgeText: NEU_DARK.emerald },
+  warning: { accent: NEU_DARK.amberStrong, badgeBg: NEU_DARK.amberSoft, badgeText: NEU_DARK.amberStrong },
+  danger: { accent: NEU_DARK.red, badgeBg: NEU_DARK.redSoft, badgeText: NEU_DARK.red }
 };
 
 type Props = {
@@ -27,7 +27,7 @@ export function StatusCard({ tone, badge, title, description, children }: Props)
   const colors = TONE_COLORS[tone];
 
   return (
-    <View style={[styles.card, { borderLeftColor: colors.accent }]}>
+    <View style={[styles.card, { borderColor: colors.accent }]}>
       <View style={[styles.badge, { backgroundColor: colors.badgeBg }]}>
         <Text style={[styles.badgeText, { color: colors.badgeText }]}>{badge}</Text>
       </View>
@@ -40,18 +40,11 @@ export function StatusCard({ tone, badge, title, description, children }: Props)
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: NEU_COLORS.card,
+    backgroundColor: NEU_DARK.card,
     padding: 18,
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: NEU_COLORS.border,
-    borderLeftWidth: 5,
-    gap: 8,
-    shadowColor: "#000000",
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 10,
-    elevation: 2
+    borderWidth: 1.5,
+    gap: 8
   },
   badge: {
     alignSelf: "flex-start",
@@ -68,11 +61,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: "800",
-    color: NEU_COLORS.ink
+    color: NEU_DARK.white
   },
   description: {
     fontSize: 13,
-    color: NEU_COLORS.subtle,
+    color: NEU_DARK.textMuted,
     lineHeight: 19
   }
 });
