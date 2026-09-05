@@ -1,4 +1,5 @@
-import { MetricCard } from "@/components/MetricCard";
+import { MetricCard, PURPOSE_ACCENTS } from "@/components/MetricCard";
+import { Panel, Row } from "@/components/Panel";
 import { computeReportStats, type VisitorRow } from "@/lib/reportStats";
 import { createClient } from "@/lib/supabase/server";
 
@@ -12,8 +13,8 @@ export default async function ReportsPage() {
 
   if (error) {
     return (
-      <div className="rounded-3xl border border-[#d8e3dc] bg-white p-6 shadow-[0_10px_28px_rgba(11,110,60,0.06)]">
-        <div className="py-10 text-center text-red-700">Unable to load report data.</div>
+      <div className="rounded-3xl border border-emerald-500/20 bg-[#0a1f14]/80 p-6">
+        <div className="py-10 text-center text-red-400">Unable to load report data.</div>
       </div>
     );
   }
@@ -23,10 +24,10 @@ export default async function ReportsPage() {
   return (
     <div className="space-y-6">
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Daily Visitors" value={stats.daily.visitorsToday} />
-        <MetricCard label="Monthly Visitors" value={stats.monthly.visitorsThisMonth} />
-        <MetricCard label="Completed Today" value={stats.daily.completedToday} />
-        <MetricCard label="Expired QR Count" value={stats.expiredQrPasses} />
+        <MetricCard label="Daily Visitors" value={stats.daily.visitorsToday} accent="from-emerald-400 to-emerald-600" />
+        <MetricCard label="Monthly Visitors" value={stats.monthly.visitorsThisMonth} accent="from-sky-400 to-sky-600" />
+        <MetricCard label="Completed Today" value={stats.daily.completedToday} accent="from-emerald-400 to-emerald-600" />
+        <MetricCard label="Expired QR Count" value={stats.expiredQrPasses} accent="from-amber-400 to-amber-600" />
       </section>
 
       <div className="grid gap-6 xl:grid-cols-2">
@@ -52,35 +53,17 @@ export default async function ReportsPage() {
               key={label}
               label={label}
               value={value}
-              accent={index % 2 === 0 ? "from-[#0b6e3c] to-[#0e7f49]" : "from-[#f5b517] to-[#d89a1f]"}
+              accent={PURPOSE_ACCENTS[index % PURPOSE_ACCENTS.length]}
             />
           ))}
         </div>
       </Panel>
 
       <Panel title="Expired QR Count">
-        <div className="rounded-2xl border border-[#d8e3dc] bg-[#f9fbf9] p-4 text-[#374151]">
+        <div className="rounded-2xl border border-emerald-500/15 bg-white/5 p-4 text-gray-300">
           {stats.expiredQrPasses} expired QR pass{stats.expiredQrPasses === 1 ? "" : "es"} recorded.
         </div>
       </Panel>
-    </div>
-  );
-}
-
-function Panel({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="rounded-3xl border border-[#d8e3dc] bg-white p-6 shadow-[0_10px_28px_rgba(11,110,60,0.06)]">
-      <h2 className="text-lg font-bold text-[#111827]">{title}</h2>
-      <div className="mt-5">{children}</div>
-    </section>
-  );
-}
-
-function Row({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="flex items-center justify-between rounded-2xl border border-[#d8e3dc] bg-[#f9fbf9] px-4 py-3">
-      <span className="text-[#374151]">{label}</span>
-      <span className="font-bold text-[#111827]">{value}</span>
     </div>
   );
 }

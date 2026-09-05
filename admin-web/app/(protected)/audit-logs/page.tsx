@@ -43,11 +43,11 @@ export default function AuditLogsPage() {
   }, [logs, search]);
 
   return (
-    <div className="rounded-3xl border border-[#d8e3dc] bg-white p-6 shadow-[0_10px_28px_rgba(11,110,60,0.06)]">
+    <div className="rounded-3xl border border-emerald-500/20 bg-[#0a1f14]/80 p-6">
       <div className="mb-5 flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-bold text-[#111827]">Audit Logs</h2>
-          <p className="text-sm text-[#4b5563]">
+          <h2 className="text-lg font-bold text-white">Audit Logs</h2>
+          <p className="text-sm text-gray-400">
             Admin actions and visitor workflow events, captured automatically.
           </p>
         </div>
@@ -55,28 +55,28 @@ export default function AuditLogsPage() {
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search logs"
-          className="w-full max-w-xs rounded-2xl border border-[#d8e3dc] bg-[#f9fbf9] px-4 py-3 text-[#111827] outline-none focus:border-[#0b6e3c] focus:ring-4 focus:ring-[#eaf5ee]"
+          className="w-full max-w-xs rounded-2xl border border-emerald-500/20 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-gray-500 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/20"
         />
       </div>
 
       <div className="space-y-3">
         {loading ? (
-          <div className="py-10 text-center text-[#4b5563]">Loading audit logs...</div>
+          <div className="py-10 text-center text-gray-400">Loading audit logs...</div>
         ) : error ? (
-          <div className="py-10 text-center text-red-700">{error}</div>
+          <div className="py-10 text-center text-red-400">{error}</div>
         ) : filtered.length === 0 ? (
-          <div className="py-10 text-center text-[#4b5563]">No matching audit log entries.</div>
+          <div className="py-10 text-center text-gray-400">No matching audit log entries.</div>
         ) : (
           filtered.map((log) => (
             <div
               key={log.id}
-              className="flex flex-col gap-1 rounded-2xl border border-[#d8e3dc] bg-[#f9fbf9] px-4 py-3 md:flex-row md:items-center md:justify-between"
+              className="flex flex-col gap-1 rounded-2xl border border-emerald-500/15 bg-white/5 px-4 py-3 md:flex-row md:items-center md:justify-between"
             >
               <div>
-                <div className="font-medium text-[#111827]">{log.action}</div>
-                <div className="text-sm text-[#4b5563]">Actor: {log.actor_label}</div>
+                <div className="font-medium text-white">{log.action}</div>
+                <div className="text-sm text-gray-400">Actor: {log.actor_label}</div>
               </div>
-              <div className="text-sm text-[#374151]">
+              <div className="text-sm text-gray-300">
                 {new Date(log.created_at).toLocaleString()}
               </div>
             </div>

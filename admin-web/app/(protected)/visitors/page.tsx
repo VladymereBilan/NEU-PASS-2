@@ -89,13 +89,13 @@ export default function VisitorsPage() {
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search visitors"
-          className="w-full rounded-2xl border border-[#d8e3dc] bg-white px-4 py-3 text-[#111827] outline-none placeholder:text-[#6b7280] focus:border-[#0b6e3c] focus:ring-4 focus:ring-[#eaf5ee] lg:max-w-sm"
+          className="w-full rounded-2xl border border-emerald-500/20 bg-[#0a1f14]/80 px-4 py-3 text-white outline-none placeholder:text-gray-500 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/20 lg:max-w-sm"
         />
         <div className="flex gap-3">
           <select
             value={filter}
             onChange={(event) => setFilter(event.target.value)}
-            className="rounded-2xl border border-[#d8e3dc] bg-white px-4 py-3 text-[#111827] outline-none focus:border-[#0b6e3c] focus:ring-4 focus:ring-[#eaf5ee]"
+            className="rounded-2xl border border-emerald-500/20 bg-[#0a1f14]/80 px-4 py-3 text-white outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/20"
           >
             <option value="All">All statuses</option>
             <option value="Pending">Pending</option>
@@ -106,20 +106,20 @@ export default function VisitorsPage() {
           <button
             onClick={handleExport}
             disabled={rows.length === 0}
-            className="whitespace-nowrap rounded-2xl bg-[#0b6e3c] px-4 py-3 text-sm font-semibold text-white hover:bg-[#0e7f49] disabled:cursor-not-allowed disabled:opacity-50"
+            className="whitespace-nowrap rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-[#04150c] hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Export CSV
           </button>
         </div>
       </div>
 
-      <div className="rounded-3xl border border-[#d8e3dc] bg-white p-5">
+      <div className="rounded-3xl border border-emerald-500/20 bg-[#0a1f14]/80 p-5">
         {loading ? (
-          <div className="py-16 text-center text-[#4b5563]">Loading visitors...</div>
+          <div className="py-16 text-center text-gray-400">Loading visitors...</div>
         ) : error ? (
-          <div className="py-16 text-center text-red-700">{error}</div>
+          <div className="py-16 text-center text-red-400">{error}</div>
         ) : rows.length === 0 ? (
-          <div className="py-16 text-center text-[#4b5563]">No visitor records found.</div>
+          <div className="py-16 text-center text-gray-400">No visitor records found.</div>
         ) : (
           <DataTable columns={COLUMNS} rows={rows} />
         )}

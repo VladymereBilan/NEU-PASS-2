@@ -220,6 +220,44 @@ export async function createAdminAccount(input: {
   return { id: created.user.id };
 }
 
+export async function getOwnAccount(): Promise<{ username: string; recoveryEmail: string | null }> {
+  const user = await requireAdmin();
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("profiles")
+    .select("username, recovery_email")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+
+  return {
+    username: data?.username ?? "",
+    recoveryEmail: data?.recovery_email ?? null
+  };
+}
+
+// Only ever writes the caller's own row (scoped by their own auth.uid()), so
+// this is safe to expose without the "which account am I touching" checks
+// the id-taking functions below need.
+export async function updateOwnRecoveryEmail(email: string) {
+  const user = await requireAdmin();
+
+  const trimmed = email.trim();
+  if (trimmed && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+    throw new Error("Enter a valid email address.");
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("profiles")
+    .update({ recovery_email: trimmed || null })
+    .eq("id", user.id);
+
+  if (error) throw new Error(error.message);
+}
+
 // Shared by both guard and admin rows. Only ever targets a profile this
 // admin console itself manages — never a visitor — since a Server Action is
 // reachable directly over the network and the caller controls `id`.
