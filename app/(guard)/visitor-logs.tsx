@@ -1,7 +1,10 @@
 import { useCallback, useState } from "react";
-import { Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "expo-router";
 import { getAllRegistrations } from "../../src/services/PrototypeRegistrationStore";
+import { AppBackground } from "../../src/components/AppBackground";
+import { NEU_DARK } from "../../src/theme/brand";
 import type { VisitorRegistration } from "../../src/types/VisitorRegistration";
 
 export default function VisitorLogsScreen() {
@@ -33,8 +36,10 @@ export default function VisitorLogsScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <View style={styles.card}>
+    <AppBackground>
+      <SafeAreaView style={styles.flex} edges={["bottom", "left", "right"]}>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={styles.card}>
         <Text style={styles.title}>Visitor Logs</Text>
         <Pressable
           style={({ pressed }) => [
@@ -77,8 +82,10 @@ export default function VisitorLogsScreen() {
             </View>
           ))
         )}
-      </View>
-    </SafeAreaView>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </AppBackground>
   );
 }
 
@@ -88,65 +95,65 @@ function formatDate(value: string) {
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    justifyContent: "center",
-    padding: 24,
-    backgroundColor: "#ecfeff"
+  flex: {
+    flex: 1
+  },
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 32
   },
   card: {
-    backgroundColor: "#ffffff",
-    padding: 24,
-    borderRadius: 16,
+    backgroundColor: NEU_DARK.card,
+    padding: 20,
+    borderRadius: 20,
     gap: 12,
-    shadowColor: "#000000",
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 12,
-    elevation: 3
+    borderWidth: 1,
+    borderColor: NEU_DARK.cardBorder
   },
   title: {
     fontSize: 20,
-    fontWeight: "700",
-    color: "#111827"
+    fontWeight: "800",
+    color: NEU_DARK.white
   },
   body: {
     fontSize: 14,
-    color: "#4b5563"
+    color: NEU_DARK.textMuted
   },
   itemCard: {
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: NEU_DARK.border,
     borderRadius: 12,
     padding: 16,
     gap: 6,
-    backgroundColor: "#f9fafb"
+    backgroundColor: NEU_DARK.card
   },
   itemTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#111827"
+    color: NEU_DARK.white
   },
   itemText: {
     fontSize: 13,
-    color: "#374151"
+    color: NEU_DARK.textMuted
   },
   refreshButton: {
     paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: "#e5e7eb",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: NEU_DARK.border,
+    backgroundColor: "rgba(255,255,255,0.05)",
     alignItems: "center"
   },
   refreshButtonActive: {
-    backgroundColor: "#DFF9EE",
-    transform: [{ scale: 1.01 }]
+    borderColor: NEU_DARK.emerald,
+    backgroundColor: NEU_DARK.emeraldSoft
   },
   refreshText: {
-    color: "#111827",
+    color: NEU_DARK.white,
     fontSize: 14,
     fontWeight: "600"
   },
   refreshTextActive: {
-    color: "#064A28"
+    color: NEU_DARK.emerald
   }
 });

@@ -4,13 +4,13 @@ import {
   Alert,
   Image,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useFocusEffect } from "expo-router";
 import {
@@ -22,6 +22,8 @@ import { getExpirationStatus } from "../../src/services/ExpirationService";
 import { getVisitorImageSignedUrl } from "../../src/lib/imageUpload";
 import { compareFaces } from "../../src/services/FaceMatchService";
 import { parseQRValue } from "../../src/services/QRService";
+import { AppBackground } from "../../src/components/AppBackground";
+import { NEU_DARK } from "../../src/theme/brand";
 import type {
   FaceCheckoutVerificationStatus,
   VisitorRegistration
@@ -329,7 +331,8 @@ export default function CheckoutVerificationScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <AppBackground>
+      <SafeAreaView style={styles.flex} edges={["bottom", "left", "right"]}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.card}>
           <Text style={styles.title}>Checkout Verification</Text>
@@ -387,6 +390,7 @@ export default function CheckoutVerificationScreen() {
               value={manualQuery}
               onChangeText={setManualQuery}
               placeholder="Type a name or pass number"
+              placeholderTextColor={NEU_DARK.textMuted}
               style={styles.searchBox}
             />
             <Pressable
@@ -527,7 +531,8 @@ export default function CheckoutVerificationScreen() {
           ) : null}
         </View>
       </ScrollView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </AppBackground>
   );
 }
 
@@ -544,41 +549,38 @@ function formatDate(value: string) {
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: "#ecfeff"
+  flex: {
+    flex: 1
   },
   scrollContent: {
-    padding: 24
+    padding: 20,
+    paddingBottom: 32
   },
   card: {
-    backgroundColor: "#ffffff",
-    padding: 24,
-    borderRadius: 16,
+    backgroundColor: NEU_DARK.card,
+    padding: 20,
+    borderRadius: 20,
     gap: 12,
-    shadowColor: "#000000",
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 12,
-    elevation: 3
+    borderWidth: 1,
+    borderColor: NEU_DARK.cardBorder
   },
   title: {
     fontSize: 20,
-    fontWeight: "700",
-    color: "#111827"
+    fontWeight: "800",
+    color: NEU_DARK.white
   },
   body: {
     fontSize: 14,
-    color: "#4b5563"
+    color: NEU_DARK.textMuted
   },
   note: {
     fontSize: 12,
-    color: "#6b7280"
+    color: NEU_DARK.textFaint
   },
   sectionTitle: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#111827",
+    color: NEU_DARK.white,
     marginTop: 4
   },
   cameraShell: {
@@ -592,57 +594,60 @@ const styles = StyleSheet.create({
   },
   scanButton: {
     paddingVertical: 12,
-    borderRadius: 10,
-    backgroundColor: "#111827",
+    borderRadius: 12,
+    backgroundColor: NEU_DARK.emeraldStrong,
     alignItems: "center"
   },
   scanButtonActive: {
-    backgroundColor: "#0F766E",
-    transform: [{ scale: 1.01 }]
+    backgroundColor: "#0C8A62"
   },
   scanButtonText: {
-    color: "#ffffff",
+    color: "#04150C",
     fontSize: 15,
-    fontWeight: "600"
+    fontWeight: "700"
   },
   scanButtonTextActive: {
-    color: "#EAF5EE"
+    color: "#04150C"
   },
   refreshButton: {
     paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: "#e5e7eb",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: NEU_DARK.border,
+    backgroundColor: "rgba(255,255,255,0.05)",
     alignItems: "center"
   },
   refreshButtonActive: {
-    backgroundColor: "#DFF9EE",
-    transform: [{ scale: 1.01 }]
+    borderColor: NEU_DARK.emerald,
+    backgroundColor: NEU_DARK.emeraldSoft
   },
   refreshText: {
-    color: "#111827",
+    color: NEU_DARK.white,
     fontSize: 14,
     fontWeight: "600"
   },
   refreshTextActive: {
-    color: "#064A28"
+    color: NEU_DARK.emerald
   },
   secondaryButton: {
     paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: "#e5e7eb",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: NEU_DARK.border,
+    backgroundColor: "rgba(255,255,255,0.05)",
     alignItems: "center"
   },
   secondaryButtonActive: {
-    backgroundColor: "#DFF9EE",
-    transform: [{ scale: 1.01 }]
+    borderColor: NEU_DARK.emerald,
+    backgroundColor: NEU_DARK.emeraldSoft
   },
   secondaryText: {
-    color: "#111827",
+    color: NEU_DARK.white,
     fontSize: 14,
     fontWeight: "600"
   },
   secondaryTextActive: {
-    color: "#064A28"
+    color: NEU_DARK.emerald
   },
   searchRow: {
     flexDirection: "row",
@@ -652,49 +657,50 @@ const styles = StyleSheet.create({
   searchBox: {
     flex: 1,
     borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 10,
+    borderColor: NEU_DARK.border,
+    borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 12,
-    backgroundColor: "#f9fafb"
+    backgroundColor: NEU_DARK.inputBg,
+    color: NEU_DARK.white
   },
   searchInput: {
     fontSize: 14,
-    color: "#6b7280"
+    color: NEU_DARK.textMuted
   },
   listGap: {
     gap: 12
   },
   itemCard: {
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: NEU_DARK.border,
     borderRadius: 12,
     padding: 16,
     gap: 6,
-    backgroundColor: "#f9fafb"
+    backgroundColor: NEU_DARK.card
   },
   scannedCard: {
     borderWidth: 1,
-    borderColor: "#111827",
+    borderColor: NEU_DARK.emerald,
     borderRadius: 12,
     padding: 16,
     gap: 6,
-    backgroundColor: "#eef2ff"
+    backgroundColor: NEU_DARK.emeraldSoft
   },
   itemTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#111827"
+    color: NEU_DARK.white
   },
   itemText: {
     fontSize: 13,
-    color: "#374151"
+    color: NEU_DARK.textMuted
   },
   thumbnail: {
     width: 120,
     height: 120,
     borderRadius: 8,
-    backgroundColor: "#e5e7eb",
+    backgroundColor: "rgba(255,255,255,0.08)",
     marginTop: 4
   },
   matchSection: {
@@ -703,7 +709,7 @@ const styles = StyleSheet.create({
   },
   matchSuggestion: {
     fontSize: 12,
-    color: "#111827",
+    color: NEU_DARK.white,
     fontWeight: "600"
   },
   matchingRow: {
@@ -714,13 +720,13 @@ const styles = StyleSheet.create({
   },
   matchingText: {
     fontSize: 13,
-    color: "#4b5563"
+    color: NEU_DARK.textMuted
   },
   selectorLabel: {
     marginTop: 6,
     fontSize: 13,
     fontWeight: "600",
-    color: "#374151"
+    color: NEU_DARK.textMuted
   },
   selectorRow: {
     flexDirection: "row",
@@ -731,36 +737,35 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: NEU_DARK.border,
     alignItems: "center",
-    backgroundColor: "#ffffff"
+    backgroundColor: "rgba(255,255,255,0.05)"
   },
   selectorActive: {
-    borderColor: "#111827",
-    backgroundColor: "#e5e7eb"
+    borderColor: NEU_DARK.emerald,
+    backgroundColor: NEU_DARK.emeraldSoft
   },
   selectorText: {
     fontSize: 12,
-    color: "#111827",
+    color: NEU_DARK.white,
     fontWeight: "600"
   },
   completeButton: {
     marginTop: 8,
     paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: "#111827",
+    borderRadius: 12,
+    backgroundColor: NEU_DARK.emeraldStrong,
     alignItems: "center"
   },
   completeButtonActive: {
-    backgroundColor: "#0F766E",
-    transform: [{ scale: 1.01 }]
+    backgroundColor: "#0C8A62"
   },
   completeText: {
-    color: "#ffffff",
+    color: "#04150C",
     fontSize: 14,
-    fontWeight: "600"
+    fontWeight: "700"
   },
   completeTextActive: {
-    color: "#EAF5EE"
+    color: "#04150C"
   }
 });
