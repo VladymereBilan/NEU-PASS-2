@@ -75,7 +75,9 @@ export async function compareFaces(
       score >= MATCH_THRESHOLD ? "Matched" : score <= NO_MATCH_THRESHOLD ? "Not Matched" : "Manual Review";
 
     return { score, suggestion, autoComplete: score >= AUTO_COMPLETE_THRESHOLD };
-  } catch {
+  } catch (error) {
+    // TEMPORARY diagnostic logging — remove once the null-score cause is found.
+    console.error("[FaceMatch] compareFaces failed:", error);
     return { score: null, suggestion: "Manual Review", autoComplete: false };
   } finally {
     clearFaceMatchCache();
@@ -109,8 +111,15 @@ async function ensureLocalUri(uri: string): Promise<string> {
 }
 
 async function embedFace(rawImageUri: string): Promise<Float32Array | null> {
+  // TEMPORARY diagnostic logging — remove once the null-score cause is found.
+  console.error("[FaceMatch] embedFace: resolving local uri for", rawImageUri);
   const imageUri = await ensureLocalUri(rawImageUri);
-  const faces = await FaceDetection.detect(imageUri, { performanceMode: "accurate" }).catch(() => []);
+  console.error("[FaceMatch] embedFace: local uri resolved to", imageUri);
+  const faces = await FaceDetection.detect(imageUri, { performanceMode: "accurate" }).catch((error) => {
+    console.error("[FaceMatch] embedFace: FaceDetection.detect threw:", error);
+    return [];
+  });
+  console.error("[FaceMatch] embedFace: detected face count", faces.length);
   if (faces.length === 0) return null;
 
   const face = faces.reduce((largest, current) =>
