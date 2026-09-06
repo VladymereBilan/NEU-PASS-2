@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { adminUsernameToEmail, guardUsernameToEmail } from "@/lib/syntheticAuth";
+import { escapeLikePattern } from "@/lib/likeEscape";
 
 // Server Actions are callable directly over the network by anyone who can
 // reach this app, regardless of which page renders the button that
@@ -98,7 +99,7 @@ export async function createGuardAccount(input: {
     .from("profiles")
     .select("id")
     .eq("account_type", "guard")
-    .ilike("username", username)
+    .ilike("username", escapeLikePattern(username))
     .maybeSingle();
 
   if (existingProfile) {
@@ -186,7 +187,7 @@ export async function createAdminAccount(input: {
     .from("profiles")
     .select("id")
     .eq("account_type", "admin")
-    .ilike("username", username)
+    .ilike("username", escapeLikePattern(username))
     .maybeSingle();
 
   if (existingProfile) {

@@ -5,9 +5,9 @@
     "scheme": "neu-pass",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/branding/neu-logo.webp",
+    "icon": "./assets/branding/neu-logo.png",
     "splash": {
-      "image": "./assets/branding/neu-logo.webp",
+      "image": "./assets/branding/neu-logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -18,7 +18,7 @@
     "android": {
       "package": "com.vladymere.neupass",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/branding/neu-logo.webp",
+        "foregroundImage": "./assets/branding/neu-logo.png",
         "backgroundColor": "#ffffff"
       }
     },

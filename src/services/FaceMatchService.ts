@@ -18,11 +18,23 @@ const PROTOTYPE_SAMPLE_PREFIX = "prototype://";
 const MATCH_THRESHOLD = 0.6;
 const NO_MATCH_THRESHOLD = 0.35;
 
+// Deliberately stricter than MATCH_THRESHOLD: this is the bar for letting the
+// system complete checkout without a guard confirming, so it should only ever
+// fire on the clearest matches. Everything below it — including an ordinary
+// "Matched" suggestion in the 0.6-0.8 band, and any "Not Matched" — still
+// requires a guard to review and tap Complete Checkout, since these
+// thresholds aren't validated against real capture conditions yet and a bad
+// auto-approval is worse than asking a guard to double-check.
+const AUTO_COMPLETE_THRESHOLD = 0.8;
+
 export type FaceMatchResult = {
   // null when a face couldn't be embedded on either side (no face detected,
   // a prototype-sample path, or a native failure) — never guess in that case.
   score: number | null;
   suggestion: FaceCheckoutVerificationStatus;
+  // true only for a score confidently above AUTO_COMPLETE_THRESHOLD — the
+  // sole signal callers should use to skip guard confirmation.
+  autoComplete: boolean;
 };
 
 let modelPromise: Promise<TensorflowModel> | null = null;
@@ -45,7 +57,7 @@ export async function compareFaces(
     referenceImageUri.startsWith(PROTOTYPE_SAMPLE_PREFIX) ||
     liveImageUri.startsWith(PROTOTYPE_SAMPLE_PREFIX)
   ) {
-    return { score: null, suggestion: "Manual Review" };
+    return { score: null, suggestion: "Manual Review", autoComplete: false };
   }
 
   try {
@@ -55,16 +67,30 @@ export async function compareFaces(
     ]);
 
     if (!referenceEmbedding || !liveEmbedding) {
-      return { score: null, suggestion: "Manual Review" };
+      return { score: null, suggestion: "Manual Review", autoComplete: false };
     }
 
     const score = cosineSimilarity(referenceEmbedding, liveEmbedding);
     const suggestion: FaceCheckoutVerificationStatus =
       score >= MATCH_THRESHOLD ? "Matched" : score <= NO_MATCH_THRESHOLD ? "Not Matched" : "Manual Review";
 
-    return { score, suggestion };
+    return { score, suggestion, autoComplete: score >= AUTO_COMPLETE_THRESHOLD };
   } catch {
-    return { score: null, suggestion: "Manual Review" };
+    return { score: null, suggestion: "Manual Review", autoComplete: false };
+  } finally {
+    clearFaceMatchCache();
+  }
+}
+
+// ensureLocalUri downloads the visitor's private reference photo into the
+// guard's app cache to run detection/embedding on it — don't let that
+// biometric photo linger on disk once this comparison is done.
+function clearFaceMatchCache(): void {
+  try {
+    const destination = new Directory(Paths.cache, "face-match");
+    if (destination.exists) destination.delete();
+  } catch {
+    // Best-effort cleanup — a leftover cache file isn't worth failing the match over.
   }
 }
 

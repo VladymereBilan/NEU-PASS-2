@@ -2,7 +2,14 @@
 // doubling internal quotes; CRLF line endings.
 export function toCsv(columns: string[], rows: Array<Array<string | number>>): string {
   const escapeField = (value: string | number) => {
-    const str = String(value);
+    let str = String(value);
+    // Neutralize formula injection: a field starting with =, +, -, or @ is
+    // interpreted as a formula by Excel/Sheets/LibreOffice when opened, and
+    // visitor-supplied fields like full name aren't restricted from starting
+    // with these characters.
+    if (/^[=+\-@]/.test(str)) {
+      str = `'${str}`;
+    }
     if (/[",\r\n]/.test(str)) {
       return `"${str.replace(/"/g, '""')}"`;
     }

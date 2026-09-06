@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Alert, Pressable, Text } from "react-native";
 import { useRouter } from "expo-router";
 import { supabase } from "../src/lib/supabaseClient";
+import { GUARD_EMAIL_DOMAIN } from "../src/lib/guardAuth";
 import { AuthScreen } from "../src/components/auth/AuthScreen";
 import { BrandHeader } from "../src/components/auth/BrandHeader";
 import { AuthField } from "../src/components/auth/AuthField";
@@ -19,10 +20,17 @@ export default function VisitorSignUpScreen() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Keep in sync with admin-web/src/lib/syntheticAuth.ts's ADMIN_EMAIL_DOMAIN.
+  const ADMIN_EMAIL_DOMAIN = "admin.neu-pass.internal";
+
   const validate = () => {
     if (!fullName.trim()) return "Full name is required.";
     if (!email.trim()) return "Email is required.";
     if (!email.includes("@")) return "Enter a valid email address.";
+    const normalizedEmail = email.trim().toLowerCase();
+    if (normalizedEmail.endsWith(`@${GUARD_EMAIL_DOMAIN}`) || normalizedEmail.endsWith(`@${ADMIN_EMAIL_DOMAIN}`)) {
+      return "This email address is reserved for staff accounts.";
+    }
     if (!contactNumber.trim()) return "Contact number is required.";
     if (!password) return "Password is required.";
     if (password.length < 6) return "Password must be at least 6 characters.";

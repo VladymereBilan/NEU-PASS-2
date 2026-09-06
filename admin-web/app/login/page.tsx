@@ -56,7 +56,7 @@ function LoginForm() {
 
     if (profile?.account_type !== "admin") {
       await supabase.auth.signOut();
-      setError("This account is not an admin account.");
+      setError("Invalid admin username or password.");
       setLoading(false);
       return;
     }
