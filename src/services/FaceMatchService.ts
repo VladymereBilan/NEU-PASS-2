@@ -1,5 +1,6 @@
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 import { Directory, File, Paths } from "expo-file-system";
+import { Image } from "react-native";
 import { decode as decodeJpeg } from "jpeg-js";
 import FaceDetection from "@react-native-ml-kit/face-detection";
 import { loadTensorflowModel, type TensorflowModel } from "react-native-fast-tflite";
@@ -75,9 +76,7 @@ export async function compareFaces(
       score >= MATCH_THRESHOLD ? "Matched" : score <= NO_MATCH_THRESHOLD ? "Not Matched" : "Manual Review";
 
     return { score, suggestion, autoComplete: score >= AUTO_COMPLETE_THRESHOLD };
-  } catch (error) {
-    // TEMPORARY diagnostic logging — remove once the null-score cause is found.
-    console.error("[FaceMatch] compareFaces failed:", error);
+  } catch {
     return { score: null, suggestion: "Manual Review", autoComplete: false };
   } finally {
     clearFaceMatchCache();
@@ -110,16 +109,15 @@ async function ensureLocalUri(uri: string): Promise<string> {
   return file.uri;
 }
 
-async function embedFace(rawImageUri: string): Promise<Float32Array | null> {
-  // TEMPORARY diagnostic logging — remove once the null-score cause is found.
-  console.error("[FaceMatch] embedFace: resolving local uri for", rawImageUri);
-  const imageUri = await ensureLocalUri(rawImageUri);
-  console.error("[FaceMatch] embedFace: local uri resolved to", imageUri);
-  const faces = await FaceDetection.detect(imageUri, { performanceMode: "accurate" }).catch((error) => {
-    console.error("[FaceMatch] embedFace: FaceDetection.detect threw:", error);
-    return [];
+function getImageSize(uri: string): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    Image.getSize(uri, (width, height) => resolve({ width, height }), reject);
   });
-  console.error("[FaceMatch] embedFace: detected face count", faces.length);
+}
+
+async function embedFace(rawImageUri: string): Promise<Float32Array | null> {
+  const imageUri = await ensureLocalUri(rawImageUri);
+  const faces = await FaceDetection.detect(imageUri, { performanceMode: "accurate" }).catch(() => []);
   if (faces.length === 0) return null;
 
   const face = faces.reduce((largest, current) =>
@@ -128,11 +126,16 @@ async function embedFace(rawImageUri: string): Promise<Float32Array | null> {
       : largest
   );
 
+  // The face's own frame is always in-bounds, but the padded box around it
+  // can extend past the image edges (e.g. a close-up selfie with the face
+  // near the top/side of the frame) — clamp against the real image size or
+  // the native crop throws "y + height must be <= bitmap.height()".
+  const { width: imageWidth, height: imageHeight } = await getImageSize(imageUri);
   const padding = Math.round(Math.max(face.frame.width, face.frame.height) * 0.2);
   const cropX = Math.max(0, face.frame.left - padding);
   const cropY = Math.max(0, face.frame.top - padding);
-  const cropWidth = face.frame.width + padding * 2;
-  const cropHeight = face.frame.height + padding * 2;
+  const cropWidth = Math.min(face.frame.width + padding * 2, imageWidth - cropX);
+  const cropHeight = Math.min(face.frame.height + padding * 2, imageHeight - cropY);
 
   // Crop+resize natively first (fast) so the pure-JS jpeg-js decode below
   // only ever has to process a small ~112px image, not a multi-megapixel
