@@ -98,18 +98,14 @@ export default function CheckoutVerificationScreen() {
     setSelectedStatus((prev) => ({ ...prev, [id]: status }));
   };
 
-  const handleComplete = async (
-    id: string,
-    statusOverride?: FaceCheckoutVerificationStatus,
-    completionMessage = "Checkout completed."
-  ) => {
-    const status = statusOverride || selectedStatus[id] || "Manual Review";
+  const handleComplete = async (id: string) => {
+    const status = selectedStatus[id] || "Manual Review";
     try {
       await completeCheckout(id, status);
       await refresh();
       setScannedVisitor(null);
       setScanMessage("");
-      Alert.alert(completionMessage);
+      Alert.alert("Checkout completed.");
     } catch {
       Alert.alert("Unable to complete checkout.");
     }
@@ -145,15 +141,6 @@ export default function CheckoutVerificationScreen() {
       const result = await compareFaces(referenceUrl, photo.uri);
       setMatchScores((prev) => ({ ...prev, [id]: result.score }));
       handleSelect(id, result.suggestion);
-
-      if (result.autoComplete) {
-        const similarityPercent = Math.round((result.score as number) * 100);
-        await handleComplete(
-          id,
-          result.suggestion,
-          `High-confidence match (${similarityPercent}% similarity) — checkout completed automatically.`
-        );
-      }
     } catch {
       Alert.alert("Unable to compare faces. Please select a status manually.");
     } finally {

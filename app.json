@@ -5,6 +5,7 @@
     "scheme": "neu-pass",
     "version": "1.0.0",
     "orientation": "portrait",
+    "newArchEnabled": false,
     "icon": "./assets/branding/neu-logo.png",
     "splash": {
       "image": "./assets/branding/neu-logo.png",
