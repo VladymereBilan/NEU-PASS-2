@@ -15,6 +15,7 @@
     "@react-native-ml-kit/face-detection": "^2.0.1",
     "@supabase/supabase-js": "^2.112.4",
     "expo": "~54.0.0",
+    "expo-asset": "~12.0.13",
     "expo-camera": "~17.0.10",
     "expo-constants": "^18.0.13",
     "expo-dev-client": "~6.0.21",

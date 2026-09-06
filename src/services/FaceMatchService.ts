@@ -1,5 +1,6 @@
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 import { Directory, File, Paths } from "expo-file-system";
+import { Asset } from "expo-asset";
 import { Image } from "react-native";
 import { decode as decodeJpeg } from "jpeg-js";
 import FaceDetection from "@react-native-ml-kit/face-detection";
@@ -42,8 +43,17 @@ let modelPromise: Promise<TensorflowModel> | null = null;
 
 function getModel() {
   if (!modelPromise) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    modelPromise = loadTensorflowModel(require("../../assets/models/mobilefacenet.tflite"), []);
+    modelPromise = (async () => {
+      // require()'s raw asset-module result only resolves correctly while
+      // Metro is serving the bundle live (dev) — a standalone release build
+      // needs the asset pre-resolved to a real local file first, or
+      // loadTensorflowModel throws "java.net.MalformedURLException: no
+      // protocol" trying to read Android's bundled-resource reference directly.
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const asset = Asset.fromModule(require("../../assets/models/mobilefacenet.tflite"));
+      await asset.downloadAsync();
+      return loadTensorflowModel({ url: asset.localUri as string }, []);
+    })();
   }
   return modelPromise;
 }
@@ -76,12 +86,7 @@ export async function compareFaces(
       score >= MATCH_THRESHOLD ? "Matched" : score <= NO_MATCH_THRESHOLD ? "Not Matched" : "Manual Review";
 
     return { score, suggestion, autoComplete: score >= AUTO_COMPLETE_THRESHOLD };
-  } catch (error) {
-    // TEMPORARY diagnostic logging round 2 — remove once the cause is found.
-    console.error(
-      "[FaceMatch] compareFaces failed:",
-      error instanceof Error ? `${error.message}\n${error.stack}` : String(error)
-    );
+  } catch {
     return { score: null, suggestion: "Manual Review", autoComplete: false };
   } finally {
     clearFaceMatchCache();
@@ -121,15 +126,8 @@ function getImageSize(uri: string): Promise<{ width: number; height: number }> {
 }
 
 async function embedFace(rawImageUri: string): Promise<Float32Array | null> {
-  const tag = `[FaceMatch:${rawImageUri.slice(-12)}]`;
-  console.error(tag, "start", rawImageUri);
   const imageUri = await ensureLocalUri(rawImageUri);
-  console.error(tag, "local uri", imageUri);
-  const faces = await FaceDetection.detect(imageUri, { performanceMode: "accurate" }).catch((error) => {
-    console.error(tag, "detect threw", error instanceof Error ? error.message : String(error));
-    return [];
-  });
-  console.error(tag, "face count", faces.length);
+  const faces = await FaceDetection.detect(imageUri, { performanceMode: "accurate" }).catch(() => []);
   if (faces.length === 0) return null;
 
   const face = faces.reduce((largest, current) =>
@@ -143,13 +141,11 @@ async function embedFace(rawImageUri: string): Promise<Float32Array | null> {
   // near the top/side of the frame) — clamp against the real image size or
   // the native crop throws "y + height must be <= bitmap.height()".
   const { width: imageWidth, height: imageHeight } = await getImageSize(imageUri);
-  console.error(tag, "image size", imageWidth, imageHeight, "face frame", JSON.stringify(face.frame));
   const padding = Math.round(Math.max(face.frame.width, face.frame.height) * 0.2);
   const cropX = Math.max(0, face.frame.left - padding);
   const cropY = Math.max(0, face.frame.top - padding);
   const cropWidth = Math.min(face.frame.width + padding * 2, imageWidth - cropX);
   const cropHeight = Math.min(face.frame.height + padding * 2, imageHeight - cropY);
-  console.error(tag, "crop rect", JSON.stringify({ cropX, cropY, cropWidth, cropHeight }));
 
   // Crop+resize natively first (fast) so the pure-JS jpeg-js decode below
   // only ever has to process a small ~112px image, not a multi-megapixel
@@ -158,22 +154,16 @@ async function embedFace(rawImageUri: string): Promise<Float32Array | null> {
     .crop({ originX: cropX, originY: cropY, width: cropWidth, height: cropHeight })
     .resize({ width: MODEL_INPUT_SIZE, height: MODEL_INPUT_SIZE })
     .renderAsync();
-  console.error(tag, "manipulated ok");
   const saved = await manipulated.saveAsync({ format: SaveFormat.JPEG, compress: 1 });
-  console.error(tag, "saved", saved.uri);
 
   const file = new File(saved.uri);
   const bytes = new Uint8Array(await file.arrayBuffer());
-  console.error(tag, "read bytes", bytes.length);
   const decoded = decodeJpeg(bytes, { useTArray: true });
-  console.error(tag, "decoded", decoded.width, decoded.height);
 
   const inputBuffer = rgbaToNormalizedRgb(decoded.data, decoded.width, decoded.height);
 
   const model = await getModel();
-  console.error(tag, "model loaded");
   const outputs = await model.run([inputBuffer]);
-  console.error(tag, "model run ok");
   return new Float32Array(outputs[0]);
 }
 

@@ -15,7 +15,8 @@
     "plugins": [
       "expo-router",
       "react-native-fast-tflite",
-      "expo-font"
+      "expo-font",
+      "expo-asset"
     ],
     "android": {
       "package": "com.vladymere.neupass",
