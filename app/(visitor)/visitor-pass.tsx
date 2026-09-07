@@ -55,6 +55,11 @@ export default function VisitorPassScreen() {
     }, [refresh])
   );
 
+  // Ticks every 30s while a pass is loaded so expiration status/the
+  // near-expiration warning stay live for a visitor who leaves this screen
+  // open, rather than only updating on focus or a manual refresh tap.
+  const [tick, setTick] = useState(0);
+
   const updateExpirationStatus = useCallback(() => {
     if (!pass || !pass.expirationTime) {
       setExpirationStatus("-");
@@ -64,9 +69,12 @@ export default function VisitorPassScreen() {
   }, [pass]);
 
   useEffect(() => {
-    updateExpirationStatus();
     setWarningShown(false);
-  }, [pass, updateExpirationStatus]);
+  }, [pass]);
+
+  useEffect(() => {
+    updateExpirationStatus();
+  }, [pass, tick, updateExpirationStatus]);
 
   useEffect(() => {
     if (!pass || warningShown) return;
@@ -76,7 +84,13 @@ export default function VisitorPassScreen() {
       );
       setWarningShown(true);
     }
-  }, [pass, warningShown]);
+  }, [pass, tick, warningShown]);
+
+  useEffect(() => {
+    if (!pass) return undefined;
+    const interval = setInterval(() => setTick((t) => t + 1), 30000);
+    return () => clearInterval(interval);
+  }, [pass]);
 
   const isExpired = expirationStatus === "Expired";
 

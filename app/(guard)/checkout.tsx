@@ -49,6 +49,7 @@ export default function CheckoutVerificationScreen() {
   const [manualQuery, setManualQuery] = useState("");
   const [liveCaptureFor, setLiveCaptureFor] = useState<string | null>(null);
   const [matchingFor, setMatchingFor] = useState<string | null>(null);
+  const [completingId, setCompletingId] = useState<string | null>(null);
   const [matchScores, setMatchScores] = useState<Record<string, number | null>>({});
   const [refreshHovered, setRefreshHovered] = useState(false);
   const [scanHovered, setScanHovered] = useState(false);
@@ -86,12 +87,15 @@ export default function CheckoutVerificationScreen() {
 
   const filteredManualRequests = useMemo(() => {
     const query = manualQuery.trim().toLowerCase();
-    if (!query) {
-      return requests;
-    }
+    const base = query ? requests.filter((request) => matchesManualQuery(request, query)) : requests;
 
-    return requests.filter((request) => matchesManualQuery(request, query));
-  }, [manualQuery, requests]);
+    // A scanned/looked-up visitor gets its own spotlight card below — drop it
+    // from this list so its face-match controls (live camera, match state)
+    // aren't rendered twice for the same id at once, which previously caused
+    // two simultaneous CameraViews fighting over one shared camera ref.
+    if (!scannedVisitor) return base;
+    return base.filter((request) => request.id !== scannedVisitor.id);
+  }, [manualQuery, requests, scannedVisitor]);
 
   const handleSelect = (
     id: string,
@@ -105,8 +109,10 @@ export default function CheckoutVerificationScreen() {
     statusOverride?: FaceCheckoutVerificationStatus,
     completionMessage = "Checkout completed."
   ) => {
+    if (completingId) return;
     const status = statusOverride || selectedStatus[id] || "Manual Review";
     try {
+      setCompletingId(id);
       await completeCheckout(id, status);
       await refresh();
       setScannedVisitor(null);
@@ -114,6 +120,8 @@ export default function CheckoutVerificationScreen() {
       Alert.alert(completionMessage);
     } catch {
       Alert.alert("Unable to complete checkout.");
+    } finally {
+      setCompletingId(null);
     }
   };
 
@@ -464,8 +472,10 @@ export default function CheckoutVerificationScreen() {
                     <Pressable
                       style={({ pressed }) => [
                         styles.completeButton,
-                        (pressed || completeHovered) && styles.completeButtonActive
+                        (pressed || completeHovered) && styles.completeButtonActive,
+                        !!completingId && styles.completeButtonDisabled
                       ]}
+                      disabled={!!completingId}
                       onPress={() => handleComplete(request.id)}
                       onHoverIn={() => setCompleteHovered(true)}
                       onHoverOut={() => setCompleteHovered(false)}
@@ -519,8 +529,10 @@ export default function CheckoutVerificationScreen() {
               <Pressable
                 style={({ pressed }) => [
                   styles.completeButton,
-                  (pressed || completeHovered) && styles.completeButtonActive
+                  (pressed || completeHovered) && styles.completeButtonActive,
+                  !!completingId && styles.completeButtonDisabled
                 ]}
+                disabled={!!completingId}
                 onPress={() => handleComplete(scannedVisitor.id)}
                 onHoverIn={() => setCompleteHovered(true)}
                 onHoverOut={() => setCompleteHovered(false)}
@@ -756,6 +768,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: NEU_DARK.emeraldStrong,
     alignItems: "center"
+  },
+  completeButtonDisabled: {
+    opacity: 0.5
   },
   completeButtonActive: {
     backgroundColor: "#0C8A62"
