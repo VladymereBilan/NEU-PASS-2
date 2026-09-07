@@ -194,7 +194,7 @@ function GuardAccountsSection({
         <div className="mb-6">
           <h2 className="text-lg font-bold text-white">Create Guard Account</h2>
           <p className="text-sm text-gray-400">
-            Guard accounts are admin-managed only. Capstone 2 will replace the prototype password storage and authentication flow.
+            Guard accounts are admin-managed only. Capstone 2 will replace the current password storage and authentication flow.
           </p>
         </div>
 
@@ -209,8 +209,8 @@ function GuardAccountsSection({
               onChange={(event) => setAccountStatus(event.target.value as AccountStatus)}
               className="w-full rounded-2xl border border-emerald-500/20 bg-white/5 px-4 py-3 text-white outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/20"
             >
-              <option value="Active">Active</option>
-              <option value="Blocked">Blocked</option>
+              <option value="Active" className="bg-[#0a1f14] text-white">Active</option>
+              <option value="Blocked" className="bg-[#0a1f14] text-white">Blocked</option>
             </select>
           </label>
         </div>

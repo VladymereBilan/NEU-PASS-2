@@ -112,7 +112,7 @@ export default async function DashboardPage() {
             <span>No visitor check-ins recorded yet.</span>
           )}
         </div>
-        <div className="text-xs text-gray-500">v1.0.0-prototype</div>
+        <div className="text-xs text-gray-500">Version 2.0.0</div>
       </div>
     </div>
   );
