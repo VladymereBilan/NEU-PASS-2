@@ -71,13 +71,11 @@ export default function IdCaptureScreen() {
     }
   };
 
-  const retakePhoto = () => {
+  const retakePhoto = async () => {
     setCapturedUri("");
     updateDraft({ idImageUri: "" });
-    setCameraReady(false);
-    setCameraSessionKey((key) => key + 1);
-    setShowCamera(true);
     setStatusMessage("");
+    await openCamera();
   };
 
   const usePrototypeSample = () => {

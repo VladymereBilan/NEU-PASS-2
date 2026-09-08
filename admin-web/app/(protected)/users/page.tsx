@@ -375,7 +375,7 @@ function AccountRow({
   fullName: string;
   username: string;
   status?: AccountStatus;
-  onToggleStatus?: () => void;
+  onToggleStatus?: () => Promise<void>;
   onResetPassword: (newPassword: string) => Promise<void>;
 }) {
   const [resetting, setResetting] = useState(false);
@@ -383,6 +383,21 @@ function AccountRow({
   const [resetError, setResetError] = useState("");
   const [resetMessage, setResetMessage] = useState("");
   const [saving, setSaving] = useState(false);
+  const [statusSaving, setStatusSaving] = useState(false);
+  const [statusError, setStatusError] = useState("");
+
+  const handleToggleStatus = async () => {
+    if (!onToggleStatus || statusSaving) return;
+    try {
+      setStatusSaving(true);
+      setStatusError("");
+      await onToggleStatus();
+    } catch (exception) {
+      setStatusError(exception instanceof Error ? exception.message : "Unable to update account status.");
+    } finally {
+      setStatusSaving(false);
+    }
+  };
 
   const openReset = () => {
     setResetting((value) => !value);
@@ -421,14 +436,15 @@ function AccountRow({
         <div className="flex flex-wrap gap-2">
           {onToggleStatus ? (
             <button
-              onClick={onToggleStatus}
-              className={`rounded-2xl px-4 py-3 text-sm font-semibold ${
+              onClick={() => void handleToggleStatus()}
+              disabled={statusSaving}
+              className={`rounded-2xl px-4 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 ${
                 status === "Active"
                   ? "border border-emerald-500/20 bg-white/5 text-white hover:bg-white/10"
                   : "bg-emerald-500 text-[#04150c] hover:bg-emerald-400"
               }`}
             >
-              {status === "Active" ? "Block" : "Unblock"}
+              {statusSaving ? "Saving..." : status === "Active" ? "Block" : "Unblock"}
             </button>
           ) : null}
           <button
@@ -457,6 +473,10 @@ function AccountRow({
             {saving ? "Saving..." : "Save Password"}
           </button>
         </div>
+      ) : null}
+
+      {statusError ? (
+        <p className="mt-2 text-sm font-medium text-red-700">{statusError}</p>
       ) : null}
 
       {resetError ? (

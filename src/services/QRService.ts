@@ -14,7 +14,8 @@ export function parseQRValue(value: string) {
       typeof parsed.visitorId !== "string" ||
       typeof parsed.visitorPassNumber !== "string" ||
       typeof parsed.timestamp !== "string" ||
-      typeof parsed.token !== "string"
+      typeof parsed.token !== "string" ||
+      parsed.token !== PROTOTYPE_TOKEN
     ) {
       return null;
     }

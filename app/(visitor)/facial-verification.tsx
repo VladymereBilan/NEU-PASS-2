@@ -98,14 +98,12 @@ export default function FacialVerificationScreen() {
     }
   };
 
-  const retakePhoto = () => {
+  const retakePhoto = async () => {
     setCapturedUri("");
     updateDraft({ faceImageUri: "", faceVerificationStatus: FaceVerificationStatus.Pending });
     setStatus(FaceVerificationStatus.Pending);
-    setCameraReady(false);
-    setCameraSessionKey((key) => key + 1);
-    setShowCamera(true);
     setStatusMessage("");
+    await openCamera();
   };
 
   const usePrototypeSample = () => {

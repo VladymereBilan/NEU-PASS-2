@@ -54,6 +54,7 @@ export default function CheckoutVerificationScreen() {
   const [scanHovered, setScanHovered] = useState(false);
   const [secondaryHovered, setSecondaryHovered] = useState(false);
   const [completeHovered, setCompleteHovered] = useState(false);
+  const [completingId, setCompletingId] = useState<string | null>(null);
   const liveCameraRef = useRef<any>(null);
 
   const loadFaceUrl = useCallback(async (registration: VisitorRegistration) => {
@@ -105,8 +106,10 @@ export default function CheckoutVerificationScreen() {
     statusOverride?: FaceCheckoutVerificationStatus,
     completionMessage = "Checkout completed."
   ) => {
+    if (completingId) return;
     const status = statusOverride || selectedStatus[id] || "Manual Review";
     try {
+      setCompletingId(id);
       await completeCheckout(id, status);
       await refresh();
       setScannedVisitor(null);
@@ -114,6 +117,8 @@ export default function CheckoutVerificationScreen() {
       Alert.alert(completionMessage);
     } catch {
       Alert.alert("Unable to complete checkout.");
+    } finally {
+      setCompletingId(null);
     }
   };
 
@@ -137,7 +142,17 @@ export default function CheckoutVerificationScreen() {
       setLiveCaptureFor(null);
       if (!photo?.uri) return;
 
-      const referenceUrl = faceUrls[id];
+      // Re-fetch a fresh signed URL rather than reusing the one loaded at
+      // refresh() time — that one can be several minutes old by the time the
+      // guard finishes walking the visitor over and opening live capture,
+      // and the signed URL only lives 5 minutes.
+      const registration =
+        requests.find((request) => request.id === id) ??
+        (scannedVisitor?.id === id ? scannedVisitor : null);
+      const referenceUrl = registration
+        ? await getVisitorImageSignedUrl("visitor-faces", registration.faceImageUri).catch(() => null)
+        : faceUrls[id];
+
       if (!referenceUrl) {
         Alert.alert("No reference photo available for this visitor — please select a status manually.");
         return;
@@ -464,13 +479,17 @@ export default function CheckoutVerificationScreen() {
                     <Pressable
                       style={({ pressed }) => [
                         styles.completeButton,
-                        (pressed || completeHovered) && styles.completeButtonActive
+                        (pressed || completeHovered) && styles.completeButtonActive,
+                        !!completingId && { opacity: 0.6 }
                       ]}
                       onPress={() => handleComplete(request.id)}
                       onHoverIn={() => setCompleteHovered(true)}
                       onHoverOut={() => setCompleteHovered(false)}
+                      disabled={!!completingId}
                     >
-                      <Text style={[styles.completeText, (completeHovered || false) && styles.completeTextActive]}>Complete Checkout</Text>
+                      <Text style={[styles.completeText, (completeHovered || false) && styles.completeTextActive]}>
+                        {completingId === request.id ? "Completing..." : "Complete Checkout"}
+                      </Text>
                     </Pressable>
                   </View>
                 ))
@@ -519,13 +538,17 @@ export default function CheckoutVerificationScreen() {
               <Pressable
                 style={({ pressed }) => [
                   styles.completeButton,
-                  (pressed || completeHovered) && styles.completeButtonActive
+                  (pressed || completeHovered) && styles.completeButtonActive,
+                  !!completingId && { opacity: 0.6 }
                 ]}
                 onPress={() => handleComplete(scannedVisitor.id)}
                 onHoverIn={() => setCompleteHovered(true)}
                 onHoverOut={() => setCompleteHovered(false)}
+                disabled={!!completingId}
               >
-                <Text style={[styles.completeText, (completeHovered || false) && styles.completeTextActive]}>Complete Checkout</Text>
+                <Text style={[styles.completeText, (completeHovered || false) && styles.completeTextActive]}>
+                  {completingId === scannedVisitor.id ? "Completing..." : "Complete Checkout"}
+                </Text>
               </Pressable>
             </View>
           ) : null}
