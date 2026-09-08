@@ -72,10 +72,12 @@ export async function compareFaces(
   }
 
   try {
-    const [referenceEmbedding, liveEmbedding] = await Promise.all([
-      embedFace(referenceImageUri),
-      embedFace(liveImageUri)
-    ]);
+    // Run these one at a time, not via Promise.all — the TFLite interpreter
+    // behind getModel() is a single shared instance, and TFLite explicitly
+    // documents Interpreter.run()/Invoke() as not thread-safe for concurrent
+    // calls on the same instance.
+    const referenceEmbedding = await embedFace(referenceImageUri);
+    const liveEmbedding = await embedFace(liveImageUri);
 
     if (!referenceEmbedding || !liveEmbedding) {
       return { score: null, suggestion: "Manual Review", autoComplete: false };
@@ -140,12 +142,23 @@ async function embedFace(rawImageUri: string): Promise<Float32Array | null> {
   // can extend past the image edges (e.g. a close-up selfie with the face
   // near the top/side of the frame) — clamp against the real image size or
   // the native crop throws "y + height must be <= bitmap.height()".
+  //
+  // The crop is forced SQUARE here (not just the face's raw w x h box):
+  // .resize() below stretches independently on each axis to hit 112x112,
+  // so a non-square crop gets non-uniformly distorted. The reference photo
+  // (portrait-shaped face box) and a live capture (landscape-shaped box)
+  // were being squashed in different directions, which measurably hurt
+  // same-person similarity scores — a real same-person comparison was
+  // landing at ~26%, well under the "Not Matched" cutoff.
   const { width: imageWidth, height: imageHeight } = await getImageSize(imageUri);
-  const padding = Math.round(Math.max(face.frame.width, face.frame.height) * 0.2);
-  const cropX = Math.max(0, face.frame.left - padding);
-  const cropY = Math.max(0, face.frame.top - padding);
-  const cropWidth = Math.min(face.frame.width + padding * 2, imageWidth - cropX);
-  const cropHeight = Math.min(face.frame.height + padding * 2, imageHeight - cropY);
+  const faceCenterX = face.frame.left + face.frame.width / 2;
+  const faceCenterY = face.frame.top + face.frame.height / 2;
+  const rawSize = Math.max(face.frame.width, face.frame.height) * 1.4;
+  const cropSize = Math.min(rawSize, imageWidth, imageHeight);
+  const cropX = Math.round(Math.min(Math.max(0, faceCenterX - cropSize / 2), imageWidth - cropSize));
+  const cropY = Math.round(Math.min(Math.max(0, faceCenterY - cropSize / 2), imageHeight - cropSize));
+  const cropWidth = Math.round(cropSize);
+  const cropHeight = Math.round(cropSize);
 
   // Crop+resize natively first (fast) so the pure-JS jpeg-js decode below
   // only ever has to process a small ~112px image, not a multi-megapixel
@@ -164,7 +177,14 @@ async function embedFace(rawImageUri: string): Promise<Float32Array | null> {
 
   const model = await getModel();
   const outputs = await model.run([inputBuffer]);
-  return new Float32Array(outputs[0]);
+  // outputs[0] is an ArrayBuffer, and `new Float32Array(arrayBuffer)` only
+  // creates a *view* onto it, not a copy. The native TFLite binding reuses
+  // its internal output buffer across run() calls (a standard zero-copy
+  // optimization), so without slice()-ing here, the very next embedFace()
+  // call silently overwrites the memory this "result" still just points at
+  // — both embeddings end up reading the same (latest) data, so every
+  // comparison scored a perfect 1.0 regardless of the two actual photos.
+  return new Float32Array(outputs[0].slice(0));
 }
 
 // jpeg-js decodes to RGBA (4 bytes/pixel); MobileFaceNet expects RGB

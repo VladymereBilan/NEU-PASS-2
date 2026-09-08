@@ -48,6 +48,7 @@ export default function CheckoutVerificationScreen() {
   const [scannerBusy, setScannerBusy] = useState(false);
   const [manualQuery, setManualQuery] = useState("");
   const [liveCaptureFor, setLiveCaptureFor] = useState<string | null>(null);
+  const [liveCameraReady, setLiveCameraReady] = useState(false);
   const [matchingFor, setMatchingFor] = useState<string | null>(null);
   const [completingId, setCompletingId] = useState<string | null>(null);
   const [matchScores, setMatchScores] = useState<Record<string, number | null>>({});
@@ -131,16 +132,21 @@ export default function CheckoutVerificationScreen() {
       Alert.alert("Camera permission was denied. You can still select a status manually.");
       return;
     }
+    setLiveCameraReady(false);
     setLiveCaptureFor(id);
   };
 
   const captureLivePhoto = async (id: string) => {
-    if (!liveCameraRef.current) return;
+    if (!liveCameraRef.current || !liveCameraReady) return;
 
     try {
+      // No skipProcessing here (unlike the registration-flow captures) —
+      // skipProcessing is documented to skip the camera's own image
+      // finalization step, and is a known source of blank/corrupted frames
+      // on some Android devices, especially front camera. This comparison
+      // needs a real, fully-processed frame to embed.
       const photo = await liveCameraRef.current.takePictureAsync({
-        quality: 0.7,
-        skipProcessing: true
+        quality: 0.7
       });
       setLiveCaptureFor(null);
       if (!photo?.uri) return;
@@ -286,17 +292,32 @@ export default function CheckoutVerificationScreen() {
     if (liveCaptureFor === id) {
       return (
         <View style={styles.cameraShell}>
-          <CameraView key={id} ref={liveCameraRef} style={styles.camera} facing="front" />
+          <CameraView
+            key={id}
+            ref={liveCameraRef}
+            style={styles.camera}
+            facing="front"
+            onCameraReady={() => setLiveCameraReady(true)}
+            onMountError={(error) => {
+              setLiveCameraReady(false);
+              setLiveCaptureFor(null);
+              Alert.alert(`Unable to start camera: ${error.message}`);
+            }}
+          />
           <Pressable
             style={({ pressed }) => [
               styles.scanButton,
-              (pressed || scanHovered) && styles.scanButtonActive
+              (pressed || scanHovered) && styles.scanButtonActive,
+              !liveCameraReady && styles.scanButtonDisabled
             ]}
             onPress={() => void captureLivePhoto(id)}
             onHoverIn={() => setScanHovered(true)}
             onHoverOut={() => setScanHovered(false)}
+            disabled={!liveCameraReady}
           >
-            <Text style={[styles.scanButtonText, (scanHovered || false) && styles.scanButtonTextActive]}>Capture</Text>
+            <Text style={[styles.scanButtonText, (scanHovered || false) && styles.scanButtonTextActive]}>
+              {liveCameraReady ? "Capture" : "Starting Camera..."}
+            </Text>
           </Pressable>
           <Pressable
             style={({ pressed }) => [
@@ -626,6 +647,9 @@ const styles = StyleSheet.create({
   },
   scanButtonActive: {
     backgroundColor: "#0C8A62"
+  },
+  scanButtonDisabled: {
+    opacity: 0.6
   },
   scanButtonText: {
     color: "#04150C",
