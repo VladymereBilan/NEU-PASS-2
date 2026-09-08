@@ -7,6 +7,7 @@ import { AuthScreen } from "../src/components/auth/AuthScreen";
 import { BrandHeader } from "../src/components/auth/BrandHeader";
 import { AuthField } from "../src/components/auth/AuthField";
 import { authStyles } from "../src/components/auth/authStyles";
+import BackButton from "../src/components/BackButton";
 
 export default function VisitorLoginScreen() {
   const router = useRouter();
@@ -69,6 +70,7 @@ export default function VisitorLoginScreen() {
 
   return (
     <AuthScreen>
+      <BackButton />
       <BrandHeader title="Visitor Login" subtitle="Use your registered email and password." />
 
       <AuthField label="Email" value={email} onChangeText={setEmail} icon="email" keyboardType="email-address" autoCapitalize="none" />

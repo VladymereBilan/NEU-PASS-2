@@ -1,11 +1,11 @@
 import type { FaceVerificationStatusType } from "../services/FaceVerificationService";
 
 export const PURPOSE_OPTIONS = [
-  "Inquiries",
-  "Enrollment",
-  "Tuition Fee Payment",
-  "Other Payments",
-  "Others"
+  { value: "Inquiries", label: "Inquiries — Open 7:00 AM–6:00 PM" },
+  { value: "Enrollment", label: "Enrollment — Open 7:00 AM–4:00 PM" },
+  { value: "Tuition Fee Payment", label: "Tuition Fee Payment — Open 7:00 AM–4:00 PM" },
+  { value: "Other Payments", label: "Other Payments — Open 7:00 AM–4:00 PM" },
+  { value: "Others", label: "Others — Open 7:00 AM–6:00 PM" }
 ] as const;
 
 export const ID_TYPE_OPTIONS = [

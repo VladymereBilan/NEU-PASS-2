@@ -20,6 +20,8 @@ type MetricCardProps = {
   value: number;
 };
 
+type PurposeValue = (typeof PURPOSE_OPTIONS)[number]["value"];
+
 export default function ReportsScreen() {
   const router = useRouter();
   const { email, signOut } = useAuth();
@@ -68,11 +70,11 @@ export default function ReportsScreen() {
 
   const purposeCounts = useMemo(() => {
     const counts = Object.fromEntries(
-      PURPOSE_OPTIONS.map((purpose) => [purpose, 0])
-    ) as Record<(typeof PURPOSE_OPTIONS)[number], number>;
+      PURPOSE_OPTIONS.map((purpose) => [purpose.value, 0])
+    ) as Record<PurposeValue, number>;
 
     visitors.forEach((visitor) => {
-      const purpose = visitor.purposeOfVisit as (typeof PURPOSE_OPTIONS)[number];
+      const purpose = visitor.purposeOfVisit as PurposeValue;
       if (purpose in counts) {
         counts[purpose] += 1;
       }
@@ -159,8 +161,12 @@ export default function ReportsScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Purpose Counts</Text>
             <View style={styles.summaryGrid}>
-              {Object.entries(purposeCounts).map(([label, value]) => (
-                <MetricCard key={label} label={label} value={value} />
+              {PURPOSE_OPTIONS.map((purpose) => (
+                <MetricCard
+                  key={purpose.value}
+                  label={purpose.label}
+                  value={purposeCounts[purpose.value]}
+                />
               ))}
             </View>
           </View>

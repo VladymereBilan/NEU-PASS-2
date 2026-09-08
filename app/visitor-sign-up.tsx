@@ -7,6 +7,7 @@ import { AuthScreen } from "../src/components/auth/AuthScreen";
 import { BrandHeader } from "../src/components/auth/BrandHeader";
 import { AuthField } from "../src/components/auth/AuthField";
 import { authStyles } from "../src/components/auth/authStyles";
+import BackButton from "../src/components/BackButton";
 
 export default function VisitorSignUpScreen() {
   const router = useRouter();
@@ -59,7 +60,11 @@ export default function VisitorSignUpScreen() {
         }
       });
       if (authError) throw new Error(authError.message);
-      router.replace("/(visitor)/home");
+      Alert.alert(
+        "Account Created",
+        "Please activate your account by confirming it in your email.",
+        [{ text: "OK", onPress: () => router.replace("/visitor-login") }]
+      );
     } catch (exception) {
       const message = exception instanceof Error ? exception.message : "Unable to create account.";
       setError(message);
@@ -71,6 +76,7 @@ export default function VisitorSignUpScreen() {
 
   return (
     <AuthScreen>
+      <BackButton />
       <BrandHeader title="Visitor Sign Up" subtitle="Create your visitor account first." />
 
       <AuthField label="Full Name" value={fullName} onChangeText={setFullName} icon="account" />

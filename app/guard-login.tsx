@@ -8,6 +8,7 @@ import { AuthScreen } from "../src/components/auth/AuthScreen";
 import { BrandHeader } from "../src/components/auth/BrandHeader";
 import { AuthField } from "../src/components/auth/AuthField";
 import { authStyles } from "../src/components/auth/authStyles";
+import BackButton from "../src/components/BackButton";
 
 export default function GuardLoginScreen() {
   const router = useRouter();
@@ -68,6 +69,7 @@ export default function GuardLoginScreen() {
 
   return (
     <AuthScreen>
+      <BackButton />
       <BrandHeader title="Guard Login" subtitle="Admin-managed accounts only." />
 
       <AuthField label="Username" value={username} onChangeText={setUsername} icon="account" autoCapitalize="none" />

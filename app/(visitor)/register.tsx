@@ -61,6 +61,9 @@ export default function RegisterVisitScreen() {
     () => form.purpose === "Others",
     [form.purpose]
   );
+  const selectedPurposeLabel = PURPOSE_OPTIONS.find(
+    (option) => option.value === form.purpose
+  )?.label;
 
   const updateField = (key: keyof FormState, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -269,7 +272,7 @@ export default function RegisterVisitScreen() {
           onHoverOut={() => setPurposeHovered(false)}
         >
           <Text style={form.purpose ? styles.selectText : styles.placeholderText}>
-            {form.purpose || "Select purpose"}
+            {selectedPurposeLabel || "Select purpose"}
           </Text>
           <Text style={styles.selectCaret}>{showPurposeOptions ? "▲" : "▼"}</Text>
         </Pressable>
@@ -277,17 +280,17 @@ export default function RegisterVisitScreen() {
           <View style={styles.options}>
             {PURPOSE_OPTIONS.map((option) => (
               <Pressable
-                key={option}
+                key={option.value}
                 style={({ pressed }) => [styles.optionButton, pressed && styles.optionButtonActive]}
                 onPress={() => {
-                  updateField("purpose", option);
-                  if (option !== "Others") {
+                  updateField("purpose", option.value);
+                  if (option.value !== "Others") {
                     updateField("agenda", "");
                   }
                   setShowPurposeOptions(false);
                 }}
               >
-                <Text style={styles.optionText}>{option}</Text>
+                <Text style={styles.optionText}>{option.label}</Text>
               </Pressable>
             ))}
           </View>
