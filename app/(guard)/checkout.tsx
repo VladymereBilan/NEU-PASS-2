@@ -49,12 +49,12 @@ export default function CheckoutVerificationScreen() {
   const [manualQuery, setManualQuery] = useState("");
   const [liveCaptureFor, setLiveCaptureFor] = useState<string | null>(null);
   const [matchingFor, setMatchingFor] = useState<string | null>(null);
+  const [completingId, setCompletingId] = useState<string | null>(null);
   const [matchScores, setMatchScores] = useState<Record<string, number | null>>({});
   const [refreshHovered, setRefreshHovered] = useState(false);
   const [scanHovered, setScanHovered] = useState(false);
   const [secondaryHovered, setSecondaryHovered] = useState(false);
   const [completeHovered, setCompleteHovered] = useState(false);
-  const [completingId, setCompletingId] = useState<string | null>(null);
   const liveCameraRef = useRef<any>(null);
 
   const loadFaceUrl = useCallback(async (registration: VisitorRegistration) => {
@@ -87,12 +87,15 @@ export default function CheckoutVerificationScreen() {
 
   const filteredManualRequests = useMemo(() => {
     const query = manualQuery.trim().toLowerCase();
-    if (!query) {
-      return requests;
-    }
+    const base = query ? requests.filter((request) => matchesManualQuery(request, query)) : requests;
 
-    return requests.filter((request) => matchesManualQuery(request, query));
-  }, [manualQuery, requests]);
+    // A scanned/looked-up visitor gets its own spotlight card below — drop it
+    // from this list so its face-match controls (live camera, match state)
+    // aren't rendered twice for the same id at once, which previously caused
+    // two simultaneous CameraViews fighting over one shared camera ref.
+    if (!scannedVisitor) return base;
+    return base.filter((request) => request.id !== scannedVisitor.id);
+  }, [manualQuery, requests, scannedVisitor]);
 
   const handleSelect = (
     id: string,
@@ -480,12 +483,12 @@ export default function CheckoutVerificationScreen() {
                       style={({ pressed }) => [
                         styles.completeButton,
                         (pressed || completeHovered) && styles.completeButtonActive,
-                        !!completingId && { opacity: 0.6 }
+                        !!completingId && styles.completeButtonDisabled
                       ]}
+                      disabled={!!completingId}
                       onPress={() => handleComplete(request.id)}
                       onHoverIn={() => setCompleteHovered(true)}
                       onHoverOut={() => setCompleteHovered(false)}
-                      disabled={!!completingId}
                     >
                       <Text style={[styles.completeText, (completeHovered || false) && styles.completeTextActive]}>
                         {completingId === request.id ? "Completing..." : "Complete Checkout"}
@@ -539,12 +542,12 @@ export default function CheckoutVerificationScreen() {
                 style={({ pressed }) => [
                   styles.completeButton,
                   (pressed || completeHovered) && styles.completeButtonActive,
-                  !!completingId && { opacity: 0.6 }
+                  !!completingId && styles.completeButtonDisabled
                 ]}
+                disabled={!!completingId}
                 onPress={() => handleComplete(scannedVisitor.id)}
                 onHoverIn={() => setCompleteHovered(true)}
                 onHoverOut={() => setCompleteHovered(false)}
-                disabled={!!completingId}
               >
                 <Text style={[styles.completeText, (completeHovered || false) && styles.completeTextActive]}>
                   {completingId === scannedVisitor.id ? "Completing..." : "Complete Checkout"}
@@ -779,6 +782,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: NEU_DARK.emeraldStrong,
     alignItems: "center"
+  },
+  completeButtonDisabled: {
+    opacity: 0.5
   },
   completeButtonActive: {
     backgroundColor: "#0C8A62"

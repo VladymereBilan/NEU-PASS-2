@@ -42,7 +42,7 @@ export default function IdCaptureScreen() {
 
     setShowCamera(false);
     setStatusMessage(
-      "Camera permission was denied. You can still use the prototype sample."
+      "Camera permission was denied. You can still use a sample image."
     );
   };
 
@@ -83,7 +83,7 @@ export default function IdCaptureScreen() {
     setCapturedUri(sampleUri);
     updateDraft({ idImageUri: sampleUri });
     setShowCamera(false);
-    setStatusMessage("Prototype sample selected.");
+    setStatusMessage("Sample image selected.");
   };
 
   const handleContinue = () => {
@@ -103,7 +103,7 @@ export default function IdCaptureScreen() {
           <Image source={{ uri: capturedUri }} style={styles.previewImage} />
         ) : (
           <Text style={styles.previewText}>
-            {capturedUri ? "Prototype Sample Selected" : "ID Image Preview"}
+            {capturedUri ? "Sample Image Selected" : "ID Image Preview"}
           </Text>
         )}
       </View>
@@ -112,7 +112,7 @@ export default function IdCaptureScreen() {
 
       {!permission?.granted && !showCamera ? (
         <Text style={styles.permissionNote}>
-          Camera access is required for live capture, but you can still use the prototype sample.
+          Camera access is required for live capture, but you can still use a sample image.
         </Text>
       ) : null}
 
@@ -133,7 +133,7 @@ export default function IdCaptureScreen() {
           ]}
           onPress={usePrototypeSample}
         >
-          <Text style={styles.secondaryText}>Use Prototype Sample</Text>
+          <Text style={styles.secondaryText}>Use Sample Image</Text>
         </Pressable>
       </View>
 

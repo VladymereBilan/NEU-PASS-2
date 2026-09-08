@@ -143,7 +143,7 @@ export default function PendingVerificationsScreen() {
                   />
                 ) : (
                   <Text style={styles.imagePlaceholder}>
-                    {registration.idImageUri ? "Prototype sample" : "No image"}
+                    {registration.idImageUri ? "Sample image" : "No image"}
                   </Text>
                 )}
               </View>
@@ -156,7 +156,7 @@ export default function PendingVerificationsScreen() {
                   />
                 ) : (
                   <Text style={styles.imagePlaceholder}>
-                    {registration.faceImageUri ? "Prototype sample" : "No image"}
+                    {registration.faceImageUri ? "Sample image" : "No image"}
                   </Text>
                 )}
               </View>

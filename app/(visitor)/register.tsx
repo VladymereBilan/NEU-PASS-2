@@ -133,7 +133,7 @@ export default function RegisterVisitScreen() {
       faceVerificationStatus: FaceVerificationStatus.Pending,
       faceImageUri: ""
     });
-    Alert.alert("Registration information saved for prototype.");
+    Alert.alert("Registration information saved.");
     router.push("/(visitor)/privacy-consent");
   };
 

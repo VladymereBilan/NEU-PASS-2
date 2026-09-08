@@ -196,17 +196,23 @@ function MetricCard({ label, value }: MetricCardProps) {
   );
 }
 
+// Philippines has no DST, so a fixed UTC+8 offset is safe — kept consistent
+// with the approve_visitor RPC's own "Asia/Manila" expiration-time logic and
+// admin-web's reportStats.ts, so guard-app and admin-web day/month
+// boundaries agree regardless of the guard device's own timezone setting.
+const MANILA_OFFSET_MS = 8 * 60 * 60 * 1000;
+
 function startOfDay(date: Date) {
-  const copy = new Date(date);
-  copy.setHours(0, 0, 0, 0);
-  return copy;
+  const shifted = new Date(date.getTime() + MANILA_OFFSET_MS);
+  return new Date(
+    Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate()) -
+      MANILA_OFFSET_MS
+  );
 }
 
 function startOfMonth(date: Date) {
-  const copy = new Date(date);
-  copy.setDate(1);
-  copy.setHours(0, 0, 0, 0);
-  return copy;
+  const shifted = new Date(date.getTime() + MANILA_OFFSET_MS);
+  return new Date(Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), 1) - MANILA_OFFSET_MS);
 }
 
 const styles = StyleSheet.create({

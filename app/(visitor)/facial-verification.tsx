@@ -56,7 +56,7 @@ export default function FacialVerificationScreen() {
 
     setShowCamera(false);
     setStatusMessage(
-      "Camera permission was denied. You can still use the prototype sample."
+      "Camera permission was denied. You can still use a sample image."
     );
   };
 
@@ -112,7 +112,7 @@ export default function FacialVerificationScreen() {
     updateDraft({ faceImageUri: sampleUri, faceVerificationStatus: prototypeMode() });
     setStatus(prototypeMode());
     setShowCamera(false);
-    setStatusMessage("Prototype sample selected.");
+    setStatusMessage("Sample image selected.");
   };
 
   const handleSubmit = async () => {
@@ -184,7 +184,7 @@ export default function FacialVerificationScreen() {
         This step verifies that the visitor matches the submitted ID information.
       </Text>
       <Text style={styles.note}>
-        Automatic face matching against your ID photo is still prototype-only — a guard will
+        Automatic face matching against your ID photo is currently under review — a guard will
         manually confirm your identity.
       </Text>
 
@@ -193,7 +193,7 @@ export default function FacialVerificationScreen() {
           <Image source={{ uri: capturedUri }} style={styles.previewImage} />
         ) : (
           <Text style={styles.previewText}>
-            {capturedUri ? "Prototype Sample Selected" : "Face Image Preview"}
+            {capturedUri ? "Sample Image Selected" : "Face Image Preview"}
           </Text>
         )}
       </View>
@@ -209,7 +209,7 @@ export default function FacialVerificationScreen() {
 
       {!permission?.granted && !showCamera ? (
         <Text style={styles.permissionNote}>
-          Camera access is required for live capture, but you can still use the prototype sample.
+          Camera access is required for live capture, but you can still use a sample image.
         </Text>
       ) : null}
 
@@ -230,7 +230,7 @@ export default function FacialVerificationScreen() {
           ]}
           onPress={usePrototypeSample}
         >
-          <Text style={styles.secondaryText}>Use Prototype Sample</Text>
+          <Text style={styles.secondaryText}>Use Sample Image</Text>
         </Pressable>
       </View>
 

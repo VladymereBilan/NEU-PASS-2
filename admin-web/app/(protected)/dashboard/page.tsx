@@ -57,7 +57,7 @@ export default async function DashboardPage() {
           eyebrow="Breakdown"
           action={
             <span className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400">
-              Today
+              All Time
             </span>
           }
         >
@@ -112,7 +112,7 @@ export default async function DashboardPage() {
             <span>No visitor check-ins recorded yet.</span>
           )}
         </div>
-        <div className="text-xs text-gray-500">v1.0.0-prototype</div>
+        <div className="text-xs text-gray-500">Version 2.0.0</div>
       </div>
     </div>
   );

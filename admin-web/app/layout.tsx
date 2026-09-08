@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "NEU-Pass Admin",
-  description: "Prototype web admin dashboard for NEU-Pass"
+  description: "NEU-Pass Admin Dashboard"
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
