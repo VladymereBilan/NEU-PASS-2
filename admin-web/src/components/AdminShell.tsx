@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
   AuditIcon,
   ChevronLeftIcon,
+  CloseIcon,
   DashboardIcon,
+  MenuIcon,
   ReportsIcon,
   SignOutIcon,
   UsersManageIcon,
@@ -33,6 +35,11 @@ export function AdminShell({
   const pathname = usePathname();
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [pathname]);
 
   const title = useMemo(() => {
     if (pathname.includes("/visitors")) return "Visitor Monitoring";
@@ -73,6 +80,71 @@ export function AdminShell({
         backgroundAttachment: "fixed"
       }}
     >
+      {mobileNavOpen ? (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <button
+            type="button"
+            aria-label="Close navigation menu"
+            onClick={() => setMobileNavOpen(false)}
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+          />
+          <div className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col border-r border-emerald-500/15 bg-[#040f0a] p-5 shadow-2xl">
+            <div className="mb-8 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-3 overflow-hidden">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-emerald-500/40 bg-emerald-950/60">
+                  <ShieldIcon className="h-5 w-5 text-emerald-400" />
+                </div>
+                <div className="overflow-hidden">
+                  <div className="truncate text-xs font-bold uppercase tracking-[0.3em] text-white">
+                    NEU PASS
+                  </div>
+                  <div className="truncate text-sm font-semibold text-emerald-400">
+                    Admin Console
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMobileNavOpen(false)}
+                aria-label="Close navigation menu"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-emerald-500/25 text-gray-400 transition hover:bg-emerald-500/10 hover:text-emerald-300"
+              >
+                <CloseIcon className="h-4 w-4" />
+              </button>
+            </div>
+
+            <nav className="flex flex-1 flex-col gap-1">
+              {navItems.map((item) => {
+                const active = pathname === item.href;
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
+                      active
+                        ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                        : "border border-transparent text-gray-400 hover:bg-white/5 hover:text-gray-200"
+                    }`}
+                  >
+                    <Icon className="h-5 w-5 shrink-0" />
+                    <span className="truncate">{item.label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+
+            <button
+              onClick={() => void signOut()}
+              className="mt-4 flex items-center gap-3 rounded-2xl border border-emerald-500/20 px-4 py-3 text-sm font-semibold text-gray-400 transition hover:bg-white/5 hover:text-gray-200"
+            >
+              <SignOutIcon className="h-5 w-5 shrink-0" />
+              <span>Sign Out</span>
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       <div className="mx-auto flex min-h-screen w-full max-w-[1700px]">
         <aside
           className={`hidden flex-col border-r border-emerald-500/15 bg-[#040f0a]/95 p-5 backdrop-blur-sm transition-all duration-200 lg:flex ${
@@ -139,11 +211,21 @@ export function AdminShell({
 
         <div className="flex min-h-screen flex-1 flex-col">
           <header className="flex flex-wrap items-center justify-between gap-4 border-b border-emerald-500/15 bg-[#040f0a]/80 px-5 py-4 backdrop-blur-sm lg:px-8">
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-400">
-                Security Operations
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setMobileNavOpen(true)}
+                aria-label="Open navigation menu"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-emerald-500/25 text-gray-300 transition hover:bg-emerald-500/10 hover:text-emerald-300 lg:hidden"
+              >
+                <MenuIcon className="h-5 w-5" />
+              </button>
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-400">
+                  Security Operations
+                </div>
+                <h1 className="text-2xl font-bold text-white">{title}</h1>
               </div>
-              <h1 className="text-2xl font-bold text-white">{title}</h1>
             </div>
             <div className="flex items-center gap-3">
               <div className="hidden text-sm text-gray-400 md:block">{today}</div>

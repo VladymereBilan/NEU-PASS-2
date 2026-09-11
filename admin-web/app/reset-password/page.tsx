@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { AuthShell, Field, LockIcon } from "@/components/AuthShell";
+import { passwordPolicyError } from "@/lib/passwordPolicy";
 
 type Status = "verifying" | "ready" | "invalid";
 
@@ -72,8 +73,9 @@ export default function ResetPasswordPage() {
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
 
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
+    const policyError = passwordPolicyError(password);
+    if (policyError) {
+      setError(policyError);
       return;
     }
     if (password !== confirm) {

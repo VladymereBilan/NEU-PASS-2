@@ -14,11 +14,11 @@ export default async function ProtectedLayout({ children }: { children: React.Re
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("account_type, username")
+    .select("account_type, username, account_status")
     .eq("id", user.id)
     .maybeSingle();
 
-  if (profile?.account_type !== "admin") {
+  if (profile?.account_type !== "admin" || profile.account_status !== "Active") {
     redirect("/login");
   }
 

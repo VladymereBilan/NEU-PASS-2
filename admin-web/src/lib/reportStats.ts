@@ -11,7 +11,7 @@ export type VisitorRow = {
   created_at: string;
 };
 
-const PURPOSE_OPTIONS = [
+export const PURPOSE_OPTIONS = [
   "Inquiries",
   "Enrollment",
   "Tuition Fee Payment",

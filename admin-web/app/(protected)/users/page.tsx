@@ -8,12 +8,16 @@ import {
   listAdminAccounts,
   listGuardAccounts,
   resetAccountPassword,
+  setAdminAccountStatus,
   setGuardAccountStatus,
   updateOwnRecoveryEmail,
   type AccountStatus,
   type AdminAccount,
   type GuardAccount
 } from "@/actions/accounts";
+import { ConfirmButton } from "@/components/ConfirmButton";
+import { passwordPolicyError } from "@/lib/passwordPolicy";
+import { usernamePolicyError } from "@/lib/usernamePolicy";
 
 export default function UsersPage() {
   const [guards, setGuards] = useState<GuardAccount[]>([]);
@@ -169,6 +173,18 @@ function GuardAccountsSection({
       return;
     }
 
+    const usernameError = usernamePolicyError(username);
+    if (usernameError) {
+      setError(usernameError);
+      return;
+    }
+
+    const passwordErrorMessage = passwordPolicyError(password);
+    if (passwordErrorMessage) {
+      setError(passwordErrorMessage);
+      return;
+    }
+
     try {
       setError("");
       await createGuardAccount({ fullName, username, password, accountStatus });
@@ -284,10 +300,41 @@ function AdminAccountsSection({
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [ownId, setOwnId] = useState<string | null>(null);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const own = await getOwnAccount();
+        setOwnId(own.id);
+      } catch {
+        // Non-fatal — self-block prevention just falls back to the server's
+        // own check if this doesn't resolve in time.
+      }
+    })();
+  }, []);
+
+  const toggleStatus = async (account: AdminAccount) => {
+    const nextStatus: AccountStatus = account.accountStatus === "Active" ? "Blocked" : "Active";
+    await setAdminAccountStatus(account.id, nextStatus);
+    await onChanged();
+  };
 
   const handleCreate = async () => {
     if (!fullName.trim() || !username.trim() || !password.trim()) {
       setError("All admin account fields are required.");
+      return;
+    }
+
+    const usernameError = usernamePolicyError(username);
+    if (usernameError) {
+      setError(usernameError);
+      return;
+    }
+
+    const passwordErrorMessage = passwordPolicyError(password);
+    if (passwordErrorMessage) {
+      setError(passwordErrorMessage);
       return;
     }
 
@@ -352,6 +399,9 @@ function AdminAccountsSection({
               key={account.id}
               fullName={account.fullName}
               username={account.username}
+              status={account.accountStatus}
+              isSelf={ownId === account.id}
+              onToggleStatus={ownId === account.id ? undefined : () => toggleStatus(account)}
               onResetPassword={(newPassword) => resetAccountPassword(account.id, newPassword)}
             />
           ))}
@@ -369,12 +419,14 @@ function AccountRow({
   fullName,
   username,
   status,
+  isSelf,
   onToggleStatus,
   onResetPassword
 }: {
   fullName: string;
   username: string;
   status?: AccountStatus;
+  isSelf?: boolean;
   onToggleStatus?: () => Promise<void>;
   onResetPassword: (newPassword: string) => Promise<void>;
 }) {
@@ -407,8 +459,9 @@ function AccountRow({
   };
 
   const handleReset = async () => {
-    if (newPassword.trim().length < 6) {
-      setResetError("Password must be at least 6 characters.");
+    const policyError = passwordPolicyError(newPassword.trim());
+    if (policyError) {
+      setResetError(policyError);
       return;
     }
 
@@ -429,23 +482,30 @@ function AccountRow({
     <div className="rounded-2xl border border-emerald-500/15 bg-white/5 p-4">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <div className="font-medium text-white">{fullName}</div>
+          <div className="font-medium text-white">
+            {fullName}
+            {isSelf ? <span className="ml-2 text-xs font-normal text-emerald-400">(You)</span> : null}
+          </div>
           <div className="text-sm text-gray-400">@{username}</div>
           {status ? <div className="text-xs text-gray-500">Status: {status}</div> : null}
         </div>
         <div className="flex flex-wrap gap-2">
           {onToggleStatus ? (
-            <button
-              onClick={() => void handleToggleStatus()}
+            <ConfirmButton
+              label={statusSaving ? "Saving..." : status === "Active" ? "Block" : "Unblock"}
+              confirmLabel={status === "Active" ? "Confirm Block" : "Confirm Unblock"}
               disabled={statusSaving}
+              onConfirm={() => void handleToggleStatus()}
               className={`rounded-2xl px-4 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 ${
                 status === "Active"
                   ? "border border-emerald-500/20 bg-white/5 text-white hover:bg-white/10"
                   : "bg-emerald-500 text-[#04150c] hover:bg-emerald-400"
               }`}
-            >
-              {statusSaving ? "Saving..." : status === "Active" ? "Block" : "Unblock"}
-            </button>
+            />
+          ) : isSelf ? (
+            <span className="rounded-2xl border border-emerald-500/10 bg-white/5 px-4 py-3 text-sm font-medium text-gray-500">
+              Can&apos;t block your own account
+            </span>
           ) : null}
           <button
             onClick={openReset}
@@ -465,13 +525,13 @@ function AccountRow({
             placeholder="New password"
             className="w-full max-w-xs rounded-2xl border border-emerald-500/20 bg-white/5 px-4 py-2.5 text-white outline-none placeholder:text-gray-500 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/20"
           />
-          <button
-            onClick={() => void handleReset()}
+          <ConfirmButton
+            label={saving ? "Saving..." : "Save Password"}
+            confirmLabel="Confirm New Password"
             disabled={saving}
+            onConfirm={() => void handleReset()}
             className="rounded-2xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-[#04150c] hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {saving ? "Saving..." : "Save Password"}
-          </button>
+          />
         </div>
       ) : null}
 

@@ -64,3 +64,19 @@ export function SignOutIcon({ className }: { className?: string }) {
     </svg>
   );
 }
+
+export function MenuIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <path strokeLinecap="round" d="M4 6.5h16M4 12h16M4 17.5h16" />
+    </svg>
+  );
+}
+
+export function CloseIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <path strokeLinecap="round" d="M5 5l14 14M19 5L5 19" />
+    </svg>
+  );
+}
