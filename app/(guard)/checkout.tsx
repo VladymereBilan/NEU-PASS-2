@@ -127,6 +127,14 @@ export default function CheckoutVerificationScreen() {
   };
 
   const openLiveCapture = async (id: string) => {
+    // compareFaces() shares a single TFLite model instance and a single
+    // on-disk cache directory across calls (see the finally block in
+    // captureLivePhoto) — TFLite isn't safe to invoke concurrently, so only
+    // one visitor's face comparison may be in flight at a time.
+    if (matchingFor) {
+      Alert.alert("Please wait for the current face comparison to finish.");
+      return;
+    }
     const result = permission?.granted ? permission : await requestPermission();
     if (!result?.granted) {
       Alert.alert("Camera permission was denied. You can still select a status manually.");
@@ -151,6 +159,14 @@ export default function CheckoutVerificationScreen() {
       setLiveCaptureFor(null);
       if (!photo?.uri) return;
 
+      // Set matchingFor as soon as we have a photo, not just around the
+      // compareFaces() call itself — this is the lock openLiveCapture checks
+      // to keep a second visitor's live capture (and thus a second
+      // compareFaces() call racing the shared TFLite model/cache) from
+      // starting while the reference-photo signed URL fetch below is still
+      // in flight.
+      setMatchingFor(id);
+
       // Re-fetch a fresh signed URL rather than reusing the one loaded at
       // refresh() time — that one can be several minutes old by the time the
       // guard finishes walking the visitor over and opening live capture,
@@ -167,7 +183,6 @@ export default function CheckoutVerificationScreen() {
         return;
       }
 
-      setMatchingFor(id);
       const result = await compareFaces(referenceUrl, photo.uri);
       setMatchScores((prev) => ({ ...prev, [id]: result.score }));
       handleSelect(id, result.suggestion);
