@@ -536,7 +536,7 @@ function AccountRow({
       ) : null}
 
       {statusError ? (
-        <p className="mt-2 text-sm font-medium text-red-700">{statusError}</p>
+        <p className="mt-2 text-sm font-medium text-red-400">{statusError}</p>
       ) : null}
 
       {resetError ? (
