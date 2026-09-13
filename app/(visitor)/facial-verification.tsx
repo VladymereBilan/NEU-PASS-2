@@ -67,9 +67,13 @@ export default function FacialVerificationScreen() {
     }
 
     try {
+      // No skipProcessing here — it's a known source of orientation/mirroring
+      // inconsistencies on Android front camera (see checkout.tsx's live
+      // capture, which avoids it for the same reason). This photo is later
+      // compared against a checkout live capture in FaceMatchService, so it
+      // needs to go through the same processing pipeline to be comparable.
       const photo = await cameraRef.current?.takePictureAsync({
-        quality: 0.7,
-        skipProcessing: true
+        quality: 0.7
       });
 
       if (!photo?.uri) {
