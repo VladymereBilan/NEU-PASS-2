@@ -154,11 +154,15 @@ async function embedFace(rawImageUri: string): Promise<Float32Array | null> {
   const faceCenterX = face.frame.left + face.frame.width / 2;
   const faceCenterY = face.frame.top + face.frame.height / 2;
   const rawSize = Math.max(face.frame.width, face.frame.height) * 1.4;
-  const cropSize = Math.min(rawSize, imageWidth, imageHeight);
-  const cropX = Math.round(Math.min(Math.max(0, faceCenterX - cropSize / 2), imageWidth - cropSize));
-  const cropY = Math.round(Math.min(Math.max(0, faceCenterY - cropSize / 2), imageHeight - cropSize));
-  const cropWidth = Math.round(cropSize);
-  const cropHeight = Math.round(cropSize);
+  // Round the crop size to a whole pixel first, then derive cropX/cropY from
+  // that same rounded value — rounding cropX/cropWidth independently could
+  // push cropX + cropWidth one pixel past imageWidth (or the Y equivalent),
+  // which throws in the native crop below.
+  const cropSize = Math.round(Math.min(rawSize, imageWidth, imageHeight));
+  const cropX = Math.min(Math.max(0, Math.round(faceCenterX - cropSize / 2)), imageWidth - cropSize);
+  const cropY = Math.min(Math.max(0, Math.round(faceCenterY - cropSize / 2)), imageHeight - cropSize);
+  const cropWidth = cropSize;
+  const cropHeight = cropSize;
 
   // Crop+resize natively first (fast) so the pure-JS jpeg-js decode below
   // only ever has to process a small ~112px image, not a multi-megapixel
