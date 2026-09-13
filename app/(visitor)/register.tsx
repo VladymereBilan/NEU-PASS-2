@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useAuth } from "../../src/context/AuthContext";
 import { useRegistrationDraft } from "../../src/context/RegistrationDraftContext";
 import { FaceVerificationStatus } from "../../src/services/FaceVerificationService";
+import { getLatestVisitorRegistration } from "../../src/services/PrototypeRegistrationStore";
 import {
   ID_NUMBER_PATTERN,
   ID_TYPE_OPTIONS,
@@ -56,6 +57,30 @@ export default function RegisterVisitScreen() {
   const [idTypeHovered, setIdTypeHovered] = useState(false);
   const [purposeHovered, setPurposeHovered] = useState(false);
   const [submitHovered, setSubmitHovered] = useState(false);
+
+  // Safety net for the ActionTile disable on the home screen: also blocks
+  // reaching this form directly (back navigation, deep link) while the
+  // visitor already has a Pending/Active registration in flight.
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      if (!accountEmail) return undefined;
+      (async () => {
+        const latest = await getLatestVisitorRegistration(accountEmail);
+        if (cancelled) return;
+        if (latest && (latest.registrationStatus === "Pending" || latest.registrationStatus === "Active")) {
+          Alert.alert(
+            "Registration Locked",
+            "You already have a registration in progress. You can register again once a guard approves your checkout."
+          );
+          router.replace("/(visitor)/home");
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }, [accountEmail, router])
+  );
 
   const isOthersSelected = useMemo(
     () => form.purpose === "Others",

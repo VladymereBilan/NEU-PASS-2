@@ -18,6 +18,7 @@ type Props = {
   icon?: ComponentProps<typeof MaterialCommunityIcons>["name"];
   tint?: ActionTileTint;
   count?: number;
+  disabled?: boolean;
   onPress: () => void;
 };
 
@@ -25,8 +26,9 @@ type Props = {
 // on the guard dashboard for queue sizes); omit it for actions that don't
 // have a meaningful count (e.g. the visitor's "Notifications"). `icon`/`tint`
 // are optional so any existing caller passing just label/count/onPress keeps
-// working unchanged.
-export function ActionTile({ label, description, icon, tint = "green", count, onPress }: Props) {
+// working unchanged. `disabled` greys the tile out and blocks onPress (used
+// to lock "Register Visit" while the visitor already has a Pending/Active pass).
+export function ActionTile({ label, description, icon, tint = "green", count, disabled = false, onPress }: Props) {
   const [hovered, setHovered] = useState(false);
   const colors = TINTS[tint];
 
@@ -35,15 +37,17 @@ export function ActionTile({ label, description, icon, tint = "green", count, on
       style={({ pressed }) => [
         styles.tile,
         { borderColor: colors.border },
-        (pressed || hovered) && styles.tileActive
+        !disabled && (pressed || hovered) && styles.tileActive,
+        disabled && styles.tileDisabled
       ]}
-      onPress={onPress}
+      onPress={disabled ? undefined : onPress}
+      disabled={disabled}
       onHoverIn={() => setHovered(true)}
       onHoverOut={() => setHovered(false)}
     >
       {icon ? (
-        <View style={[styles.iconBadge, { backgroundColor: colors.iconBg }]}>
-          <MaterialCommunityIcons name={icon} size={18} color={colors.iconColor} />
+        <View style={[styles.iconBadge, { backgroundColor: colors.iconBg }, disabled && styles.iconBadgeDisabled]}>
+          <MaterialCommunityIcons name={icon} size={18} color={disabled ? NEU_DARK.textMuted : colors.iconColor} />
         </View>
       ) : null}
       {count !== undefined ? (
@@ -51,7 +55,7 @@ export function ActionTile({ label, description, icon, tint = "green", count, on
           <Text style={styles.count}>{count}</Text>
         </View>
       ) : null}
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.label, disabled && styles.labelDisabled]}>{label}</Text>
       {description ? <Text style={styles.description}>{description}</Text> : null}
     </Pressable>
   );
@@ -81,6 +85,9 @@ const styles = StyleSheet.create({
   tileActive: {
     transform: [{ scale: 1.01 }]
   },
+  tileDisabled: {
+    opacity: 0.45
+  },
   iconBadge: {
     width: 34,
     height: 34,
@@ -88,6 +95,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 6
+  },
+  iconBadgeDisabled: {
+    backgroundColor: "rgba(255,255,255,0.08)"
   },
   countRow: {
     alignSelf: "flex-start"
@@ -101,6 +111,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
     color: NEU_DARK.white
+  },
+  labelDisabled: {
+    color: NEU_DARK.textMuted
   },
   description: {
     fontSize: 11,

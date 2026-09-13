@@ -146,6 +146,13 @@ export default function VisitorHomeScreen() {
 
   const statusView = useMemo(() => resolveStatusView(pass), [pass]);
 
+  // Locked while the visitor has a registration in flight (Pending or Active).
+  // registrationStatus only flips to Completed once a guard approves checkout
+  // (see complete_checkout RPC), so this reopens exactly when the CLAUDE.md
+  // lifecycle says it should — not merely once checkoutStatus is "Completed".
+  const registrationLocked =
+    !!pass && (pass.registrationStatus === "Pending" || pass.registrationStatus === "Active");
+
   const handleSignOut = async () => {
     await signOut();
     router.replace("/");
@@ -186,9 +193,14 @@ export default function VisitorHomeScreen() {
       <ActionGrid>
         <ActionTile
           label="Register Visit"
-          description="Submit a new visit request"
+          description={
+            registrationLocked
+              ? "Locked until a guard approves your checkout"
+              : "Submit a new visit request"
+          }
           icon="note-plus-outline"
           tint="green"
+          disabled={registrationLocked}
           onPress={() => router.push("/(visitor)/register")}
         />
         <ActionTile
