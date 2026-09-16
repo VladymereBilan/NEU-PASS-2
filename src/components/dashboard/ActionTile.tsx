@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
     padding: 14,
     gap: 4,
     minHeight: 92,
-    justifyContent: "flex-end"
+    justifyContent: "flex-start"
   },
   tileActive: {
     transform: [{ scale: 1.01 }]
