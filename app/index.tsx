@@ -19,10 +19,6 @@ export default function LoginScreen() {
     );
   }
 
-  if (role === "visitor") {
-    return <Redirect href="/(visitor)/home" />;
-  }
-
   if (role === "guard") {
     return <Redirect href="/(guard)/home" />;
   }
@@ -39,20 +35,6 @@ export default function LoginScreen() {
 
       <View style={styles.options}>
         <RoleOption
-          variant="primary"
-          icon="account"
-          title="Visitor Login"
-          subtitle="Access with existing account"
-          onPress={() => router.push("/visitor-login")}
-        />
-        <RoleOption
-          variant="secondary"
-          icon="account-plus"
-          title="Visitor Sign Up"
-          subtitle="Create a new visitor account"
-          onPress={() => router.push("/visitor-sign-up")}
-        />
-        <RoleOption
           variant="neutral"
           icon="shield-account"
           title="Guard Login"
@@ -63,15 +45,13 @@ export default function LoginScreen() {
 
       <View style={styles.noteBox}>
         <MaterialCommunityIcons name="information-outline" size={16} color={NEU_DARK.textMuted} />
-        <Text style={styles.noteText}>
-          Guard accounts are admin-managed. Visitors create their own accounts.
-        </Text>
+        <Text style={styles.noteText}>Guard accounts are admin-managed.</Text>
       </View>
     </AuthScreen>
   );
 }
 
-type RoleOptionVariant = "primary" | "secondary" | "neutral";
+type RoleOptionVariant = "neutral";
 
 function RoleOption({
   variant,
@@ -121,24 +101,6 @@ const ROLE_OPTION_PALETTES: Record<
     chevronColor: string;
   }
 > = {
-  primary: {
-    background: NEU_DARK.emeraldStrong,
-    border: "transparent",
-    iconBg: "rgba(255, 255, 255, 0.2)",
-    iconColor: NEU_DARK.white,
-    titleColor: NEU_DARK.white,
-    subtitleColor: "rgba(255, 255, 255, 0.8)",
-    chevronColor: NEU_DARK.white
-  },
-  secondary: {
-    background: NEU_DARK.amberSoft,
-    border: NEU_DARK.amber,
-    iconBg: "rgba(251, 191, 36, 0.25)",
-    iconColor: NEU_DARK.amber,
-    titleColor: NEU_DARK.amber,
-    subtitleColor: "rgba(251, 191, 36, 0.75)",
-    chevronColor: NEU_DARK.textMuted
-  },
   neutral: {
     background: NEU_DARK.card,
     border: NEU_DARK.border,
