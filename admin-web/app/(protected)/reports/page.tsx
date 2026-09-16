@@ -1,9 +1,23 @@
+import Link from "next/link";
 import { MetricCard, PURPOSE_ACCENTS } from "@/components/MetricCard";
 import { Panel, Row } from "@/components/Panel";
-import { computeReportStats, type VisitorRow } from "@/lib/reportStats";
+import { DataTable } from "@/components/DataTable";
+import {
+  computeDailyBreakdown,
+  computePurposeCounts,
+  computeReportStats,
+  resolveMonthRange,
+  type VisitorRow
+} from "@/lib/reportStats";
 import { createClient } from "@/lib/supabase/server";
 
-export default async function ReportsPage() {
+const DAILY_BREAKDOWN_PAGE_SIZE = 10;
+
+export default async function ReportsPage({
+  searchParams
+}: {
+  searchParams: { month?: string; page?: string };
+}) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("visitor_registrations")
@@ -19,7 +33,24 @@ export default async function ReportsPage() {
     );
   }
 
-  const stats = computeReportStats((data ?? []) as VisitorRow[]);
+  const rows = (data ?? []) as VisitorRow[];
+  const stats = computeReportStats(rows);
+
+  const monthRange = resolveMonthRange(searchParams.month);
+  const monthRows = rows.filter((row) => {
+    const created = new Date(row.created_at).getTime();
+    return created >= monthRange.start.getTime() && created < monthRange.end.getTime();
+  });
+  const monthPurposeCounts = computePurposeCounts(monthRows);
+  const dailyBreakdown = computeDailyBreakdown(monthRows, monthRange.start, monthRange.end);
+
+  const totalPages = Math.max(1, Math.ceil(dailyBreakdown.length / DAILY_BREAKDOWN_PAGE_SIZE));
+  const requestedPage = Number(searchParams.page) || 1;
+  const page = Math.min(Math.max(1, requestedPage), totalPages);
+  const pagedBreakdown = dailyBreakdown.slice(
+    (page - 1) * DAILY_BREAKDOWN_PAGE_SIZE,
+    page * DAILY_BREAKDOWN_PAGE_SIZE
+  );
 
   return (
     <div className="space-y-6">
@@ -46,9 +77,33 @@ export default async function ReportsPage() {
         </Panel>
       </div>
 
-      <Panel title="Purpose-Based Counts">
+      <Panel
+        title="Purpose-Based Counts"
+        eyebrow="By month"
+        action={
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/reports?month=${monthRange.prevParam}`}
+              className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/20"
+            >
+              ← Prev
+            </Link>
+            <span className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400">
+              {monthRange.label}
+            </span>
+            {monthRange.nextParam ? (
+              <Link
+                href={`/reports?month=${monthRange.nextParam}`}
+                className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/20"
+              >
+                Next →
+              </Link>
+            ) : null}
+          </div>
+        }
+      >
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {Object.entries(stats.purposeCounts).map(([label, value], index) => (
+          {Object.entries(monthPurposeCounts).map(([label, value], index) => (
             <MetricCard
               key={label}
               label={label}
@@ -57,6 +112,44 @@ export default async function ReportsPage() {
             />
           ))}
         </div>
+      </Panel>
+
+      <Panel title="Daily Breakdown" eyebrow={monthRange.label}>
+        <DataTable
+          columns={["Date", "Visitors", "Completed"]}
+          rows={pagedBreakdown.map((day) => [
+            day.date,
+            String(day.visitorsCount),
+            String(day.completedCount)
+          ])}
+        />
+        {totalPages > 1 ? (
+          <div className="mt-4 flex items-center justify-between">
+            {page > 1 ? (
+              <Link
+                href={`/reports?month=${monthRange.param}&page=${page - 1}`}
+                className="rounded-2xl border border-emerald-500/20 bg-white/5 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10"
+              >
+                Previous
+              </Link>
+            ) : (
+              <span />
+            )}
+            <span className="text-sm text-gray-400">
+              Page {page} of {totalPages}
+            </span>
+            {page < totalPages ? (
+              <Link
+                href={`/reports?month=${monthRange.param}&page=${page + 1}`}
+                className="rounded-2xl border border-emerald-500/20 bg-white/5 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10"
+              >
+                Next
+              </Link>
+            ) : (
+              <span />
+            )}
+          </div>
+        ) : null}
       </Panel>
 
       <Panel title="Expired QR Count">
