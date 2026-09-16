@@ -6,6 +6,10 @@ export const PURPOSE_ACCENTS = [
   "from-emerald-400 to-emerald-600"
 ];
 
+// Index-aligned with PURPOSE_OPTIONS — mirrors tailwind.config.ts's
+// good/accent/warn/accent2/muted tokens, which nothing else in the app uses.
+export const PURPOSE_CHART_COLORS = ["#22c55e", "#67e8f9", "#f59e0b", "#8b5cf6", "#93a4be"];
+
 export function MetricCard({
   label,
   value,

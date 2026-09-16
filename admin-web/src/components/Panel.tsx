@@ -10,7 +10,7 @@ export function Panel({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-3xl border border-emerald-500/20 bg-[#0a1f14]/80 p-6 backdrop-blur-sm">
+    <section className="flex h-full flex-col rounded-3xl border border-emerald-500/20 bg-[#0a1f14]/80 p-6 backdrop-blur-sm">
       <div className="flex items-center justify-between gap-4">
         <div>
           {eyebrow ? (
@@ -22,7 +22,7 @@ export function Panel({
         </div>
         {action}
       </div>
-      <div className="mt-5">{children}</div>
+      <div className="mt-5 flex flex-1 flex-col justify-center">{children}</div>
     </section>
   );
 }

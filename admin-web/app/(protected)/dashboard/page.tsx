@@ -1,7 +1,15 @@
-import { MetricCard, PURPOSE_ACCENTS } from "@/components/MetricCard";
+import { MetricCard, PURPOSE_CHART_COLORS } from "@/components/MetricCard";
 import { MiniStat, Panel } from "@/components/Panel";
 import { MonthlyArchiveButton } from "@/components/MonthlyArchiveButton";
-import { computeReportStats, type VisitorRow } from "@/lib/reportStats";
+import { BarChart } from "@/components/BarChart";
+import { DonutChart } from "@/components/DonutChart";
+import {
+  computeDailyBreakdown,
+  computePurposeCounts,
+  computeReportStats,
+  resolveMonthRange,
+  type VisitorRow
+} from "@/lib/reportStats";
 import { createClient } from "@/lib/supabase/server";
 
 function formatRelativeTime(iso: string, now: Date) {
@@ -33,6 +41,14 @@ export default async function DashboardPage() {
   const rows = (data ?? []) as VisitorRow[];
   const stats = computeReportStats(rows);
 
+  const monthRange = resolveMonthRange();
+  const monthRows = rows.filter((row) => {
+    const created = new Date(row.created_at).getTime();
+    return created >= monthRange.start.getTime() && created < monthRange.end.getTime();
+  });
+  const monthPurposeCounts = computePurposeCounts(monthRows);
+  const dailyBreakdown = computeDailyBreakdown(monthRows, monthRange.start, monthRange.end);
+
   const now = new Date();
   const lastCheckIn = rows.reduce<VisitorRow | null>((latest, row) => {
     if (!row.time_in) return latest;
@@ -44,10 +60,9 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard label="Total Visitors" value={stats.totalVisitors} accent="from-emerald-400 to-emerald-600" />
         <MetricCard label="Active Visitors" value={stats.activeVisitors} accent="from-sky-400 to-sky-600" />
-        <MetricCard label="Completed Visitors" value={stats.completedVisitors} accent="from-emerald-400 to-emerald-600" />
         <MetricCard label="Pending Visitors" value={stats.pendingVisitors} accent="from-amber-400 to-amber-600" />
         <MetricCard label="Expired QR Passes" value={stats.expiredQrPasses} accent="from-amber-400 to-amber-600" />
       </section>
@@ -58,20 +73,18 @@ export default async function DashboardPage() {
           eyebrow="Breakdown"
           action={
             <span className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400">
-              All Time
+              {monthRange.label}
             </span>
           }
         >
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {Object.entries(stats.purposeCounts).map(([label, value], index) => (
-              <MetricCard
-                key={label}
-                label={label}
-                value={value}
-                accent={PURPOSE_ACCENTS[index % PURPOSE_ACCENTS.length]}
-              />
-            ))}
-          </div>
+          <DonutChart
+            size={200}
+            segments={Object.entries(monthPurposeCounts).map(([label, value], index) => ({
+              label,
+              value,
+              color: PURPOSE_CHART_COLORS[index % PURPOSE_CHART_COLORS.length]
+            }))}
+          />
         </Panel>
 
         <Panel title="Daily and Monthly Logs" eyebrow="Activity">
@@ -99,6 +112,22 @@ export default async function DashboardPage() {
         </Panel>
       </div>
 
+      <Panel title={`${monthRange.label} Trend`} eyebrow="Activity">
+        <BarChart
+          data={dailyBreakdown.map((d) => ({
+            label: String(Number(d.date.slice(-2))),
+            values: [d.visitorsCount, d.completedCount]
+          }))}
+          seriesLabels={["Visitors", "Completed"]}
+          seriesColors={["#22c55e", "#f59e0b"]}
+          height={200}
+        />
+      </Panel>
+
+      <Panel title="Monthly Archive" eyebrow="Data retention">
+        <MonthlyArchiveButton />
+      </Panel>
+
       <div className="flex flex-col gap-2 rounded-2xl border border-emerald-500/15 bg-[#0a1f14]/60 px-5 py-4 text-sm text-gray-400 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <span className="h-2 w-2 rounded-full bg-emerald-400" />
@@ -115,10 +144,6 @@ export default async function DashboardPage() {
         </div>
         <div className="text-xs text-gray-500">Version 2.0.0</div>
       </div>
-
-      <Panel title="Monthly Archive" eyebrow="Data retention">
-        <MonthlyArchiveButton />
-      </Panel>
     </div>
   );
 }
