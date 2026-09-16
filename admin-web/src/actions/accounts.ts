@@ -2,43 +2,11 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireAdmin } from "@/lib/requireAdmin";
 import { adminUsernameToEmail, guardUsernameToEmail } from "@/lib/syntheticAuth";
 import { escapeLikePattern } from "@/lib/likeEscape";
 import { passwordPolicyError } from "@/lib/passwordPolicy";
 import { usernamePolicyError } from "@/lib/usernamePolicy";
-
-// Server Actions are callable directly over the network by anyone who can
-// reach this app, regardless of which page renders the button that
-// triggers them — so every action here must independently verify the
-// caller is a signed-in admin before touching the service_role client.
-// Never skip this just because the page that calls it happens to be
-// behind the (protected) layout's own check.
-async function requireAdmin() {
-  const supabase = await createClient();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    throw new Error("Not authenticated.");
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("account_type, account_status")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (profile?.account_type !== "admin") {
-    throw new Error("Only admins can perform this action.");
-  }
-
-  if (profile?.account_status !== "Active") {
-    throw new Error("Your admin account has been blocked.");
-  }
-
-  return user;
-}
 
 export type AccountStatus = "Active" | "Blocked";
 

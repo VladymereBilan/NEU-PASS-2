@@ -1,5 +1,6 @@
 import { MetricCard, PURPOSE_ACCENTS } from "@/components/MetricCard";
 import { MiniStat, Panel } from "@/components/Panel";
+import { MonthlyArchiveButton } from "@/components/MonthlyArchiveButton";
 import { computeReportStats, type VisitorRow } from "@/lib/reportStats";
 import { createClient } from "@/lib/supabase/server";
 
@@ -114,6 +115,10 @@ export default async function DashboardPage() {
         </div>
         <div className="text-xs text-gray-500">Version 2.0.0</div>
       </div>
+
+      <Panel title="Monthly Archive" eyebrow="Data retention">
+        <MonthlyArchiveButton />
+      </Panel>
     </div>
   );
 }
