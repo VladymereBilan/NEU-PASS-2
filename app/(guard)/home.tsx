@@ -4,7 +4,6 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { useAuth } from "../../src/context/AuthContext";
 import {
   getActiveVisitors,
-  getCheckoutRequests,
   getPendingRegistrations
 } from "../../src/services/PrototypeRegistrationStore";
 import { DashboardScreen } from "../../src/components/dashboard/DashboardScreen";
@@ -22,7 +21,7 @@ const GUARD_TABS: BottomNavTab[] = [
   { key: "reports", label: "Reports", icon: "chart-bar", route: "/(guard)/reports" }
 ];
 
-type Counts = { pending: number; active: number; checkoutRequests: number };
+type Counts = { pending: number; active: number };
 
 type StatusView = {
   tone: StatusTone;
@@ -45,17 +44,6 @@ function resolveStatusView(counts: Counts): StatusView {
     };
   }
 
-  if (counts.checkoutRequests > 0) {
-    return {
-      tone: "pending",
-      badge: "Checkout Requests",
-      title: `${counts.checkoutRequests} Waiting for Checkout`,
-      description: "Visitors have requested checkout and need verification.",
-      ctaLabel: "Verify Now",
-      ctaRoute: "/(guard)/checkout"
-    };
-  }
-
   return {
     tone: "active",
     badge: "All Clear",
@@ -69,25 +57,23 @@ function resolveStatusView(counts: Counts): StatusView {
 export default function GuardHomeScreen() {
   const router = useRouter();
   const { email, signOut } = useAuth();
-  const [counts, setCounts] = useState<Counts>({ pending: 0, active: 0, checkoutRequests: 0 });
+  const [counts, setCounts] = useState<Counts>({ pending: 0, active: 0 });
   const [loading, setLoading] = useState(true);
   const [ctaHovered, setCtaHovered] = useState(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const [pending, active, checkoutRequests] = await Promise.all([
+      const [pending, active] = await Promise.all([
         getPendingRegistrations(),
-        getActiveVisitors(),
-        getCheckoutRequests()
+        getActiveVisitors()
       ]);
       setCounts({
         pending: pending.length,
-        active: active.length,
-        checkoutRequests: checkoutRequests.length
+        active: active.length
       });
     } catch {
-      setCounts({ pending: 0, active: 0, checkoutRequests: 0 });
+      setCounts({ pending: 0, active: 0 });
     } finally {
       setLoading(false);
     }
@@ -162,10 +148,9 @@ export default function GuardHomeScreen() {
         />
         <ActionTile
           label="Checkout Verification"
-          description="Verify visitors exiting campus"
+          description="Scan a visitor's QR to check them out"
           icon="qrcode-scan"
           tint="blue"
-          count={counts.checkoutRequests}
           onPress={() => router.push("/(guard)/checkout")}
         />
         <ActionTile

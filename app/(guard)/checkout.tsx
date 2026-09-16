@@ -15,7 +15,7 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import { useFocusEffect } from "expo-router";
 import {
   completeCheckout,
-  getCheckoutRequests,
+  getActiveVisitors,
   getVisitorPassByVisitorId
 } from "../../src/services/PrototypeRegistrationStore";
 import { getExpirationStatus } from "../../src/services/ExpirationService";
@@ -32,7 +32,7 @@ import type {
 type ScannerState = "idle" | "camera";
 
 export default function CheckoutVerificationScreen() {
-  const [requests, setRequests] = useState<VisitorRegistration[]>([]);
+  const [activeVisitors, setActiveVisitors] = useState<VisitorRegistration[]>([]);
   const [faceUrls, setFaceUrls] = useState<Record<string, string | null>>({});
   const [selectedStatus, setSelectedStatus] = useState<
     Record<string, FaceCheckoutVerificationStatus>
@@ -69,11 +69,11 @@ export default function CheckoutVerificationScreen() {
     setLoading(true);
     setError("");
     try {
-      const data = await getCheckoutRequests();
-      setRequests(data);
+      const data = await getActiveVisitors();
+      setActiveVisitors(data);
       void Promise.all(data.map(loadFaceUrl));
     } catch {
-      setError("Unable to load checkout requests.");
+      setError("Unable to load active visitors.");
     } finally {
       setLoading(false);
     }
@@ -86,17 +86,19 @@ export default function CheckoutVerificationScreen() {
     }, [refresh])
   );
 
-  const filteredManualRequests = useMemo(() => {
+  const filteredActiveVisitors = useMemo(() => {
     const query = manualQuery.trim().toLowerCase();
-    const base = query ? requests.filter((request) => matchesManualQuery(request, query)) : requests;
+    const base = query
+      ? activeVisitors.filter((visitor) => matchesManualQuery(visitor, query))
+      : activeVisitors;
 
     // A scanned/looked-up visitor gets its own spotlight card below — drop it
     // from this list so its face-match controls (live camera, match state)
     // aren't rendered twice for the same id at once, which previously caused
     // two simultaneous CameraViews fighting over one shared camera ref.
     if (!scannedVisitor) return base;
-    return base.filter((request) => request.id !== scannedVisitor.id);
-  }, [manualQuery, requests, scannedVisitor]);
+    return base.filter((visitor) => visitor.id !== scannedVisitor.id);
+  }, [manualQuery, activeVisitors, scannedVisitor]);
 
   const handleSelect = (
     id: string,
@@ -172,7 +174,7 @@ export default function CheckoutVerificationScreen() {
       // guard finishes walking the visitor over and opening live capture,
       // and the signed URL only lives 5 minutes.
       const registration =
-        requests.find((request) => request.id === id) ??
+        activeVisitors.find((visitor) => visitor.id === id) ??
         (scannedVisitor?.id === id ? scannedVisitor : null);
       const referenceUrl = registration
         ? await getVisitorImageSignedUrl("visitor-faces", registration.faceImageUri).catch(() => null)
@@ -245,14 +247,6 @@ export default function CheckoutVerificationScreen() {
         return;
       }
 
-      if (visitor.checkoutStatus !== "Checkout Requested") {
-        setScannerState("idle");
-        Alert.alert(
-          "This visitor has not requested checkout yet. Ask them to request checkout first."
-        );
-        return;
-      }
-
       const expirationStatus = getExpirationStatus(visitor.expirationTime);
       setScannedVisitor(visitor);
       setSelectedStatus((prev) => ({
@@ -288,10 +282,10 @@ export default function CheckoutVerificationScreen() {
       return;
     }
 
-    const found = requests.find((request) => matchesManualQuery(request, query));
+    const found = activeVisitors.find((visitor) => matchesManualQuery(visitor, query));
 
     if (!found) {
-      setScanMessage("No matching checkout request found.");
+      setScanMessage("No matching active visitor found.");
       return;
     }
 
@@ -461,40 +455,37 @@ export default function CheckoutVerificationScreen() {
           </View>
 
           {loading ? (
-            <Text style={styles.body}>Loading checkout requests...</Text>
+            <Text style={styles.body}>Loading active visitors...</Text>
           ) : error ? (
             <Text style={styles.body}>{error}</Text>
-          ) : requests.length === 0 ? (
-            <Text style={styles.body}>No checkout requests.</Text>
+          ) : activeVisitors.length === 0 ? (
+            <Text style={styles.body}>No active visitors.</Text>
           ) : (
             <View style={styles.listGap}>
-              {filteredManualRequests.length === 0 ? (
-                <Text style={styles.body}>No matching requests.</Text>
+              {filteredActiveVisitors.length === 0 ? (
+                <Text style={styles.body}>No matching visitors.</Text>
               ) : (
-                filteredManualRequests.map((request) => (
-                  <View key={request.id} style={styles.itemCard}>
-                    <Text style={styles.itemTitle}>{request.fullName}</Text>
+                filteredActiveVisitors.map((visitor) => (
+                  <View key={visitor.id} style={styles.itemCard}>
+                    <Text style={styles.itemTitle}>{visitor.fullName}</Text>
                     <Text style={styles.itemText}>
-                      Purpose: {request.purposeOfVisit}
+                      Purpose: {visitor.purposeOfVisit}
                     </Text>
                     <Text style={styles.itemText}>
-                      Visitor Pass: {request.visitorPassNumber}
+                      Visitor Pass: {visitor.visitorPassNumber}
                     </Text>
                     <Text style={styles.itemText}>
-                      Time In: {formatDate(request.timeIn)}
+                      Time In: {formatDate(visitor.timeIn)}
                     </Text>
                     <Text style={styles.itemText}>
-                      Expiration: {formatDate(request.expirationTime)}
-                    </Text>
-                    <Text style={styles.itemText}>
-                      Checkout Requested: {formatDate(request.checkoutRequestedAt)}
+                      Expiration: {formatDate(visitor.expirationTime)}
                     </Text>
 
-                    {faceUrls[request.id] ? (
-                      <Image source={{ uri: faceUrls[request.id]! }} style={styles.thumbnail} />
+                    {faceUrls[visitor.id] ? (
+                      <Image source={{ uri: faceUrls[visitor.id]! }} style={styles.thumbnail} />
                     ) : null}
 
-                    {renderFaceMatchControls(request.id)}
+                    {renderFaceMatchControls(visitor.id)}
 
                     <Text style={styles.selectorLabel}>Face Verification</Text>
                     <View style={styles.selectorRow}>
@@ -504,10 +495,10 @@ export default function CheckoutVerificationScreen() {
                             key={status}
                             style={[
                               styles.selectorButton,
-                              selectedStatus[request.id] === status &&
+                              selectedStatus[visitor.id] === status &&
                                 styles.selectorActive
                             ]}
-                            onPress={() => handleSelect(request.id, status)}
+                            onPress={() => handleSelect(visitor.id, status)}
                           >
                             <Text style={styles.selectorText}>{status}</Text>
                           </Pressable>
@@ -522,12 +513,12 @@ export default function CheckoutVerificationScreen() {
                         !!completingId && styles.completeButtonDisabled
                       ]}
                       disabled={!!completingId}
-                      onPress={() => handleComplete(request.id)}
+                      onPress={() => handleComplete(visitor.id)}
                       onHoverIn={() => setCompleteHovered(true)}
                       onHoverOut={() => setCompleteHovered(false)}
                     >
                       <Text style={[styles.completeText, (completeHovered || false) && styles.completeTextActive]}>
-                        {completingId === request.id ? "Completing..." : "Complete Checkout"}
+                        {completingId === visitor.id ? "Completing..." : "Complete Checkout"}
                       </Text>
                     </Pressable>
                   </View>
