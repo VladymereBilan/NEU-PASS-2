@@ -1,4 +1,4 @@
-const STEP_LABELS = ["Details", "Consent", "ID Photo", "Review", "Face Photo"];
+const STEP_LABELS = ["Consent", "Details", "ID Photo", "Review", "Face Photo"];
 
 export function VisitShell({
   step,

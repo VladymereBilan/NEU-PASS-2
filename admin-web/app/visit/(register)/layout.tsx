@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { RegistrationDraftProvider } from "@/lib/registrationDraft";
+import { RegistrationDraftProvider, useRegistrationDraft } from "@/lib/registrationDraft";
 
 type BootstrapState =
   | { status: "loading" }
@@ -83,7 +83,33 @@ export default function VisitLayout({ children }: { children: React.ReactNode })
     return <CenteredMessage title="Something went wrong" body={state.message} />;
   }
 
-  return <RegistrationDraftProvider>{children}</RegistrationDraftProvider>;
+  return (
+    <RegistrationDraftProvider>
+      <ConsentGuard>{children}</ConsentGuard>
+    </RegistrationDraftProvider>
+  );
+}
+
+// Consent must come first and actually be agreed to — without this, any
+// step is directly URL-reachable regardless of whether a visitor ever saw
+// or accepted the privacy consent screen at "/visit".
+function ConsentGuard({ children }: { children: React.ReactNode }) {
+  const { draft } = useRegistrationDraft();
+  const pathname = usePathname();
+  const router = useRouter();
+  const blocked = !draft.consentAccepted && pathname !== "/visit";
+
+  useEffect(() => {
+    if (blocked) router.replace("/visit");
+  }, [blocked, router]);
+
+  if (blocked) {
+    return (
+      <CenteredMessage title="Please accept the privacy consent first" body="Redirecting…" />
+    );
+  }
+
+  return <>{children}</>;
 }
 
 function CenteredMessage({ title, body }: { title: string; body: string }) {
