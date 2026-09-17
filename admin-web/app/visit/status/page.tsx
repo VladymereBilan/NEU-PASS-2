@@ -94,7 +94,7 @@ export default function VisitStatusPage() {
 
     let cancelled = false;
     QRCode.toDataURL(buildVisitorQrValue(row.id, row.visitor_pass_number || ""))
-      .then((url) => {
+      .then((url: string) => {
         if (!cancelled) setQrDataUrl(url);
       })
       .catch(() => {

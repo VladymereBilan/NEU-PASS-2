@@ -52,6 +52,7 @@ export default function CheckoutVerificationScreen() {
   const [matchingFor, setMatchingFor] = useState<string | null>(null);
   const [completingId, setCompletingId] = useState<string | null>(null);
   const [matchScores, setMatchScores] = useState<Record<string, number | null>>({});
+  const [matchReasons, setMatchReasons] = useState<Record<string, string | undefined>>({});
   const [refreshHovered, setRefreshHovered] = useState(false);
   const [scanHovered, setScanHovered] = useState(false);
   const [secondaryHovered, setSecondaryHovered] = useState(false);
@@ -129,10 +130,8 @@ export default function CheckoutVerificationScreen() {
   };
 
   const openLiveCapture = async (id: string) => {
-    // compareFaces() shares a single TFLite model instance and a single
-    // on-disk cache directory across calls (see the finally block in
-    // captureLivePhoto) — TFLite isn't safe to invoke concurrently, so only
-    // one visitor's face comparison may be in flight at a time.
+    // Keep one comparison in flight at a time so the guard cannot start
+    // multiple expensive image uploads from the same checkout screen.
     if (matchingFor) {
       Alert.alert("Please wait for the current face comparison to finish.");
       return;
@@ -150,47 +149,23 @@ export default function CheckoutVerificationScreen() {
     if (!liveCameraRef.current || !liveCameraReady) return;
 
     try {
-      // No skipProcessing here (unlike the registration-flow captures) —
-      // skipProcessing is documented to skip the camera's own image
-      // finalization step, and is a known source of blank/corrupted frames
-      // on some Android devices, especially front camera. This comparison
-      // needs a real, fully-processed frame to embed.
       const photo = await liveCameraRef.current.takePictureAsync({
         quality: 0.7
       });
       setLiveCaptureFor(null);
       if (!photo?.uri) return;
 
-      // Set matchingFor as soon as we have a photo, not just around the
-      // compareFaces() call itself — this is the lock openLiveCapture checks
-      // to keep a second visitor's live capture (and thus a second
-      // compareFaces() call racing the shared TFLite model/cache) from
-      // starting while the reference-photo signed URL fetch below is still
-      // in flight.
+      // Set the lock as soon as we have a photo so a second comparison cannot
+      // start while this request is preparing the live image.
       setMatchingFor(id);
 
-      // Re-fetch a fresh signed URL rather than reusing the one loaded at
-      // refresh() time — that one can be several minutes old by the time the
-      // guard finishes walking the visitor over and opening live capture,
-      // and the signed URL only lives 5 minutes.
-      const registration =
-        activeVisitors.find((visitor) => visitor.id === id) ??
-        (scannedVisitor?.id === id ? scannedVisitor : null);
-      const referenceUrl = registration
-        ? await getVisitorImageSignedUrl("visitor-faces", registration.faceImageUri).catch(() => null)
-        : faceUrls[id];
-
-      if (!referenceUrl) {
-        Alert.alert("No reference photo available for this visitor — please select a status manually.");
-        return;
-      }
-
-      const result = await compareFaces(referenceUrl, photo.uri);
+      const result = await compareFaces(id, photo.uri);
       setMatchScores((prev) => ({ ...prev, [id]: result.score }));
+      setMatchReasons((prev) => ({ ...prev, [id]: result.reason }));
       handleSelect(id, result.suggestion);
 
       if (result.autoComplete) {
-        const similarityPercent = Math.round((result.score as number) * 100);
+        const similarityPercent = Math.round(result.score as number);
         await handleComplete(
           id,
           result.suggestion,
@@ -357,10 +332,10 @@ export default function CheckoutVerificationScreen() {
         {matchScores[id] !== undefined ? (
           <Text style={styles.matchSuggestion}>
             {matchScores[id] === null
-              ? "Couldn't compare automatically — please review manually."
-              : `Suggested: ${selectedStatus[id] || "Manual Review"} (${Math.round(
-                  (matchScores[id] as number) * 100
-                )}% similarity) — please confirm.`}
+              ? `Technical comparison error — manual review required.${matchReasons[id] ? ` Reason: ${matchReasons[id]}` : ""}`
+              : `AWS similarity: ${Number(matchScores[id]).toFixed(2)}% — ${
+                  selectedStatus[id] || "Manual Review"
+                }. Please confirm.`}
           </Text>
         ) : null}
         <Pressable

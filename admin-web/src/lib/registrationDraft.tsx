@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
 
 export type RegistrationDraft = {
   fullName: string;
@@ -76,17 +76,18 @@ const RegistrationDraftContext = createContext<RegistrationDraftContextValue | u
 
 export function RegistrationDraftProvider({ children }: { children: React.ReactNode }) {
   const [draft, setDraft] = useState<RegistrationDraft>(readStoredDraft);
+  const draftRef = useRef(draft);
 
   const updateDraft = useCallback((updates: Partial<RegistrationDraft>) => {
-    setDraft((prev) => {
-      const next = { ...prev, ...updates };
-      writeStoredDraft(next);
-      return next;
-    });
+    const next = { ...draftRef.current, ...updates };
+    draftRef.current = next;
+    writeStoredDraft(next);
+    setDraft(next);
   }, []);
 
   const clearDraft = useCallback(() => {
     clearStoredDraft();
+    draftRef.current = EMPTY_DRAFT;
     setDraft(EMPTY_DRAFT);
   }, []);
 

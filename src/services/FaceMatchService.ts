@@ -1,222 +1,163 @@
-import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 import { Directory, File, Paths } from "expo-file-system";
-import { Asset } from "expo-asset";
-import { Image } from "react-native";
-import { decode as decodeJpeg } from "jpeg-js";
-import FaceDetection from "@react-native-ml-kit/face-detection";
-import { loadTensorflowModel, type TensorflowModel } from "react-native-fast-tflite";
 import type { FaceCheckoutVerificationStatus } from "../types/VisitorRegistration";
-
-// See assets/models/NOTICE.md for this model's provenance and license
-// (InsightFace-lineage MobileFaceNet, non-commercial research use only —
-// fine for this capstone, NOT fine to ship as-is in a real/commercial release).
-const MODEL_INPUT_SIZE = 112;
-const PROTOTYPE_SAMPLE_PREFIX = "prototype://";
-
-// Cosine-similarity thresholds — starting points from commonly-cited
-// MobileFaceNet ranges (~0.5-0.7 for "same person" depending on training/
-// preprocessing), NOT validated against this app's actual camera/lighting.
-// Expect to retune these against real capture pairs on the target device.
-const MATCH_THRESHOLD = 0.6;
-const NO_MATCH_THRESHOLD = 0.35;
-
-// Deliberately stricter than MATCH_THRESHOLD: this is the bar for letting the
-// system complete checkout without a guard confirming, so it should only ever
-// fire on the clearest matches. Everything below it — including an ordinary
-// "Matched" suggestion in the 0.6-0.8 band, and any "Not Matched" — still
-// requires a guard to review and tap Complete Checkout, since these
-// thresholds aren't validated against real capture conditions yet and a bad
-// auto-approval is worse than asking a guard to double-check.
-const AUTO_COMPLETE_THRESHOLD = 0.8;
+import { supabase } from "../lib/supabaseClient";
 
 export type FaceMatchResult = {
-  // null when a face couldn't be embedded on either side (no face detected,
-  // a prototype-sample path, or a native failure) — never guess in that case.
+  success: boolean;
+  provider: "aws_rekognition";
   score: number | null;
+  threshold: number | null;
   suggestion: FaceCheckoutVerificationStatus;
-  // true only for a score confidently above AUTO_COMPLETE_THRESHOLD — the
-  // sole signal callers should use to skip guard confirmation.
   autoComplete: boolean;
+  result: "MATCHED" | "UNMATCHED" | "ERROR";
+  reason?: string;
 };
 
-let modelPromise: Promise<TensorflowModel> | null = null;
+type CompareFacesResponse = {
+  success: boolean;
+  provider: "aws_rekognition";
+  similarity: number | null;
+  threshold: number | null;
+  matched: boolean;
+  result: "MATCHED" | "UNMATCHED" | "ERROR";
+  reason?: string;
+};
 
-function getModel() {
-  if (!modelPromise) {
-    modelPromise = (async () => {
-      // require()'s raw asset-module result only resolves correctly while
-      // Metro is serving the bundle live (dev) — a standalone release build
-      // needs the asset pre-resolved to a real local file first, or
-      // loadTensorflowModel throws "java.net.MalformedURLException: no
-      // protocol" trying to read Android's bundled-resource reference directly.
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const asset = Asset.fromModule(require("../../assets/models/mobilefacenet.tflite"));
-      await asset.downloadAsync();
-      return loadTensorflowModel({ url: asset.localUri as string }, []);
-    })();
-  }
-  return modelPromise;
+const localCompareFacesUrl = process.env.EXPO_PUBLIC_COMPARE_FACES_URL?.replace(/\/$/, "");
+
+function errorResult(reason: string): FaceMatchResult {
+  return {
+    success: false,
+    provider: "aws_rekognition",
+    score: null,
+    threshold: null,
+    suggestion: "Manual Review",
+    autoComplete: false,
+    result: "ERROR",
+    reason
+  };
 }
 
-export async function compareFaces(
-  referenceImageUri: string,
-  liveImageUri: string
-): Promise<FaceMatchResult> {
-  if (
-    !referenceImageUri ||
-    !liveImageUri ||
-    referenceImageUri.startsWith(PROTOTYPE_SAMPLE_PREFIX) ||
-    liveImageUri.startsWith(PROTOTYPE_SAMPLE_PREFIX)
-  ) {
-    return { score: null, suggestion: "Manual Review", autoComplete: false };
+function bytesToBase64(bytes: Uint8Array): string {
+  let encoded = "";
+  const chunkSize = 0x8000;
+
+  for (let index = 0; index < bytes.length; index += chunkSize) {
+    encoded += String.fromCharCode(...bytes.subarray(index, index + chunkSize));
   }
 
+  return btoa(encoded);
+}
+
+async function imageUriToBase64(uri: string): Promise<string> {
+  const localUri = await ensureLocalUri(uri);
+  const file = new File(localUri);
+  return bytesToBase64(new Uint8Array(await file.arrayBuffer()));
+}
+
+async function invokeCompareFaces(
+  body: { visitorId: string; targetImageBase64: string }
+): Promise<{ data: CompareFacesResponse | null; error: Error | null }> {
+  if (!localCompareFacesUrl) {
+    const { data, error } = await supabase.functions.invoke<CompareFacesResponse>(
+      "compare-faces",
+      { body }
+    );
+    return { data, error: error ? new Error(error.message) : null };
+  }
+
+  const { data: sessionData } = await supabase.auth.getSession();
+  const accessToken = sessionData.session?.access_token;
+  if (!accessToken) {
+    return { data: null, error: new Error("An authenticated guard session is required.") };
+  }
+
+  const response = await fetch(localCompareFacesUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || "",
+      Authorization: `Bearer ${accessToken}`
+    },
+    body: JSON.stringify(body)
+  });
+
+  let data: CompareFacesResponse | null = null;
   try {
-    // Run these one at a time, not via Promise.all — the TFLite interpreter
-    // behind getModel() is a single shared instance, and TFLite explicitly
-    // documents Interpreter.run()/Invoke() as not thread-safe for concurrent
-    // calls on the same instance.
-    const referenceEmbedding = await embedFace(referenceImageUri);
-    const liveEmbedding = await embedFace(liveImageUri);
-
-    if (!referenceEmbedding || !liveEmbedding) {
-      return { score: null, suggestion: "Manual Review", autoComplete: false };
-    }
-
-    const score = cosineSimilarity(referenceEmbedding, liveEmbedding);
-    const suggestion: FaceCheckoutVerificationStatus =
-      score >= MATCH_THRESHOLD ? "Matched" : score <= NO_MATCH_THRESHOLD ? "Not Matched" : "Manual Review";
-
-    return { score, suggestion, autoComplete: score >= AUTO_COMPLETE_THRESHOLD };
+    data = (await response.json()) as CompareFacesResponse;
   } catch {
-    return { score: null, suggestion: "Manual Review", autoComplete: false };
-  } finally {
-    clearFaceMatchCache();
+    return { data: null, error: new Error(`Local compare-faces returned HTTP ${response.status}.`) };
   }
+
+  if (!response.ok) {
+    return { data, error: new Error(data.reason || `Local compare-faces returned HTTP ${response.status}.`) };
+  }
+
+  return { data, error: null };
 }
 
-// ensureLocalUri downloads the visitor's private reference photo into the
-// guard's app cache to run detection/embedding on it — don't let that
-// biometric photo linger on disk once this comparison is done.
-function clearFaceMatchCache(): void {
-  try {
-    const destination = new Directory(Paths.cache, "face-match");
-    if (destination.exists) destination.delete();
-  } catch {
-    // Best-effort cleanup — a leftover cache file isn't worth failing the match over.
-  }
-}
-
-// expo-image-manipulator's documented support is for local files/data URIs,
-// not arbitrary remote URLs — the reference photo comes in as a Supabase
-// signed https:// URL, so download it to a local cache file first rather
-// than assume ImageManipulator can fetch it directly.
 async function ensureLocalUri(uri: string): Promise<string> {
   if (!uri.startsWith("http")) return uri;
 
-  const destination = new Directory(Paths.cache, "face-match");
+  const destination = new Directory(Paths.cache, "face-match-aws");
   if (!destination.exists) destination.create({ intermediates: true, idempotent: true });
 
-  const file = await File.downloadFileAsync(uri, destination);
-  return file.uri;
+  return (await File.downloadFileAsync(uri, destination)).uri;
 }
 
-function getImageSize(uri: string): Promise<{ width: number; height: number }> {
-  return new Promise((resolve, reject) => {
-    Image.getSize(uri, (width, height) => resolve({ width, height }), reject);
-  });
+function clearFaceMatchCache(): void {
+  try {
+    const destination = new Directory(Paths.cache, "face-match-aws");
+    if (destination.exists) destination.delete();
+  } catch {
+    // Cache cleanup is best effort and must not change the comparison result.
+  }
 }
 
-async function embedFace(rawImageUri: string): Promise<Float32Array | null> {
-  const imageUri = await ensureLocalUri(rawImageUri);
-  const faces = await FaceDetection.detect(imageUri, { performanceMode: "accurate" }).catch(() => []);
-  if (faces.length === 0) return null;
-
-  const face = faces.reduce((largest, current) =>
-    current.frame.width * current.frame.height > largest.frame.width * largest.frame.height
-      ? current
-      : largest
-  );
-
-  // The face's own frame is always in-bounds, but the padded box around it
-  // can extend past the image edges (e.g. a close-up selfie with the face
-  // near the top/side of the frame) — clamp against the real image size or
-  // the native crop throws "y + height must be <= bitmap.height()".
-  //
-  // The crop is forced SQUARE here (not just the face's raw w x h box):
-  // .resize() below stretches independently on each axis to hit 112x112,
-  // so a non-square crop gets non-uniformly distorted. The reference photo
-  // (portrait-shaped face box) and a live capture (landscape-shaped box)
-  // were being squashed in different directions, which measurably hurt
-  // same-person similarity scores — a real same-person comparison was
-  // landing at ~26%, well under the "Not Matched" cutoff.
-  const { width: imageWidth, height: imageHeight } = await getImageSize(imageUri);
-  const faceCenterX = face.frame.left + face.frame.width / 2;
-  const faceCenterY = face.frame.top + face.frame.height / 2;
-  const rawSize = Math.max(face.frame.width, face.frame.height) * 1.4;
-  // Round the crop size to a whole pixel first, then derive cropX/cropY from
-  // that same rounded value — rounding cropX/cropWidth independently could
-  // push cropX + cropWidth one pixel past imageWidth (or the Y equivalent),
-  // which throws in the native crop below.
-  const cropSize = Math.round(Math.min(rawSize, imageWidth, imageHeight));
-  const cropX = Math.min(Math.max(0, Math.round(faceCenterX - cropSize / 2)), imageWidth - cropSize);
-  const cropY = Math.min(Math.max(0, Math.round(faceCenterY - cropSize / 2)), imageHeight - cropSize);
-  const cropWidth = cropSize;
-  const cropHeight = cropSize;
-
-  // Crop+resize natively first (fast) so the pure-JS jpeg-js decode below
-  // only ever has to process a small ~112px image, not a multi-megapixel
-  // phone photo.
-  const manipulated = await ImageManipulator.manipulate(imageUri)
-    .crop({ originX: cropX, originY: cropY, width: cropWidth, height: cropHeight })
-    .resize({ width: MODEL_INPUT_SIZE, height: MODEL_INPUT_SIZE })
-    .renderAsync();
-  const saved = await manipulated.saveAsync({ format: SaveFormat.JPEG, compress: 1 });
-
-  const file = new File(saved.uri);
-  const bytes = new Uint8Array(await file.arrayBuffer());
-  const decoded = decodeJpeg(bytes, { useTArray: true });
-
-  const inputBuffer = rgbaToNormalizedRgb(decoded.data, decoded.width, decoded.height);
-
-  const model = await getModel();
-  const outputs = await model.run([inputBuffer]);
-  // outputs[0] is an ArrayBuffer, and `new Float32Array(arrayBuffer)` only
-  // creates a *view* onto it, not a copy. The native TFLite binding reuses
-  // its internal output buffer across run() calls (a standard zero-copy
-  // optimization), so without slice()-ing here, the very next embedFace()
-  // call silently overwrites the memory this "result" still just points at
-  // — both embeddings end up reading the same (latest) data, so every
-  // comparison scored a perfect 1.0 regardless of the two actual photos.
-  return new Float32Array(outputs[0].slice(0));
-}
-
-// jpeg-js decodes to RGBA (4 bytes/pixel); MobileFaceNet expects RGB
-// normalized to roughly [-1, 1], the standard InsightFace-lineage
-// preprocessing convention. Not confirmed against this exact file's own
-// conversion script — a real candidate to revisit during threshold tuning
-// if match scores look systematically off.
-function rgbaToNormalizedRgb(rgba: Uint8Array, width: number, height: number): ArrayBuffer {
-  const pixelCount = width * height;
-  const out = new Float32Array(pixelCount * 3);
-
-  for (let i = 0; i < pixelCount; i++) {
-    out[i * 3] = (rgba[i * 4] - 127.5) / 127.5;
-    out[i * 3 + 1] = (rgba[i * 4 + 1] - 127.5) / 127.5;
-    out[i * 3 + 2] = (rgba[i * 4 + 2] - 127.5) / 127.5;
+export async function compareFaces(
+  visitorId: string,
+  liveImageUri: string
+): Promise<FaceMatchResult> {
+  if (!visitorId || !liveImageUri) {
+    return errorResult("Missing visit identifier or live face image.");
   }
 
-  return out.buffer;
-}
+  try {
+    const targetImageBase64 = await imageUriToBase64(liveImageUri);
 
-function cosineSimilarity(a: Float32Array, b: Float32Array): number {
-  let dot = 0;
-  let normA = 0;
-  let normB = 0;
-  for (let i = 0; i < a.length; i++) {
-    dot += a[i] * b[i];
-    normA += a[i] * a[i];
-    normB += b[i] * b[i];
+    const { data, error } = await invokeCompareFaces({ visitorId, targetImageBase64 });
+
+    if (error || !data) {
+      return errorResult(error?.message || "Face comparison service unavailable.");
+    }
+
+    if (!data.success || data.result === "ERROR") {
+      return {
+        success: false,
+        provider: "aws_rekognition",
+        score: null,
+        threshold: data.threshold,
+        suggestion: "Manual Review",
+        autoComplete: false,
+        result: "ERROR",
+        reason: data.reason || "Face comparison failed."
+      };
+    }
+
+    const matched = data.result === "MATCHED" && data.matched;
+    return {
+      success: true,
+      provider: "aws_rekognition",
+      score: data.similarity,
+      threshold: data.threshold,
+      suggestion: matched ? "Matched" : "Not Matched",
+      autoComplete: matched,
+      result: matched ? "MATCHED" : "UNMATCHED",
+      reason: data.reason
+    };
+  } catch (error) {
+    return errorResult(error instanceof Error ? error.message : "Face comparison failed.");
+  } finally {
+    clearFaceMatchCache();
   }
-  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
 }

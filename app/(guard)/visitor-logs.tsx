@@ -21,7 +21,7 @@ export default function VisitorLogsScreen() {
       setCompleted(
         all.filter((registration) => registration.checkoutStatus === "Completed")
       );
-    } catch (err) {
+    } catch {
       setError("Unable to load visitor logs.");
     } finally {
       setLoading(false);

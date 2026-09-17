@@ -98,7 +98,7 @@ export default function VisitFaceCapturePage() {
     <VisitShell
       step={5}
       title="Capture Your Face"
-      subtitle="A guard will manually confirm your identity — automatic face matching isn't available yet."
+      subtitle="A guard will compare this photo with a live photo during checkout."
     >
       <div className="space-y-4">
         <div className="flex h-48 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-emerald-500/25 bg-white/5">
