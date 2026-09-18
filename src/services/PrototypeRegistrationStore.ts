@@ -4,7 +4,7 @@ import {
   approveVisitor,
   completeCheckout as completeCheckoutRepo,
   getActiveVisitors as getActiveVisitorsRepo,
-  getAllVisitors as getAllVisitorsRepo,
+  getCompletedVisitors as getCompletedVisitorsRepo,
   getPendingVisitors as getPendingVisitorsRepo,
   getVisitorById,
   rejectVisitor,
@@ -14,8 +14,8 @@ export async function getPendingRegistrations() {
   return getPendingVisitorsRepo();
 }
 
-export async function getAllRegistrations() {
-  return getAllVisitorsRepo();
+export async function getCompletedRegistrations() {
+  return getCompletedVisitorsRepo();
 }
 
 export async function getActiveVisitors() {
