@@ -50,14 +50,39 @@ export async function getVisitorById(id: string) {
   return data ? mapRow(data) : null;
 }
 
-export async function getAllVisitors() {
+export type VisitorStatsRow = {
+  purposeOfVisit: string;
+  registrationStatus: string;
+  checkoutStatus: string;
+  qrStatus: string;
+  timeIn: string;
+  timeOut: string;
+  expirationTime: string;
+  createdAt: string;
+};
+
+// Reports screens only aggregate counts by status/purpose/date — selecting
+// just those columns (instead of select("*")) keeps names, addresses,
+// contact info, ID numbers, and image paths for every visitor ever
+// registered off the wire, since nothing here needs them.
+export async function getVisitorStatsRows(): Promise<VisitorStatsRow[]> {
   const { data, error } = await supabase
     .from("visitor_registrations")
-    .select("*")
-    .order("created_at", { ascending: false });
+    .select(
+      "purpose_of_visit, registration_status, checkout_status, qr_status, time_in, time_out, expiration_time, created_at"
+    );
 
   if (error) throw new Error(error.message);
-  return (data || []).map(mapRow);
+  return (data || []).map((row) => ({
+    purposeOfVisit: row.purpose_of_visit,
+    registrationStatus: row.registration_status,
+    checkoutStatus: row.checkout_status,
+    qrStatus: row.qr_status,
+    timeIn: row.time_in || "",
+    timeOut: row.time_out || "",
+    expirationTime: row.expiration_time || "",
+    createdAt: row.created_at
+  }));
 }
 
 export async function getPendingVisitors() {

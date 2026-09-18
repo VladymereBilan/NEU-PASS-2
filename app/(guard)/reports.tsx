@@ -2,11 +2,11 @@ import { useCallback, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useAuth } from "../../src/context/AuthContext";
-import { getAllVisitors } from "../../src/repositories/VisitorRepository";
+import { getVisitorStatsRows, type VisitorStatsRow } from "../../src/repositories/VisitorRepository";
 import { DashboardScreen } from "../../src/components/dashboard/DashboardScreen";
 import type { BottomNavTab } from "../../src/components/dashboard/BottomNavBar";
 import { NEU_DARK } from "../../src/theme/brand";
-import { PURPOSE_OPTIONS, type VisitorRegistration } from "../../src/types/VisitorRegistration";
+import { PURPOSE_OPTIONS } from "../../src/types/VisitorRegistration";
 
 const GUARD_TABS: BottomNavTab[] = [
   { key: "home", label: "Home", icon: "home-variant", route: "/(guard)/home" },
@@ -25,7 +25,7 @@ type PurposeValue = (typeof PURPOSE_OPTIONS)[number]["value"];
 export default function ReportsScreen() {
   const router = useRouter();
   const { email, signOut } = useAuth();
-  const [visitors, setVisitors] = useState<VisitorRegistration[]>([]);
+  const [visitors, setVisitors] = useState<VisitorStatsRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [refreshHovered, setRefreshHovered] = useState(false);
@@ -34,7 +34,7 @@ export default function ReportsScreen() {
     setLoading(true);
     setError("");
     try {
-      const data = await getAllVisitors();
+      const data = await getVisitorStatsRows();
       setVisitors(data);
     } catch {
       setError("Unable to load reports.");
