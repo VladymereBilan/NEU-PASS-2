@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useRegistrationDraft } from "@/lib/registrationDraft";
@@ -15,6 +15,22 @@ export default function VisitFaceCapturePage() {
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  // Clearing the draft here (rather than right before the router.push below)
+  // matters: router.push to /visit/status is an async client-side navigation,
+  // but clearing the draft is a synchronous context update. If we cleared it
+  // before the push resolved, the still-mounted (register) layout's
+  // ConsentGuard would see consentAccepted flip to false while the URL was
+  // still /visit/face and redirect back to /visit (step 1) — even though the
+  // registration row was already inserted and visible to the guard. Deferring
+  // the clear to unmount means it only runs once React actually swaps this
+  // page out, by which point ConsentGuard's own effect isn't re-evaluated.
+  const submittedRef = useRef(false);
+  useEffect(() => {
+    return () => {
+      if (submittedRef.current) clearDraft();
+    };
+  }, [clearDraft]);
 
   const handleFileSelected = async (file: File | undefined) => {
     if (!file) return;
@@ -90,7 +106,7 @@ export default function VisitFaceCapturePage() {
       return;
     }
 
-    clearDraft();
+    submittedRef.current = true;
     router.push("/visit/status");
   };
 
