@@ -4,7 +4,7 @@ import {
   approveVisitor,
   completeCheckout as completeCheckoutRepo,
   getActiveVisitors as getActiveVisitorsRepo,
-  getCompletedVisitors as getCompletedVisitorsRepo,
+  getCompletedVisitorsPage as getCompletedVisitorsPageRepo,
   getPendingVisitors as getPendingVisitorsRepo,
   getVisitorById,
   rejectVisitor,
@@ -14,8 +14,8 @@ export async function getPendingRegistrations() {
   return getPendingVisitorsRepo();
 }
 
-export async function getCompletedRegistrations() {
-  return getCompletedVisitorsRepo();
+export async function getCompletedRegistrationsPage(offset: number, limit: number) {
+  return getCompletedVisitorsPageRepo(offset, limit);
 }
 
 export async function getActiveVisitors() {

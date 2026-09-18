@@ -1,15 +1,21 @@
 import { useCallback, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "expo-router";
-import { getCompletedRegistrations } from "../../src/services/PrototypeRegistrationStore";
+import { getCompletedRegistrationsPage } from "../../src/services/PrototypeRegistrationStore";
 import { AppBackground } from "../../src/components/AppBackground";
 import { NEU_DARK } from "../../src/theme/brand";
 import type { VisitorRegistration } from "../../src/types/VisitorRegistration";
 
+// Bounds each request to a page instead of the entire completed-checkout
+// history, which only ever grows until the monthly archive/purge runs.
+const PAGE_SIZE = 30;
+
 export default function VisitorLogsScreen() {
   const [completed, setCompleted] = useState<VisitorRegistration[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState("");
   const [refreshHovered, setRefreshHovered] = useState(false);
 
@@ -17,13 +23,33 @@ export default function VisitorLogsScreen() {
     setLoading(true);
     setError("");
     try {
-      setCompleted(await getCompletedRegistrations());
+      const { visitors, hasMore: more } = await getCompletedRegistrationsPage(0, PAGE_SIZE);
+      setCompleted(visitors);
+      setHasMore(more);
     } catch {
       setError("Unable to load visitor logs.");
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const loadMore = useCallback(async () => {
+    if (loading || loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    try {
+      const { visitors, hasMore: more } = await getCompletedRegistrationsPage(
+        completed.length,
+        PAGE_SIZE
+      );
+      setCompleted((prev) => [...prev, ...visitors]);
+      setHasMore(more);
+    } catch {
+      // Leave the already-loaded page visible; the guard can pull Refresh
+      // to retry from the top rather than losing what's already on screen.
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [loading, loadingMore, hasMore, completed.length]);
 
   useFocusEffect(
     useCallback(() => {
@@ -47,6 +73,8 @@ export default function VisitorLogsScreen() {
             initialNumToRender={15}
             maxToRenderPerBatch={15}
             windowSize={7}
+            onEndReached={() => void loadMore()}
+            onEndReachedThreshold={0.5}
             ListHeaderComponent={
               <View style={styles.headerRow}>
                 <Text style={styles.title}>Visitor Logs</Text>
@@ -75,6 +103,11 @@ export default function VisitorLogsScreen() {
                     ? error
                     : "No completed visitors."}
               </Text>
+            }
+            ListFooterComponent={
+              loadingMore ? (
+                <ActivityIndicator style={styles.footerSpinner} color={NEU_DARK.emerald} />
+              ) : null
             }
             renderItem={({ item: registration }) => (
               <View style={styles.itemCard}>
@@ -125,6 +158,9 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 32,
     gap: 12
+  },
+  footerSpinner: {
+    paddingVertical: 12
   },
   headerRow: {
     gap: 12

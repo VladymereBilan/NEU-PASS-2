@@ -82,15 +82,23 @@ export async function getActiveVisitors() {
   return (data || []).map(mapRow);
 }
 
-export async function getCompletedVisitors() {
+// Fetches one page of completed visitors, requesting one extra row over
+// `limit` so the caller can tell whether more pages remain without a
+// separate (more expensive) exact-count query.
+export async function getCompletedVisitorsPage(offset: number, limit: number) {
   const { data, error } = await supabase
     .from("visitor_registrations")
     .select("*")
     .eq("checkout_status", "Completed")
-    .order("time_out", { ascending: false });
+    .order("time_out", { ascending: false })
+    .range(offset, offset + limit);
 
   if (error) throw new Error(error.message);
-  return (data || []).map(mapRow);
+  const rows = data || [];
+  return {
+    visitors: rows.slice(0, limit).map(mapRow),
+    hasMore: rows.length > limit
+  };
 }
 
 export async function approveVisitor(id: string) {
