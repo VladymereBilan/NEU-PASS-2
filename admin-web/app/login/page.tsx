@@ -81,6 +81,16 @@ function LoginForm() {
 
   const lockRemainingSeconds = lockedUntil > now ? Math.ceil((lockedUntil - now) / 1000) : 0;
 
+  // lockedUntil tracks whichever username last triggered it — without this,
+  // switching from a locked-out username to a fresh, never-locked one keeps
+  // the submit button disabled/labeled "Locked" until the old lock expires.
+  const handleUsernameChange = (value: string) => {
+    setUsername(value);
+    const state = value.trim() ? readAttemptState(value) : { count: 0, lockedUntil: 0 };
+    setNow(Date.now());
+    setLockedUntil(state.lockedUntil > Date.now() ? state.lockedUntil : 0);
+  };
+
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!username.trim() || !password.trim()) {
@@ -177,7 +187,7 @@ function LoginForm() {
           <Field
             label="Username"
             value={username}
-            onChange={setUsername}
+            onChange={handleUsernameChange}
             icon={<UserIcon className="h-4 w-4" />}
             placeholder="Enter your username"
           />
