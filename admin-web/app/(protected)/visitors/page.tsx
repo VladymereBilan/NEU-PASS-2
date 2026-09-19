@@ -87,6 +87,7 @@ export default function VisitorsPage() {
   const [page, setPage] = useState(0);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState("");
+  const [exportNotice, setExportNotice] = useState("");
 
   useEffect(() => {
     const timeout = setTimeout(() => setDebouncedSearch(search), 350);
@@ -144,6 +145,7 @@ export default function VisitorsPage() {
     try {
       setExporting(true);
       setExportError("");
+      setExportNotice("");
 
       const supabase = createClient();
       let query = supabase
@@ -164,9 +166,20 @@ export default function VisitorsPage() {
         return;
       }
 
-      const csv = toCsv(COLUMNS, ((data ?? []) as VisitorRow[]).map(toRow));
+      const exportRows = (data ?? []) as VisitorRow[];
+      const truncated = exportRows.length >= EXPORT_ROW_CAP;
+      const csv = toCsv(COLUMNS, exportRows.map(toRow));
       const timestamp = new Date().toISOString().slice(0, 10);
-      downloadCsv(`neu-pass-visitors-${timestamp}.csv`, csv);
+      const filename = truncated
+        ? `neu-pass-visitors-${timestamp}-partial-first-${EXPORT_ROW_CAP}.csv`
+        : `neu-pass-visitors-${timestamp}.csv`;
+      downloadCsv(filename, csv);
+
+      if (truncated) {
+        setExportNotice(
+          `Export limited to the first ${EXPORT_ROW_CAP.toLocaleString()} matching rows — ${totalCount.toLocaleString()} rows match the current filter. Narrow your search/filter to export the rest.`
+        );
+      }
     } finally {
       setExporting(false);
     }
@@ -206,6 +219,12 @@ export default function VisitorsPage() {
       {exportError ? (
         <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-300">
           {exportError}
+        </div>
+      ) : null}
+
+      {exportNotice ? (
+        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm font-medium text-amber-300">
+          {exportNotice}
         </div>
       ) : null}
 
