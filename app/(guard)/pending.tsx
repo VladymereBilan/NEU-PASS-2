@@ -67,30 +67,32 @@ export default function PendingVerificationsScreen() {
 
   const handleApprove = async (id: string) => {
     if (processing) return;
+    setProcessing({ id, action: "approve" });
     try {
-      setProcessing({ id, action: "approve" });
       await markVisitorActive(id);
-      await refresh();
-      Alert.alert("Visitor approved.");
     } catch (err) {
       Alert.alert("Unable to approve visitor.");
-    } finally {
       setProcessing(null);
+      return;
     }
+    Alert.alert("Visitor approved.");
+    await refresh().catch(() => setError("Visitor approved, but the list failed to refresh."));
+    setProcessing(null);
   };
 
   const handleReject = async (id: string) => {
     if (processing) return;
+    setProcessing({ id, action: "reject" });
     try {
-      setProcessing({ id, action: "reject" });
       await rejectRegistration(id);
-      await refresh();
-      Alert.alert("Visitor rejected.");
     } catch (err) {
       Alert.alert("Unable to reject visitor.");
-    } finally {
       setProcessing(null);
+      return;
     }
+    Alert.alert("Visitor rejected.");
+    await refresh().catch(() => setError("Visitor rejected, but the list failed to refresh."));
+    setProcessing(null);
   };
 
   const handleSignOut = async () => {
