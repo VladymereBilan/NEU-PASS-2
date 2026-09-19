@@ -198,6 +198,25 @@ function findAddressValue(lines: string[]): string | undefined {
   return undefined;
 }
 
+// A passport's machine-readable zone (second line) encodes the passport
+// number in its first 9 characters ('<'-padded), followed by a check
+// digit, the 3-letter issuing country, a 6-digit DOB + check digit, sex,
+// a 6-digit expiry + check digit, then '<'-filled personal number — e.g.
+// "P7505936C6PHL0410014M3407091<<<<<<<<<<<<<04". MRZ text is printed in
+// an OCR-friendly monospace font and, on a real capture, correctly
+// decoded a passport number that Textract had misread (C -> 0) in the
+// normal printed field above it — so this is checked first for passports,
+// ahead of the normal label/fallback logic below.
+function findMrzPassportNumber(lines: string[]): string | undefined {
+  for (const line of lines) {
+    const match = line.match(/^([A-Z0-9<]{9})\d[A-Z]{3}\d{7}[MFX<]\d{7}/);
+    if (!match) continue;
+    const passportNumber = match[1].replace(/</g, "");
+    if (passportNumber.length >= 6) return passportNumber;
+  }
+  return undefined;
+}
+
 // ID numbers are frequently grouped on the same OCR line as an adjacent
 // column's value (e.g. "License No." / "Expiration Date" print as separate
 // header lines, but "N02-25-017583 2029/05/11" prints as one combined value
@@ -205,7 +224,29 @@ function findAddressValue(lines: string[]): string | undefined {
 // with real digit density, then pulls out just the ID-number-shaped token
 // rather than trusting the whole line.
 function findIdNumberValue(lines: string[]): string | undefined {
-  const extractToken = (line: string) => line.match(/[A-Za-z0-9][A-Za-z0-9-]{4,}/)?.[0];
+  // The anchor token alone (no internal spaces) — safe default.
+  const anchorPattern = /[A-Za-z0-9][A-Za-z0-9-]{4,}/;
+  // The same anchor, but allowed to absorb adjacent PURELY-NUMERIC
+  // space-separated groups on either side (e.g. "084 000 01341080", a
+  // serial number split into groups by the card's own formatting).
+  const expandedPattern = /(?:\d+\s+)*[A-Za-z0-9][A-Za-z0-9-]{4,}(?:\s+\d+)*/;
+
+  const extractToken = (line: string): string | undefined => {
+    const anchorMatch = line.match(anchorPattern)?.[0];
+    if (!anchorMatch) return undefined;
+
+    const expandedMatch = line.match(expandedPattern)?.[0];
+    // Only trust the wider match when it accounts for the ENTIRE line, as
+    // on a dedicated serial-number line. If the line also has unrelated
+    // content around the anchor (e.g. the driver's license's license
+    // number merged with an adjacent expiration-date column), that
+    // unrelated content is left outside the expanded match, so this
+    // falls back to the narrower anchor alone instead of absorbing it.
+    if (expandedMatch && expandedMatch.trim() === line.trim()) {
+      return expandedMatch.replace(/\s+/g, " ").trim();
+    }
+    return anchorMatch;
+  };
 
   for (let i = 0; i < lines.length; i++) {
     const upper = lines[i].toUpperCase();
@@ -251,7 +292,7 @@ export function extractIdFields(lines: string[]): ExtractedIdFields {
     result.address = toDisplayCase(addressCandidate);
   }
 
-  const idNumberCandidate = findIdNumberValue(lines);
+  const idNumberCandidate = findMrzPassportNumber(lines) ?? findIdNumberValue(lines);
   if (idNumberCandidate && ID_NUMBER_PATTERN.test(idNumberCandidate.trim())) {
     result.idNumber = idNumberCandidate.trim();
   }
