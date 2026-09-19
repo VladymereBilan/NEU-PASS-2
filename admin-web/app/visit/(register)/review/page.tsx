@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useRegistrationDraft } from "@/lib/registrationDraft";
+import { extractIdFields } from "@/lib/idFieldExtraction";
 import {
   ID_NUMBER_PATTERN,
   NAME_DIGIT_PATTERN,
@@ -19,17 +20,7 @@ type ReviewForm = {
 };
 
 type ReviewErrors = Partial<Record<keyof ReviewForm, string>>;
-
-// Raw OCR only (AWS Textract DetectDocumentText via the extract-id-text edge
-// function) — it returns whatever text lines Textract found on the ID photo,
-// with no attempt to map them to specific fields (see that function's own
-// scope note: Textract's structured ID parsing isn't trained on Philippine
-// ID formats). So this is shown purely as a side-by-side reference for the
-// visitor's own manual review below, never used to fill in the form fields.
-type OcrState =
-  | { status: "loading" }
-  | { status: "ready"; lines: string[] }
-  | { status: "unavailable" };
+type AutoFilledFields = Partial<Record<keyof ReviewForm, boolean>>;
 
 export default function VisitReviewPage() {
   const router = useRouter();
@@ -41,7 +32,8 @@ export default function VisitReviewPage() {
     idNumber: draft.idNumber
   });
   const [errors, setErrors] = useState<ReviewErrors>({});
-  const [ocr, setOcr] = useState<OcrState | null>(null);
+  const [autoFilled, setAutoFilled] = useState<AutoFilledFields>({});
+  const [ocrLoading, setOcrLoading] = useState(false);
 
   useEffect(() => {
     if (!draft.idImagePath) return;
@@ -55,7 +47,7 @@ export default function VisitReviewPage() {
     // flag alone is the React-docs-recommended pattern and is safe here:
     // it costs one extra duplicate request in dev only, never in production.
     let cancelled = false;
-    setOcr({ status: "loading" });
+    setOcrLoading(true);
 
     (async () => {
       const supabase = createClient();
@@ -65,11 +57,39 @@ export default function VisitReviewPage() {
       }>("extract-id-text", { body: { idImagePath: draft.idImagePath } });
 
       if (cancelled) return;
-      if (error || !data?.success || data.lines.length === 0) {
-        setOcr({ status: "unavailable" });
-        return;
-      }
-      setOcr({ status: "ready", lines: data.lines });
+      setOcrLoading(false);
+      if (error || !data?.success || data.lines.length === 0) return;
+
+      // AWS Textract (DetectDocumentText via the extract-id-text edge
+      // function) returns raw text lines with no field labels of its own;
+      // extractIdFields() applies best-effort label/keyword heuristics (see
+      // that module) to guess Full Name / Address / ID Type / ID Number from
+      // them. These are only ever pre-filled *suggestions* — every field
+      // stays editable, and nothing here is trusted without the visitor's
+      // own confirmation on this step.
+      const extracted = extractIdFields(data.lines);
+      const nextAutoFilled: AutoFilledFields = {};
+      setForm((prev) => {
+        const next = { ...prev };
+        if (extracted.fullName) {
+          next.fullName = extracted.fullName;
+          nextAutoFilled.fullName = true;
+        }
+        if (extracted.address) {
+          next.address = extracted.address;
+          nextAutoFilled.address = true;
+        }
+        if (extracted.idType) {
+          next.idType = extracted.idType;
+          nextAutoFilled.idType = true;
+        }
+        if (extracted.idNumber) {
+          next.idNumber = extracted.idNumber;
+          nextAutoFilled.idNumber = true;
+        }
+        return next;
+      });
+      setAutoFilled(nextAutoFilled);
     })();
 
     return () => {
@@ -80,6 +100,10 @@ export default function VisitReviewPage() {
   const updateField = (key: keyof ReviewForm, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
     setErrors((prev) => ({ ...prev, [key]: undefined }));
+    // Once the visitor edits a field themselves, it's no longer "what the ID
+    // said" — drop the auto-filled hint so it doesn't keep claiming a value
+    // they just typed came from the photo.
+    setAutoFilled((prev) => ({ ...prev, [key]: false }));
   };
 
   const validate = (): ReviewErrors => {
@@ -117,57 +141,45 @@ export default function VisitReviewPage() {
     router.push("/visit/face");
   };
 
+  const hintFor = (key: keyof ReviewForm) =>
+    autoFilled[key] && !errors[key] ? "Matched from your ID — please verify." : undefined;
+
   return (
     <VisitShell
       step={4}
       title="Review Your Details"
-      subtitle="We don't fill this in for you — please double-check the details below are correct before continuing."
+      subtitle="We've filled in what we could read from your ID photo — please check everything below and correct anything that's wrong."
     >
       <div className="space-y-4">
-        {ocr?.status === "loading" ? (
-          <p className="text-sm text-gray-400">Reading your ID photo…</p>
-        ) : null}
-
-        {ocr?.status === "ready" ? (
-          <div className="rounded-xl border border-emerald-500/20 bg-white/5 p-4">
-            <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-gray-400">
-              Text we read from your ID
-            </p>
-            <ul className="space-y-1 text-sm text-gray-300">
-              {ocr.lines.map((line, index) => (
-                <li key={index}>{line}</li>
-              ))}
-            </ul>
-            <p className="mt-3 text-xs text-gray-500">
-              Reference only — we don&apos;t fill anything in automatically. Make sure the fields
-              below match your ID.
-            </p>
-          </div>
-        ) : null}
+        {ocrLoading ? <p className="text-sm text-gray-400">Reading your ID photo…</p> : null}
 
         <TextField
           label="Full Name"
           value={form.fullName}
           onChange={(value) => updateField("fullName", value)}
           error={errors.fullName}
+          hint={hintFor("fullName")}
         />
         <TextField
           label="Address"
           value={form.address}
           onChange={(value) => updateField("address", value)}
           error={errors.address}
+          hint={hintFor("address")}
         />
         <TextField
           label="ID Type"
           value={form.idType}
           onChange={(value) => updateField("idType", value)}
           error={errors.idType}
+          hint={hintFor("idType")}
         />
         <TextField
           label="ID Number"
           value={form.idNumber}
           onChange={(value) => updateField("idNumber", value)}
           error={errors.idNumber}
+          hint={hintFor("idNumber")}
         />
 
         <PrimaryButton onClick={handleContinue}>Continue</PrimaryButton>

@@ -92,6 +92,7 @@ export function TextField({
   value,
   onChange,
   error,
+  hint,
   placeholder,
   type = "text"
 }: {
@@ -99,6 +100,7 @@ export function TextField({
   value: string;
   onChange: (value: string) => void;
   error?: string;
+  hint?: string;
   placeholder?: string;
   type?: string;
 }) {
@@ -112,7 +114,11 @@ export function TextField({
         placeholder={placeholder}
         className="w-full rounded-xl border border-emerald-500/20 bg-[#04150c]/70 px-4 py-3.5 text-white outline-none transition placeholder:text-gray-500 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/20"
       />
-      {error ? <p className="mt-1.5 text-xs font-medium text-red-300">{error}</p> : null}
+      {error ? (
+        <p className="mt-1.5 text-xs font-medium text-red-300">{error}</p>
+      ) : hint ? (
+        <p className="mt-1.5 text-xs font-medium text-emerald-400">{hint}</p>
+      ) : null}
     </label>
   );
 }
