@@ -5,7 +5,13 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useRegistrationDraft } from "@/lib/registrationDraft";
 import { uploadVisitorImage } from "@/lib/visitorImageUpload";
-import { FACE_VERIFICATION_READY_FOR_GUARD_REVIEW } from "@/lib/visitorRegistrationConstants";
+import {
+  EMAIL_PATTERN,
+  FACE_VERIFICATION_READY_FOR_GUARD_REVIEW,
+  ID_NUMBER_PATTERN,
+  NAME_DIGIT_PATTERN,
+  NAME_LETTER_PATTERN
+} from "@/lib/visitorRegistrationConstants";
 import { VisitShell, PrimaryButton, SecondaryButton, ErrorBanner } from "@/components/VisitShell";
 
 export default function VisitFaceCapturePage() {
@@ -59,6 +65,27 @@ export default function VisitFaceCapturePage() {
   };
 
   const handleSubmit = async () => {
+    // Defense in depth against direct/URL navigation past earlier steps
+    // (e.g. consent -> /visit/id -> /visit/face): ConsentGuard only checks
+    // that consent was accepted, not that details/review were completed, so
+    // re-validate everything the earlier steps require before inserting.
+    const hasValidDetails =
+      draft.fullName.trim() &&
+      NAME_LETTER_PATTERN.test(draft.fullName) &&
+      !NAME_DIGIT_PATTERN.test(draft.fullName) &&
+      draft.address.trim() &&
+      draft.contactNumber.trim() &&
+      draft.email.trim() &&
+      EMAIL_PATTERN.test(draft.email.trim()) &&
+      draft.idType.trim() &&
+      draft.idNumber.trim() &&
+      ID_NUMBER_PATTERN.test(draft.idNumber.trim()) &&
+      draft.purposeOfVisit.trim();
+
+    if (!hasValidDetails) {
+      router.replace("/visit/details");
+      return;
+    }
     if (!draft.idImagePath) {
       setError("Missing ID photo. Please go back and capture your ID.");
       return;
