@@ -169,7 +169,7 @@ export default function VisitFaceCapturePage() {
               onChange={(event) => handleFileSelected(event.target.files?.[0])}
             />
             <div className="w-full rounded-xl border border-emerald-500/20 bg-white/5 px-4 py-3.5 text-center text-base font-bold text-white transition hover:border-emerald-400 hover:bg-emerald-500/10">
-              Open Camera / Choose Photo
+              Open Camera
             </div>
           </label>
         )}
