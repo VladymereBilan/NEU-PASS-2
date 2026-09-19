@@ -118,15 +118,20 @@ export default function CheckoutVerificationScreen() {
     try {
       setCompletingId(id);
       await completeCheckout(id, status);
-      await refresh();
-      setScannedVisitor(null);
-      setScanMessage("");
-      Alert.alert(completionMessage);
     } catch {
       Alert.alert("Unable to complete checkout.");
-    } finally {
       setCompletingId(null);
+      return;
     }
+
+    // The checkout itself already succeeded server-side at this point — a
+    // failure here is just a stale-list refresh, not a failed checkout, so
+    // it must not surface as "Unable to complete checkout."
+    setScannedVisitor(null);
+    setScanMessage("");
+    Alert.alert(completionMessage);
+    await refresh().catch(() => setError("Checkout completed, but the list failed to refresh."));
+    setCompletingId(null);
   };
 
   const openLiveCapture = async (id: string) => {
@@ -211,10 +216,19 @@ export default function CheckoutVerificationScreen() {
         return;
       }
 
-      const visitor = await getVisitorPassByVisitorId(payload.visitorId);
+      let visitor: VisitorRegistration | null;
+      try {
+        visitor = await getVisitorPassByVisitorId(payload.visitorId);
+      } catch {
+        setScannerState("idle");
+        Alert.alert("Unable to look up this visitor. Please check your connection and try again.");
+        return;
+      }
+
       if (
         !visitor ||
         visitor.registrationStatus !== "Active" ||
+        visitor.qrStatus !== "Active" ||
         visitor.visitorPassNumber !== payload.visitorPassNumber
       ) {
         setScannerState("idle");
