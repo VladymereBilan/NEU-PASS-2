@@ -1,4 +1,4 @@
-const STEP_LABELS = ["Consent", "Details", "ID Photo", "Review", "Face Photo"];
+const STEP_LABELS = ["Consent", "ID Photo", "Details", "Face Photo"];
 
 export function VisitShell({
   step,
@@ -129,6 +129,7 @@ export function SelectField({
   onChange,
   options,
   error,
+  hint,
   placeholder
 }: {
   label: string;
@@ -136,6 +137,7 @@ export function SelectField({
   onChange: (value: string) => void;
   options: ReadonlyArray<{ value: string; label: string }>;
   error?: string;
+  hint?: string;
   placeholder: string;
 }) {
   return (
@@ -155,7 +157,11 @@ export function SelectField({
           </option>
         ))}
       </select>
-      {error ? <p className="mt-1.5 text-xs font-medium text-red-300">{error}</p> : null}
+      {error ? (
+        <p className="mt-1.5 text-xs font-medium text-red-300">{error}</p>
+      ) : hint ? (
+        <p className="mt-1.5 text-xs font-medium text-emerald-400">{hint}</p>
+      ) : null}
     </label>
   );
 }

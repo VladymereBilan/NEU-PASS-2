@@ -12,7 +12,7 @@ export default function VisitConsentPage() {
 
   const handleAccept = () => {
     updateDraft({ consentAccepted: true });
-    router.push("/visit/details");
+    router.push("/visit/id");
   };
 
   return (

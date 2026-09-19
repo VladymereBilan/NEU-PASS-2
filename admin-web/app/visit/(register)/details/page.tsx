@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { useRegistrationDraft } from "@/lib/registrationDraft";
+import { extractIdFields } from "@/lib/idFieldExtraction";
 import {
   EMAIL_PATTERN,
   ID_NUMBER_PATTERN,
@@ -26,6 +28,9 @@ type FormState = {
 };
 
 type FormErrors = Partial<Record<keyof FormState, string>>;
+// Only the fields AWS Textract can actually inform — contact number, email,
+// and purpose of visit aren't on a government ID, so they're never touched.
+type AutoFilledFields = Partial<Record<"fullName" | "address" | "idType" | "idNumber", boolean>>;
 
 const ID_TYPE_SELECT_OPTIONS = ID_TYPE_OPTIONS.map((option) => ({ value: option, label: option }));
 
@@ -47,10 +52,81 @@ export default function VisitDetailsPage() {
     };
   });
   const [errors, setErrors] = useState<FormErrors>({});
+  const [autoFilled, setAutoFilled] = useState<AutoFilledFields>({});
+  const [ocrLoading, setOcrLoading] = useState(false);
+
+  useEffect(() => {
+    if (!draft.idImagePath) return;
+
+    // No ref-based "already requested" guard here — that would combine badly
+    // with React Strict Mode's dev-only mount->cleanup->mount: the guard
+    // would block the second (uncancelled) effect run from ever firing its
+    // own request, leaving only the first (cancelled) run's fetch in
+    // flight — whose result then gets silently dropped by the `cancelled`
+    // check below, permanently stuck on "loading". The plain `cancelled`
+    // flag alone is the React-docs-recommended pattern and is safe here:
+    // it costs one extra duplicate request in dev only, never in production.
+    let cancelled = false;
+    setOcrLoading(true);
+
+    (async () => {
+      const supabase = createClient();
+      const { data, error } = await supabase.functions.invoke<{
+        success: boolean;
+        lines: string[];
+      }>("extract-id-text", { body: { idImagePath: draft.idImagePath } });
+
+      if (cancelled) return;
+      setOcrLoading(false);
+      if (error || !data?.success || data.lines.length === 0) return;
+
+      // AWS Textract (DetectDocumentText via the extract-id-text edge
+      // function) returns raw text lines with no field labels of its own;
+      // extractIdFields() applies best-effort label/keyword heuristics (see
+      // that module) to guess Full Name / Address / ID Type / ID Number from
+      // them. These are only ever pre-filled *suggestions* — every field
+      // stays editable, and nothing here is trusted without the visitor's
+      // own confirmation before Continue.
+      const extracted = extractIdFields(data.lines);
+      const nextAutoFilled: AutoFilledFields = {};
+      setForm((prev) => {
+        const next = { ...prev };
+        if (extracted.fullName) {
+          next.fullName = extracted.fullName;
+          nextAutoFilled.fullName = true;
+        }
+        if (extracted.address) {
+          next.address = extracted.address;
+          nextAutoFilled.address = true;
+        }
+        if (extracted.idType) {
+          next.idType = extracted.idType;
+          next.idDescription = "";
+          nextAutoFilled.idType = true;
+        }
+        if (extracted.idNumber) {
+          next.idNumber = extracted.idNumber;
+          nextAutoFilled.idNumber = true;
+        }
+        return next;
+      });
+      setAutoFilled(nextAutoFilled);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [draft.idImagePath]);
 
   const updateField = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
     setErrors((prev) => ({ ...prev, [key]: undefined }));
+    // Once the visitor edits a field themselves, it's no longer "what the ID
+    // said" — drop the auto-filled hint so it doesn't keep claiming a value
+    // they just typed came from the photo.
+    if (key === "fullName" || key === "address" || key === "idType" || key === "idNumber") {
+      setAutoFilled((prev) => ({ ...prev, [key]: false }));
+    }
   };
 
   const validate = (): FormErrors => {
@@ -104,11 +180,22 @@ export default function VisitDetailsPage() {
       purposeOfVisit: form.purpose.trim(),
       otherAgenda: form.agenda.trim()
     });
-    router.push("/visit/id");
+    router.push("/visit/face");
   };
 
+  const hintFor = (key: keyof AutoFilledFields) =>
+    autoFilled[key] ? "Matched from your ID — please verify." : undefined;
+
   return (
-    <VisitShell step={2} title="Your Details" subtitle="Tell us who you are and why you're visiting.">
+    <VisitShell
+      step={3}
+      title="Your Details"
+      subtitle={
+        ocrLoading
+          ? "Reading your ID photo…"
+          : "We've filled in what we could read from your ID — please check it and fill in the rest."
+      }
+    >
       <div className="space-y-4">
         <TextField
           label="Full Name"
@@ -116,6 +203,7 @@ export default function VisitDetailsPage() {
           onChange={(value) => updateField("fullName", value)}
           placeholder="Juan Dela Cruz"
           error={errors.fullName}
+          hint={hintFor("fullName")}
         />
         <TextField
           label="Address"
@@ -123,6 +211,7 @@ export default function VisitDetailsPage() {
           onChange={(value) => updateField("address", value)}
           placeholder="Full address"
           error={errors.address}
+          hint={hintFor("address")}
         />
         <TextField
           label="Contact Number"
@@ -150,6 +239,7 @@ export default function VisitDetailsPage() {
           options={ID_TYPE_SELECT_OPTIONS}
           placeholder="Select ID type"
           error={errors.idType}
+          hint={hintFor("idType")}
         />
         {form.idType === "Other" ? (
           <TextField
@@ -166,6 +256,7 @@ export default function VisitDetailsPage() {
           onChange={(value) => updateField("idNumber", value)}
           placeholder="ID number"
           error={errors.idNumber}
+          hint={hintFor("idNumber")}
         />
         <SelectField
           label="Purpose of Visit"

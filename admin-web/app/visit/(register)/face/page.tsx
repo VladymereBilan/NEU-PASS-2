@@ -67,8 +67,8 @@ export default function VisitFaceCapturePage() {
   const handleSubmit = async () => {
     // Defense in depth against direct/URL navigation past earlier steps
     // (e.g. consent -> /visit/id -> /visit/face): ConsentGuard only checks
-    // that consent was accepted, not that details/review were completed, so
-    // re-validate everything the earlier steps require before inserting.
+    // that consent was accepted, not that the details step was completed, so
+    // re-validate everything that step requires before inserting.
     const hasValidDetails =
       draft.fullName.trim() &&
       NAME_LETTER_PATTERN.test(draft.fullName) &&
@@ -139,7 +139,7 @@ export default function VisitFaceCapturePage() {
 
   return (
     <VisitShell
-      step={5}
+      step={4}
       title="Capture Your Face"
       subtitle="A guard will compare this photo with a live photo during checkout."
     >
