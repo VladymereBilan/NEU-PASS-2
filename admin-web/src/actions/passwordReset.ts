@@ -36,49 +36,74 @@ function shouldSkipForCooldown(key: string, now: number) {
   return false;
 }
 
+// Response time must be equalized across every branch (empty input,
+// cooldown, unknown username, no recovery email, or a full generate+send) so
+// a caller can't infer which branch ran — and therefore whether an account
+// exists — by timing the response. That requires both a floor (pad fast
+// branches up to this) AND a ceiling (cap the slow generateLink+Resend
+// branch so it can't run past this) — a floor alone still lets the slow
+// branch's real latency bleed through whenever it exceeds the floor.
+const TARGET_DURATION_MS = 2000;
+
 export async function requestAdminPasswordReset(username: string) {
   const trimmed = username.trim();
   const startedAt = Date.now();
 
   if (trimmed && !shouldSkipForCooldown(adminUsernameToEmail(trimmed), startedAt)) {
     try {
-      const admin = createAdminClient();
-      const { data: profile } = await admin
-        .from("profiles")
-        .select("recovery_email")
-        .eq("account_type", "admin")
-        .ilike("username", escapeLikePattern(trimmed))
-        .maybeSingle();
-
-      if (profile?.recovery_email) {
-        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-        const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
-          type: "recovery",
-          email: adminUsernameToEmail(trimmed),
-          options: { redirectTo: `${siteUrl}/reset-password` }
-        });
-
-        if (!linkError && linkData?.properties?.action_link) {
-          await sendPasswordResetEmail(profile.recovery_email, linkData.properties.action_link);
-        }
-      }
+      await withTimeout(performReset(trimmed), TARGET_DURATION_MS);
     } catch {
-      // Swallow — the response must never reveal whether this failed or
-      // whether the account exists.
+      // Swallow — timeout, network failure, or "no account" must all look
+      // identical to the caller. On a timeout, generateLink/send may still
+      // complete in the background after we've already moved on below.
     }
   }
 
-  // Equalize response time across every branch (empty input, cooldown,
-  // unknown username, no recovery email, or a full generate+send) so a
-  // caller can't infer which branch ran — and therefore whether an account
-  // exists — by timing the response.
-  const minDurationMs = 400;
   const elapsed = Date.now() - startedAt;
-  if (elapsed < minDurationMs) {
-    await new Promise((resolve) => setTimeout(resolve, minDurationMs - elapsed));
+  if (elapsed < TARGET_DURATION_MS) {
+    await new Promise((resolve) => setTimeout(resolve, TARGET_DURATION_MS - elapsed));
   }
 
   return { ok: true } as const;
+}
+
+async function performReset(trimmed: string) {
+  const admin = createAdminClient();
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("recovery_email")
+    .eq("account_type", "admin")
+    .ilike("username", escapeLikePattern(trimmed))
+    .maybeSingle();
+
+  if (!profile?.recovery_email) return;
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
+    type: "recovery",
+    email: adminUsernameToEmail(trimmed),
+    options: { redirectTo: `${siteUrl}/reset-password` }
+  });
+
+  if (!linkError && linkData?.properties?.action_link) {
+    await sendPasswordResetEmail(profile.recovery_email, linkData.properties.action_link);
+  }
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("timeout")), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      }
+    );
+  });
 }
 
 async function sendPasswordResetEmail(to: string, actionLink: string) {
