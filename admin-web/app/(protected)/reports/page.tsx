@@ -42,7 +42,22 @@ export default async function ReportsPage({
     return created >= monthRange.start.getTime() && created < monthRange.end.getTime();
   });
   const monthPurposeCounts = computePurposeCounts(monthRows);
-  const dailyBreakdown = computeDailyBreakdown(monthRows, monthRange.start, monthRange.end);
+  // computeDailyBreakdown buckets visitorsCount by created_at and
+  // completedCount by time_out independently, so its input must include a
+  // row if EITHER falls in this month — otherwise a row registered last
+  // month but checked out this month is invisible to the "Completed" bucket,
+  // silently undercounting it versus stats.monthly.completedThisMonth
+  // (computed from the unfiltered `rows`). monthRows above stays scoped to
+  // created_at only, since Purpose-Based Counts should reflect this month's
+  // registrations, not checkouts of visits registered elsewhere.
+  const dailyBreakdownRows = rows.filter((row) => {
+    const created = new Date(row.created_at).getTime();
+    if (created >= monthRange.start.getTime() && created < monthRange.end.getTime()) return true;
+    if (!row.time_out) return false;
+    const completed = new Date(row.time_out).getTime();
+    return completed >= monthRange.start.getTime() && completed < monthRange.end.getTime();
+  });
+  const dailyBreakdown = computeDailyBreakdown(dailyBreakdownRows, monthRange.start, monthRange.end);
 
   const totalPages = Math.max(1, Math.ceil(dailyBreakdown.length / DAILY_BREAKDOWN_PAGE_SIZE));
   const requestedPage = Number(searchParams.page) || 1;
