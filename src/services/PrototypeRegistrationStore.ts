@@ -14,8 +14,8 @@ export async function getPendingRegistrations() {
   return getPendingVisitorsRepo();
 }
 
-export async function getCompletedRegistrationsPage(offset: number, limit: number) {
-  return getCompletedVisitorsPageRepo(offset, limit);
+export async function getCompletedRegistrationsPage(cursor: string | null, limit: number) {
+  return getCompletedVisitorsPageRepo(cursor, limit);
 }
 
 export async function getActiveVisitors() {

@@ -109,14 +109,23 @@ export async function getActiveVisitors() {
 
 // Fetches one page of completed visitors, requesting one extra row over
 // `limit` so the caller can tell whether more pages remain without a
-// separate (more expensive) exact-count query.
-export async function getCompletedVisitorsPage(offset: number, limit: number) {
-  const { data, error } = await supabase
+// separate (more expensive) exact-count query. Paginated by a `time_out`
+// cursor rather than a numeric offset — the table keeps growing as other
+// guards complete checkouts, and a numeric offset into a DESC-ordered list
+// that's actively growing at the front skips/duplicates rows across pages.
+export async function getCompletedVisitorsPage(cursor: string | null, limit: number) {
+  let query = supabase
     .from("visitor_registrations")
     .select("*")
     .eq("checkout_status", "Completed")
     .order("time_out", { ascending: false })
-    .range(offset, offset + limit);
+    .limit(limit + 1);
+
+  if (cursor) {
+    query = query.lt("time_out", cursor);
+  }
+
+  const { data, error } = await query;
 
   if (error) throw new Error(error.message);
   const rows = data || [];

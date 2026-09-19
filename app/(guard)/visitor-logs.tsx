@@ -23,7 +23,7 @@ export default function VisitorLogsScreen() {
     setLoading(true);
     setError("");
     try {
-      const { visitors, hasMore: more } = await getCompletedRegistrationsPage(0, PAGE_SIZE);
+      const { visitors, hasMore: more } = await getCompletedRegistrationsPage(null, PAGE_SIZE);
       setCompleted(visitors);
       setHasMore(more);
     } catch {
@@ -34,11 +34,12 @@ export default function VisitorLogsScreen() {
   }, []);
 
   const loadMore = useCallback(async () => {
-    if (loading || loadingMore || !hasMore) return;
+    if (loading || loadingMore || !hasMore || completed.length === 0) return;
     setLoadingMore(true);
     try {
+      const cursor = completed[completed.length - 1].timeOut;
       const { visitors, hasMore: more } = await getCompletedRegistrationsPage(
-        completed.length,
+        cursor,
         PAGE_SIZE
       );
       setCompleted((prev) => [...prev, ...visitors]);
@@ -49,7 +50,7 @@ export default function VisitorLogsScreen() {
     } finally {
       setLoadingMore(false);
     }
-  }, [loading, loadingMore, hasMore, completed.length]);
+  }, [loading, loadingMore, hasMore, completed]);
 
   useFocusEffect(
     useCallback(() => {
