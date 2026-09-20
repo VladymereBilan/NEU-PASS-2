@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AppBackground } from "../AppBackground";
 import { NEU_DARK } from "../../theme/brand";
@@ -26,7 +26,11 @@ export function DashboardScreen({ roleLabel, onSignOut, tabs, children }: Props)
       <SafeAreaView style={styles.flex} edges={["top", "left", "right"]}>
         <View style={styles.header}>
           <View style={styles.badge}>
-            <MaterialCommunityIcons name="shield-check-outline" size={22} color={NEU_DARK.emerald} />
+            <Image
+              source={require("../../../assets/branding/neu-logo.png")}
+              style={styles.logo}
+              resizeMode="cover"
+            />
           </View>
           <View style={styles.headerText}>
             <Text style={styles.appName}>NEU PASS</Text>
@@ -73,9 +77,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: NEU_DARK.emeraldSoft,
-    borderWidth: 1,
-    borderColor: NEU_DARK.cardBorder
+    overflow: "hidden"
+  },
+  logo: {
+    width: "100%",
+    height: "100%"
   },
   headerText: {
     flex: 1

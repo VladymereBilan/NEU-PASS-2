@@ -1,12 +1,15 @@
-import { StyleSheet, Text, View } from "react-native";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { Image, StyleSheet, Text, View } from "react-native";
 import { NEU_DARK } from "../../theme/brand";
 
 export function BrandHeader({ title, subtitle }: { title: string; subtitle: string }) {
   return (
     <View style={styles.container}>
       <View style={styles.badge}>
-        <MaterialCommunityIcons name="shield-check-outline" size={30} color={NEU_DARK.emerald} />
+        <Image
+          source={require("../../../assets/branding/neu-logo.png")}
+          style={styles.logo}
+          resizeMode="cover"
+        />
       </View>
       <Text style={styles.eyebrow}>NEW ERA UNIVERSITY</Text>
       <Text style={styles.title}>{title}</Text>
@@ -27,10 +30,12 @@ const styles = StyleSheet.create({
     borderRadius: 36,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: NEU_DARK.emeraldSoft,
-    borderWidth: 1,
-    borderColor: NEU_DARK.cardBorder,
+    overflow: "hidden",
     marginBottom: 10
+  },
+  logo: {
+    width: "100%",
+    height: "100%"
   },
   eyebrow: {
     fontSize: 12,
