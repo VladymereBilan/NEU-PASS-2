@@ -113,16 +113,29 @@ export async function getActiveVisitors() {
 // cursor rather than a numeric offset — the table keeps growing as other
 // guards complete checkouts, and a numeric offset into a DESC-ordered list
 // that's actively growing at the front skips/duplicates rows across pages.
-export async function getCompletedVisitorsPage(cursor: string | null, limit: number) {
+export type CompletedVisitorsCursor = { timeOut: string; id: string };
+
+export async function getCompletedVisitorsPage(
+  cursor: CompletedVisitorsCursor | null,
+  limit: number
+) {
   let query = supabase
     .from("visitor_registrations")
     .select("*")
     .eq("checkout_status", "Completed")
     .order("time_out", { ascending: false })
+    .order("id", { ascending: false })
     .limit(limit + 1);
 
   if (cursor) {
-    query = query.lt("time_out", cursor);
+    // A plain `.lt("time_out", cursor)` drops any row sharing the exact
+    // same time_out as the page-boundary row (plausible at whole-second
+    // resolution during rapid/bulk checkouts). Break ties with `id` so
+    // every row is visited exactly once across pages: strictly earlier
+    // time_out, OR the same time_out with a strictly earlier id.
+    query = query.or(
+      `time_out.lt.${cursor.timeOut},and(time_out.eq.${cursor.timeOut},id.lt.${cursor.id})`
+    );
   }
 
   const { data, error } = await query;

@@ -141,6 +141,14 @@ export default function CheckoutVerificationScreen() {
       Alert.alert("Please wait for the current face comparison to finish.");
       return;
     }
+    // Also block opening a second visitor's camera while one is already
+    // open — otherwise tapping another row silently swaps whose camera is
+    // showing, with no message, risking confusion about who is being
+    // photographed.
+    if (liveCaptureFor && liveCaptureFor !== id) {
+      Alert.alert("Please finish or cancel the current live photo capture first.");
+      return;
+    }
     const result = permission?.granted ? permission : await requestPermission();
     if (!result?.granted) {
       Alert.alert("Camera permission was denied. You can still select a status manually.");

@@ -37,7 +37,8 @@ export default function VisitorLogsScreen() {
     if (loading || loadingMore || !hasMore || completed.length === 0) return;
     setLoadingMore(true);
     try {
-      const cursor = completed[completed.length - 1].timeOut;
+      const last = completed[completed.length - 1];
+      const cursor = { timeOut: last.timeOut, id: last.id };
       const { visitors, hasMore: more } = await getCompletedRegistrationsPage(
         cursor,
         PAGE_SIZE

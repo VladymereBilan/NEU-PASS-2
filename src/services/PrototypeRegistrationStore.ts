@@ -8,13 +8,17 @@ import {
   getPendingVisitors as getPendingVisitorsRepo,
   getVisitorById,
   rejectVisitor,
+  type CompletedVisitorsCursor,
 } from "../repositories/VisitorRepository";
 
 export async function getPendingRegistrations() {
   return getPendingVisitorsRepo();
 }
 
-export async function getCompletedRegistrationsPage(cursor: string | null, limit: number) {
+export async function getCompletedRegistrationsPage(
+  cursor: CompletedVisitorsCursor | null,
+  limit: number
+) {
   return getCompletedVisitorsPageRepo(cursor, limit);
 }
 
