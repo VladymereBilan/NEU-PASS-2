@@ -30,9 +30,18 @@ function shouldSkipForCooldown(key: string, now: number) {
     return true;
   }
 
-  if (lastRequestedAt.size < MAX_TRACKED_KEYS) {
-    lastRequestedAt.set(key, now);
+  // Map only ever holds keys requested within the last RESET_COOLDOWN_MS
+  // (older ones are swept above), and an existing key is never re-set
+  // without first being deleted — so iteration order is oldest-first.
+  // If full, evict the oldest tracked key rather than skip tracking this
+  // one, so a brand-new username is never left with no cooldown at all.
+  if (lastRequestedAt.size >= MAX_TRACKED_KEYS) {
+    const oldestKey = lastRequestedAt.keys().next().value;
+    if (oldestKey !== undefined) {
+      lastRequestedAt.delete(oldestKey);
+    }
   }
+  lastRequestedAt.set(key, now);
   return false;
 }
 

@@ -6,6 +6,7 @@ import {
   computeDailyBreakdown,
   computePurposeCounts,
   computeReportStats,
+  fetchAllRows,
   resolveMonthRange,
   type VisitorRow
 } from "@/lib/reportStats";
@@ -19,11 +20,14 @@ export default async function ReportsPage({
   searchParams: { month?: string; page?: string };
 }) {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("visitor_registrations")
-    .select(
-      "id, full_name, purpose_of_visit, registration_status, checkout_status, qr_status, time_in, time_out, expiration_time, created_at"
-    );
+  const { rows: fetchedRows, error } = await fetchAllRows<VisitorRow>((from, to) =>
+    supabase
+      .from("visitor_registrations")
+      .select(
+        "id, full_name, purpose_of_visit, registration_status, checkout_status, qr_status, time_in, time_out, expiration_time, created_at"
+      )
+      .range(from, to)
+  );
 
   if (error) {
     return (
@@ -33,7 +37,7 @@ export default async function ReportsPage({
     );
   }
 
-  const rows = (data ?? []) as VisitorRow[];
+  const rows = fetchedRows;
   const stats = computeReportStats(rows);
 
   const monthRange = resolveMonthRange(searchParams.month);

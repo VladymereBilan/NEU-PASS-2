@@ -1,3 +1,38 @@
+// PostgREST caps how many rows a single query returns (the project's
+// max-rows setting, 1000 by default) — a plain .select() with no .range()
+// silently truncates once visitor_registrations grows past that cap, with
+// no error to signal it. Page through with .range() until a page comes back
+// smaller than requested, which is the only reliable "that was the last
+// page" signal (an exact multiple of FETCH_PAGE_SIZE still needs one more
+// empty-page fetch to confirm there's nothing left).
+const FETCH_PAGE_SIZE = 1000;
+
+export async function fetchAllRows<T>(
+  // PromiseLike, not Promise: a Supabase PostgrestFilterBuilder is thenable
+  // (usable with `await`) but isn't a real Promise (no .catch/.finally), so
+  // typing this as Promise<...> would reject passing a query builder here
+  // directly without an explicit `await` inside the callback.
+  fetchPage: (
+    from: number,
+    to: number
+  ) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>
+): Promise<{ rows: T[]; error: string | null }> {
+  const rows: T[] = [];
+  let from = 0;
+
+  for (;;) {
+    const { data, error } = await fetchPage(from, from + FETCH_PAGE_SIZE - 1);
+    if (error) return { rows, error: error.message };
+
+    const page = data ?? [];
+    rows.push(...page);
+    if (page.length < FETCH_PAGE_SIZE) break;
+    from += FETCH_PAGE_SIZE;
+  }
+
+  return { rows, error: null };
+}
+
 export type VisitorRow = {
   id: string;
   full_name: string;

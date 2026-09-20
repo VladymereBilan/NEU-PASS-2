@@ -167,7 +167,13 @@ export default function VisitorsPage() {
       }
 
       const exportRows = (data ?? []) as VisitorRow[];
-      const truncated = exportRows.length >= EXPORT_ROW_CAP;
+      // Compare against the exact server-side count (from the paginated
+      // fetch's `count: "exact"`), not exportRows.length >= EXPORT_ROW_CAP —
+      // that comparison can't tell "exactly EXPORT_ROW_CAP matches" from
+      // "more, truncated", and misses truncation entirely if PostgREST's own
+      // max-rows setting caps the query below EXPORT_ROW_CAP before it ever
+      // gets there.
+      const truncated = exportRows.length < totalCount;
       const csv = toCsv(COLUMNS, exportRows.map(toRow));
       const timestamp = new Date().toISOString().slice(0, 10);
       const filename = truncated
