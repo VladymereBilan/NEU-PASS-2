@@ -52,7 +52,9 @@ function decodeBase64(value: unknown): Uint8Array | null {
 }
 
 function configuredThreshold(): number {
-  const configured = Number(Deno.env.get("FACE_MATCH_THRESHOLD") ?? 80);
+  const raw = Deno.env.get("FACE_MATCH_THRESHOLD");
+  if (!raw || raw.trim() === "") return 80;
+  const configured = Number(raw);
   return Number.isFinite(configured) ? configured : 80;
 }
 

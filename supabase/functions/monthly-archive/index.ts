@@ -78,35 +78,33 @@ function jsonResponse(body: unknown, status: number) {
   });
 }
 
-// The platform's gateway (verify_jwt) already rejects a request whose JWT
-// isn't validly signed for this project before our code ever runs — so
-// decoding the (already-verified) role claim here is a safe, standard way
-// to gate on "caller is service_role" without string-matching against
-// Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"), whose auto-injected value can
-// differ from the legacy JWT callers actually send once a project also has
-// the newer sb_secret_/sb_publishable_ key system enabled.
-function jwtRole(authHeader: string): string | null {
-  const match = authHeader.match(/^Bearer (.+)$/);
-  if (!match) return null;
-  const parts = match[1].split(".");
-  if (parts.length !== 3) return null;
-  try {
-    let base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-    while (base64.length % 4) base64 += "=";
-    const payload = JSON.parse(atob(base64));
-    return typeof payload.role === "string" ? payload.role : null;
-  } catch {
-    return null;
+// Both legitimate callers (pg_cron, admin-web's Server Action via
+// createAdminClient()) present the actual service_role key as the bearer
+// token. Comparing the presented token directly against our own copy of
+// that secret is a self-contained gate: unlike decoding an unverified JWT's
+// role claim, it doesn't depend on the project's verify_jwt gateway setting
+// (which lives outside this repo and could be disabled without notice) —
+// forging a JWT payload of {"role":"service_role"} does not produce a
+// string that matches SERVICE_ROLE_KEY. Constant-time compare avoids
+// leaking the key length/prefix via response-timing.
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
   }
+  return diff === 0;
 }
 
 Deno.serve(async (req) => {
-  // Only a caller holding a service_role-signed JWT (pg_cron, or admin-web's
-  // Server Action via createAdminClient()) may trigger this — the key is
-  // never exposed to a browser, so this is a safe-enough gate for a
-  // server-to-server job with no end-user session of its own.
+  // Only a caller presenting the actual service_role key (pg_cron, or
+  // admin-web's Server Action via createAdminClient()) may trigger this —
+  // the key is never exposed to a browser, so this is a safe-enough gate
+  // for a server-to-server job with no end-user session of its own.
   const authHeader = req.headers.get("Authorization") ?? "";
-  if (jwtRole(authHeader) !== "service_role") {
+  const bearerMatch = authHeader.match(/^Bearer (.+)$/);
+  const presentedToken = bearerMatch?.[1] ?? "";
+  if (!presentedToken || !timingSafeEqual(presentedToken, SERVICE_ROLE_KEY)) {
     return jsonResponse({ error: "Unauthorized" }, 401);
   }
 
