@@ -4,7 +4,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import QRCode from "qrcode";
 import { createClient } from "@/lib/supabase/client";
-import { buildVisitorQrValue, getExpirationStatus } from "@/lib/visitorRegistrationConstants";
+import {
+  buildVisitorQrValue,
+  getExpirationStatus,
+  type ExpirationStatus
+} from "@/lib/visitorRegistrationConstants";
 
 type RegistrationRow = {
   id: string;
@@ -30,7 +34,28 @@ const TERMINAL_STATUSES = new Set(["Completed", "Rejected"]);
 export default function VisitStatusPage() {
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [qrDataUrl, setQrDataUrl] = useState("");
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | null>(
+    null
+  );
   const userIdRef = useRef<string | null>(null);
+  const lastExpirationStatusRef = useRef<ExpirationStatus | null>(null);
+
+  // Browsers only ever show the permission prompt in response to a real
+  // user gesture (a click) — calling requestPermission() on mount/effect is
+  // silently ignored (confirmed: permission stays "default" forever, the
+  // notification would never fire for anyone). So this only reads the
+  // current permission to decide whether to show the "Enable" button below;
+  // the actual request happens in that button's onClick.
+  useEffect(() => {
+    if (typeof window === "undefined" || !("Notification" in window)) return;
+    setNotificationPermission(Notification.permission);
+  }, []);
+
+  const requestNotificationPermission = useCallback(async () => {
+    if (typeof window === "undefined" || !("Notification" in window)) return;
+    const result = await Notification.requestPermission();
+    setNotificationPermission(result);
+  }, []);
 
   const fetchLatest = useCallback(async () => {
     const supabase = createClient();
@@ -78,6 +103,40 @@ export default function VisitStatusPage() {
     return () => clearInterval(interval);
   }, [state, fetchLatest]);
 
+  // Fires a native browser notification exactly once, the moment this
+  // poll cycle first observes the pass cross into "Near Expiration" — not
+  // on every 20s tick while it stays there. Works even if the tab is
+  // backgrounded (not fully closed) and permission was granted above.
+  useEffect(() => {
+    if (state.status !== "loaded" || !state.row || !state.row.expiration_time) {
+      lastExpirationStatusRef.current = null;
+      return;
+    }
+    if (state.row.registration_status !== "Active") {
+      lastExpirationStatusRef.current = null;
+      return;
+    }
+
+    const currentStatus = getExpirationStatus(state.row.expiration_time);
+    const previousStatus = lastExpirationStatusRef.current;
+    lastExpirationStatusRef.current = currentStatus;
+
+    const justEnteredNearExpiration =
+      currentStatus === "Near Expiration" && previousStatus !== "Near Expiration";
+    const canNotify =
+      typeof window !== "undefined" &&
+      "Notification" in window &&
+      Notification.permission === "granted";
+
+    if (justEnteredNearExpiration && canNotify) {
+      new Notification("Your NEU-Pass visitor pass is expiring soon", {
+        body: `Pass ${state.row.visitor_pass_number ?? ""} expires at ${formatDate(
+          state.row.expiration_time
+        )}. Please proceed to checkout.`
+      });
+    }
+  }, [state]);
+
   useEffect(() => {
     if (state.status !== "loaded" || !state.row) {
       setQrDataUrl("");
@@ -118,13 +177,19 @@ export default function VisitStatusPage() {
       }}
     >
       <div className="w-full max-w-md rounded-[22px] border border-emerald-500/25 bg-[#0a1f14]/85 p-8 shadow-[0_25px_70px_rgba(0,0,0,0.55)] backdrop-blur-md">
-        {renderBody(state, qrDataUrl, fetchLatest)}
+        {renderBody(state, qrDataUrl, fetchLatest, notificationPermission, requestNotificationPermission)}
       </div>
     </main>
   );
 }
 
-function renderBody(state: LoadState, qrDataUrl: string, refresh: () => void) {
+function renderBody(
+  state: LoadState,
+  qrDataUrl: string,
+  refresh: () => void,
+  notificationPermission: NotificationPermission | null,
+  onEnableNotifications: () => void
+) {
   if (state.status === "loading") {
     return <p className="text-center text-sm text-gray-400">Loading your status…</p>;
   }
@@ -212,6 +277,16 @@ function renderBody(state: LoadState, qrDataUrl: string, refresh: () => void) {
         <p className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm font-medium text-amber-300">
           Your pass expires within 15 minutes. Please head to checkout.
         </p>
+      ) : null}
+
+      {notificationPermission === "default" ? (
+        <button
+          type="button"
+          onClick={onEnableNotifications}
+          className="mt-4 w-full rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-3 py-2.5 text-sm font-semibold text-emerald-300 transition hover:bg-emerald-500/20"
+        >
+          Enable alert when my pass is about to expire
+        </button>
       ) : null}
 
       {qrDataUrl ? (
