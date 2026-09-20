@@ -91,26 +91,30 @@ export default function VisitDetailsPage() {
       const nextAutoFilled: AutoFilledFields = {};
       setForm((prev) => {
         const next = { ...prev };
-        if (extracted.fullName) {
+        // Only fill a field that's still blank when this response lands —
+        // OCR runs in the background while the visitor can already be typing,
+        // and a slow response must never clobber input they've entered in
+        // the meantime.
+        if (extracted.fullName && !prev.fullName.trim()) {
           next.fullName = extracted.fullName;
           nextAutoFilled.fullName = true;
         }
-        if (extracted.address) {
+        if (extracted.address && !prev.address.trim()) {
           next.address = extracted.address;
           nextAutoFilled.address = true;
         }
-        if (extracted.idType) {
+        if (extracted.idType && !prev.idType.trim()) {
           next.idType = extracted.idType;
           next.idDescription = "";
           nextAutoFilled.idType = true;
         }
-        if (extracted.idNumber) {
+        if (extracted.idNumber && !prev.idNumber.trim()) {
           next.idNumber = extracted.idNumber;
           nextAutoFilled.idNumber = true;
         }
         return next;
       });
-      setAutoFilled(nextAutoFilled);
+      setAutoFilled((prev) => ({ ...prev, ...nextAutoFilled }));
     })();
 
     return () => {

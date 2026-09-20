@@ -74,13 +74,16 @@ export default function VisitFaceCapturePage() {
       NAME_LETTER_PATTERN.test(draft.fullName) &&
       !NAME_DIGIT_PATTERN.test(draft.fullName) &&
       draft.address.trim() &&
+      /[A-Za-zÀ-ÖØ-öø-ÿ]/.test(draft.address) &&
+      /\d/.test(draft.address) &&
       draft.contactNumber.trim() &&
       draft.email.trim() &&
       EMAIL_PATTERN.test(draft.email.trim()) &&
       draft.idType.trim() &&
       draft.idNumber.trim() &&
       ID_NUMBER_PATTERN.test(draft.idNumber.trim()) &&
-      draft.purposeOfVisit.trim();
+      draft.purposeOfVisit.trim() &&
+      (draft.purposeOfVisit !== "Others" || draft.otherAgenda.trim());
 
     if (!hasValidDetails) {
       router.replace("/visit/details");

@@ -263,7 +263,11 @@ function findIdNumberValue(lines: string[]): string | undefined {
   // No recognized label at all — fall back to the first sufficiently
   // digit-dense token anywhere on the ID, on the theory that an ID number
   // is one of the few things on the card with that much digit density.
+  // Skip lines that are themselves a *different* known field (date of
+  // birth, expiration, etc.) so that field's digits aren't mistaken for the
+  // ID number just because no ID-number label was recognized.
   for (const line of lines) {
+    if (OTHER_FIELD_LABELS.some((label) => line.toUpperCase().includes(label))) continue;
     if ((line.match(/\d/g) || []).length < 3) continue;
     const token = extractToken(line);
     if (token && /\d/.test(token)) return token;
@@ -292,7 +296,12 @@ export function extractIdFields(lines: string[]): ExtractedIdFields {
     result.address = toDisplayCase(addressCandidate);
   }
 
-  const idNumberCandidate = findMrzPassportNumber(lines) ?? findIdNumberValue(lines);
+  // MRZ scanning is passport-specific — its shape can coincidentally match a
+  // line on a non-passport ID, so only trust it once the ID type itself has
+  // already been recognized as a passport.
+  const idNumberCandidate =
+    (result.idType === "Philippine Passport" ? findMrzPassportNumber(lines) : undefined) ??
+    findIdNumberValue(lines);
   if (idNumberCandidate && ID_NUMBER_PATTERN.test(idNumberCandidate.trim())) {
     result.idNumber = idNumberCandidate.trim();
   }
