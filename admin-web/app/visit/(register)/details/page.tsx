@@ -9,8 +9,10 @@ import {
   EMAIL_PATTERN,
   ID_NUMBER_PATTERN,
   ID_TYPE_OPTIONS,
+  isValidPhilippineMobile,
   NAME_DIGIT_PATTERN,
   NAME_LETTER_PATTERN,
+  normalizePhilippineMobile,
   PURPOSE_OPTIONS
 } from "@/lib/visitorRegistrationConstants";
 import { VisitShell, TextField, SelectField, PrimaryButton } from "@/components/VisitShell";
@@ -146,7 +148,11 @@ export default function VisitDetailsPage() {
     } else if (!/[A-Za-zÀ-ÖØ-öø-ÿ]/.test(form.address) || !/\d/.test(form.address)) {
       nextErrors.address = "Address must contain both letters and a number.";
     }
-    if (!form.contactNumber.trim()) nextErrors.contactNumber = "Contact Number is required.";
+    if (!form.contactNumber.trim()) {
+      nextErrors.contactNumber = "Contact Number is required.";
+    } else if (!isValidPhilippineMobile(form.contactNumber)) {
+      nextErrors.contactNumber = "Enter a valid PH mobile number (e.g. 09XXXXXXXXX).";
+    }
     if (!form.email.trim()) {
       nextErrors.email = "Email Address is required.";
     } else if (!EMAIL_PATTERN.test(form.email.trim())) {
@@ -177,7 +183,7 @@ export default function VisitDetailsPage() {
     updateDraft({
       fullName: form.fullName.trim(),
       address: form.address.trim(),
-      contactNumber: form.contactNumber.trim(),
+      contactNumber: normalizePhilippineMobile(form.contactNumber),
       email: form.email.trim(),
       idType: form.idType === "Other" ? `Other: ${form.idDescription.trim()}` : form.idType.trim(),
       idNumber: form.idNumber.trim(),

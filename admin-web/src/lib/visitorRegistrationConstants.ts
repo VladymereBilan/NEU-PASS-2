@@ -38,6 +38,33 @@ export const NAME_LETTER_PATTERN = /[A-Za-zÀ-ÖØ-öø-ÿ]/;
 export const NAME_DIGIT_PATTERN = /\d/;
 export const ID_NUMBER_PATTERN = /^(?=.*\d)[A-Za-z0-9\-\s]+$/;
 export const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+// Accepts 09XXXXXXXXX, 639XXXXXXXXX, or +639XXXXXXXXX — the common ways a
+// Philippine mobile number gets typed — after stripPhoneSeparators() has
+// already removed any spaces/dashes a visitor typed between groups of
+// digits (e.g. "0910 582 7021" or "0910-582-7021"), both of which are
+// normal ways to type a PH number and must not be rejected outright.
+// Required so the number is actually deliverable by the expiration-reminder
+// SMS (send-expiration-reminders edge function) rather than just "non-empty".
+export const CONTACT_NUMBER_PATTERN = /^(09\d{9}|\+?639\d{9})$/;
+
+function stripPhoneSeparators(value: string): string {
+  return value.replace(/[\s-]/g, "").trim();
+}
+
+export function isValidPhilippineMobile(value: string): boolean {
+  return CONTACT_NUMBER_PATTERN.test(stripPhoneSeparators(value));
+}
+
+// Normalizes any of CONTACT_NUMBER_PATTERN's accepted shapes (spaces/dashes
+// included) to 09XXXXXXXXX before it's saved, so the stored value is always
+// one canonical format and the SMS-sending edge function never needs to
+// re-parse it.
+export function normalizePhilippineMobile(value: string): string {
+  const stripped = stripPhoneSeparators(value);
+  if (/^09\d{9}$/.test(stripped)) return stripped;
+  if (/^\+?639\d{9}$/.test(stripped)) return stripped.replace(/^\+?63/, "0");
+  return stripped;
+}
 
 // Face matching is still manual/prototype (see FaceVerificationService.ts) —
 // a guard visually compares the ID/face photos rather than any automated
