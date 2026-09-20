@@ -14,6 +14,15 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+// A manually-set secret, distinct from SUPABASE_SERVICE_ROLE_KEY: this
+// project has both the legacy JWT key system and the newer sb_secret_/
+// sb_publishable_ system enabled, and Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
+// resolves to the *new* sb_secret_ value at runtime — but both legitimate
+// callers (pg_cron's Vault-stored secret, admin-web's createAdminClient())
+// still present the legacy JWT. Comparing against a secret we set ourselves
+// (to that same legacy JWT value) sidesteps depending on which key format
+// the platform happens to auto-inject under that reserved name.
+const EDGE_FUNCTIONS_AUTH_TOKEN = Deno.env.get("EDGE_FUNCTIONS_AUTH_TOKEN")!;
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const RESEND_FROM_EMAIL = Deno.env.get("RESEND_FROM_EMAIL");
 
@@ -81,12 +90,13 @@ function jsonResponse(body: unknown, status: number) {
 // Both legitimate callers (pg_cron, admin-web's Server Action via
 // createAdminClient()) present the actual service_role key as the bearer
 // token. Comparing the presented token directly against our own copy of
-// that secret is a self-contained gate: unlike decoding an unverified JWT's
-// role claim, it doesn't depend on the project's verify_jwt gateway setting
-// (which lives outside this repo and could be disabled without notice) —
-// forging a JWT payload of {"role":"service_role"} does not produce a
-// string that matches SERVICE_ROLE_KEY. Constant-time compare avoids
-// leaking the key length/prefix via response-timing.
+// that secret (EDGE_FUNCTIONS_AUTH_TOKEN, not SUPABASE_SERVICE_ROLE_KEY —
+// see its declaration above) is a self-contained gate: unlike decoding an
+// unverified JWT's role claim, it doesn't depend on the project's verify_jwt
+// gateway setting (which lives outside this repo and could be disabled
+// without notice) — forging a JWT payload of {"role":"service_role"} does
+// not produce a string that matches this secret. Constant-time compare
+// avoids leaking the key length/prefix via response-timing.
 function timingSafeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
   let diff = 0;
@@ -104,7 +114,7 @@ Deno.serve(async (req) => {
   const authHeader = req.headers.get("Authorization") ?? "";
   const bearerMatch = authHeader.match(/^Bearer (.+)$/);
   const presentedToken = bearerMatch?.[1] ?? "";
-  if (!presentedToken || !timingSafeEqual(presentedToken, SERVICE_ROLE_KEY)) {
+  if (!presentedToken || !timingSafeEqual(presentedToken, EDGE_FUNCTIONS_AUTH_TOKEN)) {
     return jsonResponse({ error: "Unauthorized" }, 401);
   }
 
