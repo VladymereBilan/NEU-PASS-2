@@ -15,8 +15,6 @@ import {
   UsersManageIcon,
   VisitorsIcon
 } from "@/components/icons";
-import { ShieldIcon } from "@/components/AuthShell";
-
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: DashboardIcon },
   { href: "/visitors", label: "Visitors", icon: VisitorsIcon },
@@ -91,8 +89,9 @@ export function AdminShell({
           <div className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col border-r border-emerald-500/15 bg-[#040f0a] p-5 shadow-2xl">
             <div className="mb-8 flex items-center justify-between gap-2">
               <div className="flex items-center gap-3 overflow-hidden">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-emerald-500/40 bg-emerald-950/60">
-                  <ShieldIcon className="h-5 w-5 text-emerald-400" />
+                <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/neu-logo.webp" alt="New Era University" className="h-full w-full object-cover" />
                 </div>
                 <div className="overflow-hidden">
                   <div className="truncate text-xs font-bold uppercase tracking-[0.3em] text-white">
@@ -153,8 +152,9 @@ export function AdminShell({
         >
           <div className="mb-8 flex items-center justify-between gap-2">
             <div className="flex items-center gap-3 overflow-hidden">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-emerald-500/40 bg-emerald-950/60">
-                <ShieldIcon className="h-5 w-5 text-emerald-400" />
+              <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/neu-logo.webp" alt="New Era University" className="h-full w-full object-cover" />
               </div>
               {!collapsed ? (
                 <div className="overflow-hidden">

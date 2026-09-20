@@ -40,8 +40,9 @@ export function AuthShell({
             <div className="absolute inset-x-8 top-0 h-[3px] rounded-full bg-gradient-to-r from-transparent via-emerald-400 to-transparent" />
 
             <div className="flex flex-col items-center">
-              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-emerald-500/40 bg-emerald-950/60">
-                <ShieldIcon className="h-7 w-7 text-emerald-400" />
+              <div className="mb-4 h-16 w-16 shrink-0 overflow-hidden rounded-full">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/neu-logo.webp" alt="New Era University" className="h-full w-full object-cover" />
               </div>
               <div className="text-[11px] font-bold tracking-[0.28em] text-emerald-400 uppercase">
                 {eyebrow}
@@ -80,19 +81,6 @@ export function AuthShell({
         ?
       </button>
     </main>
-  );
-}
-
-export function ShieldIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M12 3l7 3v5c0 4.5-3 8.2-7 10-4-1.8-7-5.5-7-10V6l7-3z"
-      />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9.5 12l1.8 1.8L14.5 10" />
-    </svg>
   );
 }
 
