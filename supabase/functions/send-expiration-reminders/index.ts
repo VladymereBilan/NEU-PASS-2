@@ -4,8 +4,8 @@
 // Deno-only globals against Node/DOM lib settings.
 //
 // Triggered every 5 minutes by pg_cron. Texts a visitor once, ~10-15 minutes
-// before their Active pass's expiration_time, via the PhilSMS API — the
-// only visitor-facing warning today is the "Near Expiration" badge on
+// before their Active pass's expiration_time, via the Semaphore SMS API —
+// the only visitor-facing warning today is the "Near Expiration" badge on
 // /visit/status, which only reaches a visitor who still has that tab open.
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -20,12 +20,10 @@ const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 // (to that same legacy JWT value) sidesteps depending on which key format
 // the platform happens to auto-inject under that reserved name.
 const EDGE_FUNCTIONS_AUTH_TOKEN = Deno.env.get("EDGE_FUNCTIONS_AUTH_TOKEN")!;
-const PHILSMS_API_KEY = Deno.env.get("PHILSMS_API_KEY");
-// PhilSMS requires a registered sender_id on every send (unlike Semaphore,
-// which defaults to the account's own sender name when omitted) — see
-// https://app.philsms.com/developers/documentation. Set this to whatever
-// sender ID/name is approved on the PhilSMS dashboard.
-const PHILSMS_SENDER_ID = Deno.env.get("PHILSMS_SENDER_ID");
+const SEMAPHORE_API_KEY = Deno.env.get("SEMAPHORE_API_KEY");
+// Optional — Semaphore falls back to the account's own registered sender
+// name when this isn't set, unlike PhilSMS which requires one explicitly.
+const SEMAPHORE_SENDER_NAME = Deno.env.get("SEMAPHORE_SENDER_NAME");
 
 const MANILA_OFFSET_MS = 8 * 60 * 60 * 1000;
 
@@ -47,16 +45,6 @@ function timingSafeEqual(a: string, b: string): boolean {
     diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
   }
   return diff === 0;
-}
-
-// contact_number is stored as 09XXXXXXXXX (see
-// admin-web/src/lib/visitorRegistrationConstants.ts::normalizePhilippineMobile)
-// but PhilSMS expects the country-code form with no leading zero and no "+"
-// (its docs show "639171234567") — converted here rather than at storage
-// time, so the DB stays in the more recognizable local format for
-// guard/admin display.
-function toPhilSmsRecipient(contactNumber: string): string {
-  return contactNumber.replace(/^0/, "63");
 }
 
 function formatManilaTime(iso: string): string {
@@ -85,9 +73,9 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Unauthorized" }, 401);
   }
 
-  if (!PHILSMS_API_KEY || !PHILSMS_SENDER_ID) {
+  if (!SEMAPHORE_API_KEY) {
     return jsonResponse(
-      { error: "PHILSMS_API_KEY/PHILSMS_SENDER_ID secrets are not configured — nothing sent." },
+      { error: "SEMAPHORE_API_KEY secret is not configured — nothing sent." },
       500
     );
   }
@@ -123,26 +111,24 @@ Deno.serve(async (req) => {
       `${formatManilaTime(row.expiration_time)}. Please proceed to checkout soon.`;
 
     try {
-      const smsResponse = await fetch("https://app.philsms.com/api/v3/sms/send", {
+      const smsResponse = await fetch("https://api.semaphore.co/api/v4/messages", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${PHILSMS_API_KEY}`
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          recipient: toPhilSmsRecipient(row.contact_number),
-          sender_id: PHILSMS_SENDER_ID,
-          type: "plain",
-          message
+          apikey: SEMAPHORE_API_KEY,
+          number: row.contact_number,
+          message,
+          ...(SEMAPHORE_SENDER_NAME ? { sendername: SEMAPHORE_SENDER_NAME } : {})
         })
       });
 
-      // PhilSMS can return HTTP 200 with a JSON {status: "error", ...} body,
-      // so success requires checking both the HTTP status and the body.
+      // Semaphore returns a JSON array of message objects on success; a
+      // non-array body (e.g. {message: "..."} for a bad apikey) means it
+      // never queued the text, even if the HTTP status itself is 200.
       const result = await smsResponse.json().catch(() => null);
-      if (!smsResponse.ok || result?.status !== "success") {
+      if (!smsResponse.ok || !Array.isArray(result) || result.length === 0) {
         failures.push(
-          `${row.id}: HTTP ${smsResponse.status} ${result?.message ?? JSON.stringify(result)}`
+          `${row.id}: HTTP ${smsResponse.status} ${JSON.stringify(result)}`
         );
         continue;
       }
