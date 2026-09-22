@@ -7,7 +7,7 @@ import {
   getCompletedVisitorsPage as getCompletedVisitorsPageRepo,
   getPendingVisitors as getPendingVisitorsRepo,
   getVisitorById,
-  rejectVisitor,
+  rejectVisitorWithReason,
   type CompletedVisitorsCursor,
 } from "../repositories/VisitorRepository";
 
@@ -34,8 +34,8 @@ export async function approveRegistration(id: string) {
   return approveVisitor(id);
 }
 
-export async function rejectRegistration(id: string) {
-  return rejectVisitor(id);
+export async function rejectRegistration(id: string, reason: string) {
+  return rejectVisitorWithReason(id, reason);
 }
 
 export async function markVisitorActive(id: string) {

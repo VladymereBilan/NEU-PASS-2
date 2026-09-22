@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { Alert, Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useAuth } from "../../src/context/AuthContext";
 import {
@@ -33,6 +33,11 @@ export default function PendingVerificationsScreen() {
   const [processing, setProcessing] = useState<
     { id: string; action: "approve" | "reject" } | null
   >(null);
+  // Which pending card currently has its "reason for rejection" field open —
+  // a reason is required before Reject can actually be confirmed, so this is
+  // a two-step reveal rather than an immediate action on the first tap.
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [rejectReasons, setRejectReasons] = useState<Record<string, string>>({});
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -80,17 +85,28 @@ export default function PendingVerificationsScreen() {
     setProcessing(null);
   };
 
-  const handleReject = async (id: string) => {
+  const handleConfirmReject = async (id: string) => {
     if (processing) return;
+    const reason = (rejectReasons[id] || "").trim();
+    if (!reason) {
+      Alert.alert("Please enter a reason for rejecting this visitor.");
+      return;
+    }
     setProcessing({ id, action: "reject" });
     try {
-      await rejectRegistration(id);
+      await rejectRegistration(id, reason);
     } catch (err) {
       Alert.alert("Unable to reject visitor.");
       setProcessing(null);
       return;
     }
     Alert.alert("Visitor rejected.");
+    setRejectingId(null);
+    setRejectReasons((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
     await refresh().catch(() => setError("Visitor rejected, but the list failed to refresh."));
     setProcessing(null);
   };
@@ -164,38 +180,77 @@ export default function PendingVerificationsScreen() {
               </View>
             </View>
 
-            <View style={styles.actionRow}>
-              <Pressable
-                style={[
-                  styles.actionButton,
-                  styles.approve,
-                  processing?.id === registration.id && styles.actionDisabled
-                ]}
-                onPress={() => handleApprove(registration.id)}
-                disabled={!!processing}
-              >
-                <Text style={[styles.actionText, styles.approveText]}>
-                  {processing?.id === registration.id && processing.action === "approve"
-                    ? "Approving..."
-                    : "Approve"}
-                </Text>
-              </Pressable>
-              <Pressable
-                style={[
-                  styles.actionButton,
-                  styles.reject,
-                  processing?.id === registration.id && styles.actionDisabled
-                ]}
-                onPress={() => handleReject(registration.id)}
-                disabled={!!processing}
-              >
-                <Text style={styles.actionText}>
-                  {processing?.id === registration.id && processing.action === "reject"
-                    ? "Rejecting..."
-                    : "Reject"}
-                </Text>
-              </Pressable>
-            </View>
+            {rejectingId === registration.id ? (
+              <View style={styles.rejectReasonBox}>
+                <Text style={styles.rejectReasonLabel}>Reason for rejection (required)</Text>
+                <TextInput
+                  value={rejectReasons[registration.id] || ""}
+                  onChangeText={(value) =>
+                    setRejectReasons((prev) => ({ ...prev, [registration.id]: value }))
+                  }
+                  placeholder="e.g. Invalid ID, incomplete details..."
+                  placeholderTextColor={NEU_DARK.textMuted}
+                  style={styles.rejectReasonInput}
+                  multiline
+                />
+                <View style={styles.actionRow}>
+                  <Pressable
+                    style={[styles.actionButton, styles.reject]}
+                    onPress={() => {
+                      setRejectingId(null);
+                      setRejectReasons((prev) => {
+                        const next = { ...prev };
+                        delete next[registration.id];
+                        return next;
+                      });
+                    }}
+                    disabled={!!processing}
+                  >
+                    <Text style={styles.actionText}>Cancel</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[
+                      styles.actionButton,
+                      styles.confirmReject,
+                      processing?.id === registration.id && styles.actionDisabled
+                    ]}
+                    onPress={() => handleConfirmReject(registration.id)}
+                    disabled={!!processing}
+                  >
+                    <Text style={styles.actionText}>
+                      {processing?.id === registration.id && processing.action === "reject"
+                        ? "Rejecting..."
+                        : "Confirm Reject"}
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+            ) : (
+              <View style={styles.actionRow}>
+                <Pressable
+                  style={[
+                    styles.actionButton,
+                    styles.approve,
+                    processing?.id === registration.id && styles.actionDisabled
+                  ]}
+                  onPress={() => handleApprove(registration.id)}
+                  disabled={!!processing}
+                >
+                  <Text style={[styles.actionText, styles.approveText]}>
+                    {processing?.id === registration.id && processing.action === "approve"
+                      ? "Approving..."
+                      : "Approve"}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.actionButton, styles.reject]}
+                  onPress={() => setRejectingId(registration.id)}
+                  disabled={!!processing}
+                >
+                  <Text style={styles.actionText}>Reject</Text>
+                </Pressable>
+              </View>
+            )}
           </View>
         ))
       )}
@@ -280,6 +335,28 @@ const styles = StyleSheet.create({
   },
   actionDisabled: {
     opacity: 0.7
+  },
+  confirmReject: {
+    backgroundColor: "#ef4444"
+  },
+  rejectReasonBox: {
+    marginTop: 8,
+    gap: 8
+  },
+  rejectReasonLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: NEU_DARK.textMuted
+  },
+  rejectReasonInput: {
+    borderWidth: 1,
+    borderColor: NEU_DARK.border,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    minHeight: 60,
+    color: NEU_DARK.white,
+    textAlignVertical: "top"
   },
   actionText: {
     color: NEU_DARK.white,

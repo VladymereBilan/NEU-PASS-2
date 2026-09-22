@@ -16,6 +16,7 @@ type VisitorRow = {
   time_out: string | null;
   qr_status: string;
   expiration_time: string | null;
+  rejection_reason: string | null;
 };
 
 const COLUMNS = [
@@ -25,7 +26,8 @@ const COLUMNS = [
   "Time In",
   "Time Out",
   "QR Status",
-  "Expiration Time"
+  "Expiration Time",
+  "Rejection Reason"
 ];
 
 const PAGE_SIZE = 20;
@@ -47,7 +49,8 @@ function toRow(visitor: VisitorRow): Array<string> {
     formatDate(visitor.time_in),
     formatDate(visitor.time_out),
     visitor.qr_status,
-    formatDate(visitor.expiration_time)
+    formatDate(visitor.expiration_time),
+    visitor.registration_status === "Rejected" ? visitor.rejection_reason || "-" : "-"
   ];
 }
 
@@ -110,7 +113,7 @@ export default function VisitorsPage() {
     let query = supabase
       .from("visitor_registrations")
       .select(
-        "id, full_name, purpose_of_visit, registration_status, time_in, time_out, qr_status, expiration_time",
+        "id, full_name, purpose_of_visit, registration_status, time_in, time_out, qr_status, expiration_time, rejection_reason",
         { count: "exact" }
       );
 
@@ -151,7 +154,7 @@ export default function VisitorsPage() {
       let query = supabase
         .from("visitor_registrations")
         .select(
-          "id, full_name, purpose_of_visit, registration_status, time_in, time_out, qr_status, expiration_time"
+          "id, full_name, purpose_of_visit, registration_status, time_in, time_out, qr_status, expiration_time, rejection_reason"
         );
 
       const operand = searchOperand(debouncedSearch);

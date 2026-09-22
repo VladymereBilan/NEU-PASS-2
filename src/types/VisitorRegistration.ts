@@ -64,6 +64,7 @@ export type VisitorRegistration = {
   faceVerificationStatus: FaceVerificationStatusType;
   faceImageUri: string;
   registrationStatus: RegistrationStatus;
+  rejectionReason: string;
   timeIn: string;
   visitorPassNumber: string;
   qrStatus: QrStatus;
