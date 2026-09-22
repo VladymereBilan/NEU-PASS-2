@@ -50,9 +50,7 @@ export default function UsersPage() {
           {error}
         </div>
       ) : null}
-      <div className="max-w-2xl">
-        <MyAccountSection />
-      </div>
+      <MyAccountSection />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-6">
