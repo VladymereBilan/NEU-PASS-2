@@ -7,6 +7,7 @@
 // (add SUPABASE_SERVICE_ROLE_KEY to .env.local yourself first; if your Node
 // version predates --env-file (20.6+), export the var in your shell instead)
 import { createClient } from "@supabase/supabase-js";
+import { randomBytes } from "node:crypto";
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -62,6 +63,7 @@ async function seedAccount({ email, password, accountType, username, fullName })
 
   if (updateError) throw updateError;
   console.log(`profiles.account_type set to '${accountType}' for ${email}.`);
+  return { userId, created: !already };
 }
 
 await seedAccount({
@@ -79,5 +81,34 @@ await seedAccount({
   username: "admin01",
   fullName: "Demo Admin Account"
 });
+
+// Break-glass account: same account_type ('admin', same permissions as any
+// other admin) but exempt from the account_status==="Active" login gate (see
+// isSuperuserUsername in admin-web/src/lib/syntheticAuth.ts) — so if the
+// regular admin account is ever Blocked, mis-configured, or its password is
+// lost, this one still gets in. Unlike guard01/admin01, its password is
+// generated fresh (not a fixed demo value) and is only ever printed once,
+// here, on the run that creates it — hand it to whoever should hold
+// emergency access (e.g. the adviser/Commander Reggie) and store it
+// somewhere other than this repo.
+const superuserPassword = randomBytes(9).toString("base64url");
+const superuserResult = await seedAccount({
+  email: `superadmin@${ADMIN_EMAIL_DOMAIN}`,
+  password: superuserPassword,
+  accountType: "admin",
+  username: "superadmin",
+  fullName: "Superuser (Break-Glass) Account"
+});
+
+if (superuserResult.created) {
+  console.log("\n=== Superuser account created ===");
+  console.log("Username: superadmin");
+  console.log(`Password: ${superuserPassword}`);
+  console.log(
+    "This password will not be shown again — store it securely and hand it to whoever should hold emergency access.\n"
+  );
+} else {
+  console.log("superadmin already exists — leaving its password unchanged.");
+}
 
 console.log("Done.");

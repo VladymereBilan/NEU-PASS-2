@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { adminUsernameToEmail } from "@/lib/syntheticAuth";
+import { adminUsernameToEmail, isSuperuserUsername } from "@/lib/syntheticAuth";
 import { AuthShell, Field, UserIcon, LockIcon } from "@/components/AuthShell";
 
 export default function LoginPage() {
@@ -123,7 +123,7 @@ function LoginForm() {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("account_type, account_status")
+      .select("account_type, account_status, username")
       .eq("id", data.user.id)
       .maybeSingle();
 
@@ -135,7 +135,7 @@ function LoginForm() {
       return;
     }
 
-    if (profile.account_status !== "Active") {
+    if (profile.account_status !== "Active" && !isSuperuserUsername(profile.username)) {
       await supabase.auth.signOut();
       setError("This admin account has been blocked. Contact another administrator.");
       setLoading(false);
