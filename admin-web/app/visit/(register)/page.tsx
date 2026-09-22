@@ -37,9 +37,13 @@ export default function VisitConsentPage() {
         </div>
 
         {declined ? (
-          <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm font-medium text-red-300">
-            Consent is required to continue registration.
-          </p>
+          <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-3 text-sm font-medium text-red-300">
+            <p>
+              Consent is required to use this online registration. You can still visit today —
+              please proceed to the guard on duty at the gate for manual registration, and bring a
+              valid ID.
+            </p>
+          </div>
         ) : null}
 
         <div className="flex gap-3">

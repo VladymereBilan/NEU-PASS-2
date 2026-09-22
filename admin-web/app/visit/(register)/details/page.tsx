@@ -214,6 +214,7 @@ export default function VisitDetailsPage() {
           placeholder="Juan Dela Cruz"
           error={errors.fullName}
           hint={hintFor("fullName")}
+          required
         />
         <TextField
           label="Address"
@@ -222,6 +223,7 @@ export default function VisitDetailsPage() {
           placeholder="Full address"
           error={errors.address}
           hint={hintFor("address")}
+          required
         />
         <TextField
           label="Contact Number"
@@ -230,6 +232,7 @@ export default function VisitDetailsPage() {
           placeholder="09xxxxxxxxx"
           type="tel"
           error={errors.contactNumber}
+          required
         />
         <TextField
           label="Email Address"
@@ -238,6 +241,7 @@ export default function VisitDetailsPage() {
           placeholder="name@email.com"
           type="email"
           error={errors.email}
+          required
         />
         <SelectField
           label="ID Type"
@@ -250,6 +254,7 @@ export default function VisitDetailsPage() {
           placeholder="Select ID type"
           error={errors.idType}
           hint={hintFor("idType")}
+          required
         />
         {form.idType === "Other" ? (
           <TextField
@@ -258,6 +263,7 @@ export default function VisitDetailsPage() {
             onChange={(value) => updateField("idDescription", value)}
             placeholder="e.g. Foreign passport or residence permit"
             error={errors.idDescription}
+            required
           />
         ) : null}
         <TextField
@@ -267,6 +273,7 @@ export default function VisitDetailsPage() {
           placeholder="ID number"
           error={errors.idNumber}
           hint={hintFor("idNumber")}
+          required
         />
         <SelectField
           label="Purpose of Visit"
@@ -278,6 +285,7 @@ export default function VisitDetailsPage() {
           options={PURPOSE_OPTIONS}
           placeholder="Select purpose"
           error={errors.purpose}
+          required
         />
         {form.purpose === "Others" ? (
           <TextField
@@ -286,6 +294,7 @@ export default function VisitDetailsPage() {
             onChange={(value) => updateField("agenda", value)}
             placeholder="Describe your agenda"
             error={errors.agenda}
+            required
           />
         ) : null}
 

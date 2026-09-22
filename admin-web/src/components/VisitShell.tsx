@@ -79,10 +79,17 @@ function StepIndicator({ step }: { step: number }) {
   );
 }
 
-export function FieldLabel({ children }: { children: React.ReactNode }) {
+export function FieldLabel({
+  children,
+  required
+}: {
+  children: React.ReactNode;
+  required?: boolean;
+}) {
   return (
     <div className="mb-2 text-[11px] font-bold tracking-[0.14em] text-gray-400 uppercase">
       {children}
+      {required ? <span className="ml-1 text-red-400">*</span> : null}
     </div>
   );
 }
@@ -94,7 +101,8 @@ export function TextField({
   error,
   hint,
   placeholder,
-  type = "text"
+  type = "text",
+  required
 }: {
   label: string;
   value: string;
@@ -103,10 +111,11 @@ export function TextField({
   hint?: string;
   placeholder?: string;
   type?: string;
+  required?: boolean;
 }) {
   return (
     <label className="block">
-      <FieldLabel>{label}</FieldLabel>
+      <FieldLabel required={required}>{label}</FieldLabel>
       <input
         type={type}
         value={value}
@@ -130,7 +139,8 @@ export function SelectField({
   options,
   error,
   hint,
-  placeholder
+  placeholder,
+  required
 }: {
   label: string;
   value: string;
@@ -139,10 +149,11 @@ export function SelectField({
   error?: string;
   hint?: string;
   placeholder: string;
+  required?: boolean;
 }) {
   return (
     <label className="block">
-      <FieldLabel>{label}</FieldLabel>
+      <FieldLabel required={required}>{label}</FieldLabel>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
