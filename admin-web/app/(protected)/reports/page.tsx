@@ -15,10 +15,11 @@ import { createClient } from "@/lib/supabase/server";
 const DAILY_BREAKDOWN_PAGE_SIZE = 10;
 
 export default async function ReportsPage({
-  searchParams
+  searchParams: searchParamsPromise
 }: {
-  searchParams: { month?: string; page?: string };
+  searchParams: Promise<{ month?: string; page?: string }>;
 }) {
+  const searchParams = await searchParamsPromise;
   const supabase = await createClient();
   const { rows: fetchedRows, error } = await fetchAllRows<VisitorRow>((from, to) =>
     supabase
