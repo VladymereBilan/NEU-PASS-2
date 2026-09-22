@@ -49,9 +49,18 @@ export default function UsersPage() {
           {error}
         </div>
       ) : null}
-      <MyAccountSection />
-      <GuardAccountsSection guards={guards} loading={loading} onChanged={refresh} />
-      <AdminAccountsSection admins={admins} loading={loading} onChanged={refresh} />
+      <div className="max-w-2xl">
+        <MyAccountSection />
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="space-y-6">
+          <GuardAccountsSection guards={guards} loading={loading} onChanged={refresh} />
+        </div>
+        <div className="space-y-6">
+          <AdminAccountsSection admins={admins} loading={loading} onChanged={refresh} />
+        </div>
+      </div>
     </div>
   );
 }
@@ -214,7 +223,7 @@ function GuardAccountsSection({
           </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Guard Full Name" value={fullName} onChange={setFullName} />
           <Field label="Username" value={username} onChange={setUsername} />
           <Field label="Password" value={password} onChange={setPassword} type="password" />
@@ -266,7 +275,7 @@ function GuardAccountsSection({
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           {filtered.map((account) => (
             <AccountRow
               key={account.id}
@@ -360,7 +369,7 @@ function AdminAccountsSection({
           </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Admin Full Name" value={fullName} onChange={setFullName} />
           <Field label="Username" value={username} onChange={setUsername} />
           <Field label="Password" value={password} onChange={setPassword} type="password" />
@@ -393,7 +402,7 @@ function AdminAccountsSection({
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           {admins.map((account) => (
             <AccountRow
               key={account.id}
@@ -479,8 +488,8 @@ function AccountRow({
   };
 
   return (
-    <div className="rounded-2xl border border-emerald-500/15 bg-white/5 p-4">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div className="rounded-2xl border border-emerald-500/15 bg-white/5 p-3.5">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <div className="font-medium text-white">
             {fullName}
@@ -496,20 +505,20 @@ function AccountRow({
               confirmLabel={status === "Active" ? "Confirm Block" : "Confirm Unblock"}
               disabled={statusSaving}
               onConfirm={() => void handleToggleStatus()}
-              className={`rounded-2xl px-4 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 ${
+              className={`rounded-2xl px-3.5 py-2.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 ${
                 status === "Active"
                   ? "border border-emerald-500/20 bg-white/5 text-white hover:bg-white/10"
                   : "bg-emerald-500 text-[#04150c] hover:bg-emerald-400"
               }`}
             />
           ) : isSelf ? (
-            <span className="rounded-2xl border border-emerald-500/10 bg-white/5 px-4 py-3 text-sm font-medium text-gray-500">
+            <span className="rounded-2xl border border-emerald-500/10 bg-white/5 px-3.5 py-2.5 text-sm font-medium text-gray-500">
               Can&apos;t block your own account
             </span>
           ) : null}
           <button
             onClick={openReset}
-            className="rounded-2xl border border-emerald-500/20 bg-white/5 px-4 py-3 text-sm font-semibold text-white hover:bg-white/10"
+            className="rounded-2xl border border-emerald-500/20 bg-white/5 px-3.5 py-2.5 text-sm font-semibold text-white hover:bg-white/10"
           >
             {resetting ? "Cancel" : "Reset Password"}
           </button>
