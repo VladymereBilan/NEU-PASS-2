@@ -218,7 +218,19 @@ function renderBody(
 
   const { row } = state;
 
-  if (!row || row.registration_status === "Completed") {
+  if (row?.registration_status === "Completed") {
+    return (
+      <>
+        <h1 className="text-xl font-extrabold text-white">Checked out</h1>
+        <p className="mt-3 text-sm text-gray-400">
+          Thanks for visiting New Era University! Your visit has been checked out.
+        </p>
+        <VisitLink />
+      </>
+    );
+  }
+
+  if (!row) {
     return (
       <>
         <h1 className="text-xl font-extrabold text-white">No active visit</h1>
