@@ -53,7 +53,7 @@ export default async function DashboardPage() {
           }
         >
           <DonutChart
-            size={200}
+            size={230}
             segments={Object.entries(monthPurposeCounts).map(([label, value], index) => ({
               label,
               value,
@@ -63,26 +63,12 @@ export default async function DashboardPage() {
         </Panel>
 
         <Panel title="Daily and Monthly Logs" eyebrow="Activity">
-          <div className="space-y-4">
-            <div>
-              <div className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
-                Daily
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <MiniStat label="Visitors Today" value={stats.daily.visitorsToday} />
-                <MiniStat label="Completed Today" value={stats.daily.completedToday} />
-                <MiniStat label="Active Today" value={stats.daily.activeToday} />
-              </div>
-            </div>
-            <div>
-              <div className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
-                Monthly
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <MiniStat label="Visitors This Month" value={stats.monthly.visitorsThisMonth} />
-                <MiniStat label="Completed This Month" value={stats.monthly.completedThisMonth} />
-              </div>
-            </div>
+          <div className="grid grid-cols-2 gap-3">
+            <MiniStat label="Visitors Today" value={stats.daily.visitorsToday} />
+            <MiniStat label="Completed Today" value={stats.daily.completedToday} />
+            <MiniStat label="Active Today" value={stats.daily.activeToday} />
+            <MiniStat label="Visitors This Month" value={stats.monthly.visitorsThisMonth} />
+            <MiniStat label="Completed This Month" value={stats.monthly.completedThisMonth} />
           </div>
         </Panel>
       </div>
