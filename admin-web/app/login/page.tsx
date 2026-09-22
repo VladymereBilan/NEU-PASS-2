@@ -3,8 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { adminUsernameToEmail, isSuperuserUsername } from "@/lib/syntheticAuth";
+import { adminLogin } from "@/actions/adminLogin";
 import { AuthShell, Field, UserIcon, LockIcon } from "@/components/AuthShell";
 
 export default function LoginPage() {
@@ -13,51 +12,6 @@ export default function LoginPage() {
       <LoginForm />
     </Suspense>
   );
-}
-
-// Best-effort, client-side-only deterrent against rapid repeated guesses —
-// it resets if the browser storage is cleared and isn't shared across
-// devices/tabs, so it's not a substitute for real server-side rate limiting.
-// Mirrors the same "best-effort cooldown" framing used by
-// requestAdminPasswordReset's in-memory cooldown.
-const MAX_ATTEMPTS = 5;
-const LOCKOUT_MS = 30_000;
-
-type AttemptState = { count: number; lockedUntil: number };
-
-function attemptStorageKey(username: string) {
-  return `neu-pass-admin-login-attempts:${username.trim().toLowerCase()}`;
-}
-
-function readAttemptState(username: string): AttemptState {
-  try {
-    const raw = sessionStorage.getItem(attemptStorageKey(username));
-    if (!raw) return { count: 0, lockedUntil: 0 };
-    const parsed = JSON.parse(raw);
-    return {
-      count: typeof parsed.count === "number" ? parsed.count : 0,
-      lockedUntil: typeof parsed.lockedUntil === "number" ? parsed.lockedUntil : 0
-    };
-  } catch {
-    return { count: 0, lockedUntil: 0 };
-  }
-}
-
-function writeAttemptState(username: string, state: AttemptState) {
-  try {
-    sessionStorage.setItem(attemptStorageKey(username), JSON.stringify(state));
-  } catch {
-    // Storage unavailable (e.g. private browsing) — lockout just won't
-    // persist across reloads; login itself still works.
-  }
-}
-
-function clearAttemptState(username: string) {
-  try {
-    sessionStorage.removeItem(attemptStorageKey(username));
-  } catch {
-    // Ignore.
-  }
 }
 
 function LoginForm() {
@@ -81,14 +35,13 @@ function LoginForm() {
 
   const lockRemainingSeconds = lockedUntil > now ? Math.ceil((lockedUntil - now) / 1000) : 0;
 
-  // lockedUntil tracks whichever username last triggered it — without this,
-  // switching from a locked-out username to a fresh, never-locked one keeps
-  // the submit button disabled/labeled "Locked" until the old lock expires.
+  // The lockout itself is enforced server-side in adminLogin() — this local
+  // state is only for the countdown display, seeded from that action's
+  // response. Switching usernames clears it rather than tracking per-name
+  // state locally, since only the server knows who's actually locked.
   const handleUsernameChange = (value: string) => {
     setUsername(value);
-    const state = value.trim() ? readAttemptState(value) : { count: 0, lockedUntil: 0 };
-    setNow(Date.now());
-    setLockedUntil(state.lockedUntil > Date.now() ? state.lockedUntil : 0);
+    setLockedUntil(0);
   };
 
   const submit = async (event: React.FormEvent) => {
@@ -98,67 +51,21 @@ function LoginForm() {
       return;
     }
 
-    const attemptState = readAttemptState(username);
-    if (attemptState.lockedUntil > Date.now()) {
-      setLockedUntil(attemptState.lockedUntil);
-      setError("Too many failed attempts. Please wait before trying again.");
-      return;
-    }
-
     setLoading(true);
     setError("");
 
-    const supabase = createClient();
-    const { data, error: authError } = await supabase.auth.signInWithPassword({
-      email: adminUsernameToEmail(username),
-      password
-    });
+    const result = await adminLogin(username, password);
 
-    if (authError || !data.user) {
-      recordFailedAttempt();
-      setError("Invalid admin username or password.");
+    if (!result.ok) {
+      setError(result.error);
+      setNow(Date.now());
+      setLockedUntil(result.lockedUntil ?? 0);
       setLoading(false);
       return;
     }
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("account_type, account_status, username")
-      .eq("id", data.user.id)
-      .maybeSingle();
-
-    if (profile?.account_type !== "admin") {
-      await supabase.auth.signOut();
-      recordFailedAttempt();
-      setError("Invalid admin username or password.");
-      setLoading(false);
-      return;
-    }
-
-    if (profile.account_status !== "Active" && !isSuperuserUsername(profile.username)) {
-      await supabase.auth.signOut();
-      setError("This admin account has been blocked. Contact another administrator.");
-      setLoading(false);
-      return;
-    }
-
-    clearAttemptState(username);
     router.push("/dashboard");
     router.refresh();
-  };
-
-  const recordFailedAttempt = () => {
-    const current = readAttemptState(username);
-    const nextCount = current.count + 1;
-
-    if (nextCount >= MAX_ATTEMPTS) {
-      const lockedUntilValue = Date.now() + LOCKOUT_MS;
-      writeAttemptState(username, { count: 0, lockedUntil: lockedUntilValue });
-      setLockedUntil(lockedUntilValue);
-      setNow(Date.now());
-    } else {
-      writeAttemptState(username, { count: nextCount, lockedUntil: 0 });
-    }
   };
 
   const isLocked = lockRemainingSeconds > 0;
