@@ -131,7 +131,16 @@ export default function VisitFaceCapturePage() {
     });
 
     if (insertError) {
-      setError(insertError.message);
+      // Postgres unique-violation — a partial unique index on id_number
+      // (active registrations only) blocks a second Pending/Active
+      // registration under the same ID number, even from a different
+      // anonymous session (a new browser/incognito/device would otherwise
+      // bypass the same-session check in (register)/layout.tsx).
+      setError(
+        insertError.code === "23505"
+          ? "This ID already has an active or pending registration. Please wait for it to be checked out, or check its status if it's yours."
+          : insertError.message
+      );
       setSubmitting(false);
       return;
     }
