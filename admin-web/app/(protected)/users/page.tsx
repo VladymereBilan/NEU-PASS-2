@@ -16,6 +16,7 @@ import {
   type GuardAccount
 } from "@/actions/accounts";
 import { ConfirmButton } from "@/components/ConfirmButton";
+import { SearchIcon } from "@/components/icons";
 import { passwordPolicyError } from "@/lib/passwordPolicy";
 import { usernamePolicyError } from "@/lib/usernamePolicy";
 
@@ -65,6 +66,39 @@ export default function UsersPage() {
   );
 }
 
+function SectionHeader({
+  eyebrow,
+  title,
+  description,
+  action
+}: {
+  eyebrow: string;
+  title: string;
+  description: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="mb-5 border-b border-emerald-500/10 pb-5">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">{eyebrow}</div>
+          <h2 className="mt-1 text-lg font-bold text-white">{title}</h2>
+        </div>
+        {action}
+      </div>
+      <p className="mt-2 text-sm text-gray-400">{description}</p>
+    </div>
+  );
+}
+
+function CountBadge({ loading, count }: { loading: boolean; count: number }) {
+  return (
+    <span className="whitespace-nowrap rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400">
+      {loading ? "Loading..." : `${count} account(s)`}
+    </span>
+  );
+}
+
 function MyAccountSection() {
   const [username, setUsername] = useState("");
   const [recoveryEmail, setRecoveryEmail] = useState("");
@@ -103,17 +137,15 @@ function MyAccountSection() {
 
   return (
     <section className="rounded-3xl border border-emerald-500/20 bg-[#0a1f14]/80 p-6 backdrop-blur-sm">
-      <div className="mb-6">
-        <h2 className="text-lg font-bold text-white">My Account</h2>
-        <p className="text-sm text-gray-400">
-          Set a personal recovery email so you can reset your own password from the login page's
-          &ldquo;Forgot password?&rdquo; link if you&apos;re ever locked out.
-        </p>
-      </div>
+      <SectionHeader
+        eyebrow="Account Settings"
+        title="My Account"
+        description={'Set a personal recovery email so you can reset your own password from the login page’s “Forgot password?” link if you’re ever locked out.'}
+      />
 
       <div className="grid gap-4 md:grid-cols-2">
         <label className="block">
-          <div className="mb-2 text-sm font-semibold text-gray-300">Username</div>
+          <div className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">Username</div>
           <input
             value={loading ? "Loading..." : `@${username}`}
             disabled
@@ -136,7 +168,7 @@ function MyAccountSection() {
         <p className="mt-4 text-sm font-medium text-emerald-400">{message}</p>
       ) : null}
 
-      <div className="mt-5">
+      <div className="mt-5 border-t border-emerald-500/10 pt-5">
         <button
           onClick={() => void handleSave()}
           disabled={loading || saving}
@@ -216,19 +248,20 @@ function GuardAccountsSection({
   return (
     <>
       <section className="rounded-3xl border border-emerald-500/20 bg-[#0a1f14]/80 p-6 backdrop-blur-sm">
-        <div className="mb-6">
-          <h2 className="text-lg font-bold text-white">Create Guard Account</h2>
-          <p className="text-sm text-gray-400">
-            Guard accounts are admin-managed only. Capstone 2 will replace the current password storage and authentication flow.
-          </p>
-        </div>
+        <SectionHeader
+          eyebrow="Guard Management"
+          title="Create Guard Account"
+          description="Guard accounts are admin-managed only. Guards cannot self-register."
+        />
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Guard Full Name" value={fullName} onChange={setFullName} />
-          <Field label="Username" value={username} onChange={setUsername} />
+          <Field label="Full Name" value={fullName} onChange={setFullName} placeholder="Juan dela Cruz" />
+          <Field label="Username" value={username} onChange={setUsername} placeholder="guard_juan" />
           <Field label="Password" value={password} onChange={setPassword} type="password" />
           <label className="block">
-            <div className="mb-2 text-sm font-semibold text-gray-300">Account Status</div>
+            <div className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
+              Account Status
+            </div>
             <select
               value={accountStatus}
               onChange={(event) => setAccountStatus(event.target.value as AccountStatus)}
@@ -246,34 +279,33 @@ function GuardAccountsSection({
           </p>
         ) : null}
 
-        <div className="mt-5 flex flex-wrap gap-3">
+        <div className="mt-5 border-t border-emerald-500/10 pt-5">
           <button
             onClick={() => void handleCreate()}
             className="rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-[#04150c] hover:bg-emerald-400"
           >
-            Create Guard Account
+            + Create Guard Account
           </button>
-          <input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search guards"
-            className="w-full max-w-xs rounded-2xl border border-emerald-500/20 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-gray-500 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/20"
-          />
         </div>
       </section>
 
       <section className="rounded-3xl border border-emerald-500/20 bg-[#0a1f14]/80 p-6 backdrop-blur-sm">
-        <div className="mb-6 flex items-center justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-bold text-white">Guard Accounts</h2>
-            <p className="text-sm text-gray-400">
-              Block and unblock guard access, or reset a guard's password.
-            </p>
-          </div>
-          <div className="text-sm text-gray-400">
-            {loading ? "Loading..." : `${filtered.length} account(s)`}
-          </div>
-        </div>
+        <SectionHeader
+          eyebrow="Guard Roster"
+          title="Guard Accounts"
+          description="Block, unblock, or reset a guard's password."
+          action={<CountBadge loading={loading} count={filtered.length} />}
+        />
+
+        <label className="relative mb-4 block">
+          <SearchIcon className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search guards..."
+            className="w-full rounded-2xl border border-emerald-500/20 bg-white/5 py-3 pl-11 pr-4 text-white outline-none placeholder:text-gray-500 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/20"
+          />
+        </label>
 
         <div className="space-y-3">
           {filtered.map((account) => (
@@ -282,6 +314,7 @@ function GuardAccountsSection({
               fullName={account.fullName}
               username={account.username}
               status={account.accountStatus}
+              role="Guard"
               onToggleStatus={() => toggleStatus(account)}
               onResetPassword={(newPassword) => resetAccountPassword(account.id, newPassword)}
             />
@@ -362,17 +395,18 @@ function AdminAccountsSection({
   return (
     <>
       <section className="rounded-3xl border border-emerald-500/20 bg-[#0a1f14]/80 p-6 backdrop-blur-sm">
-        <div className="mb-6">
-          <h2 className="text-lg font-bold text-white">Create Admin Account</h2>
-          <p className="text-sm text-gray-400">
-            Admin accounts have full access to this console. Only create one for someone you trust.
-          </p>
-        </div>
+        <SectionHeader
+          eyebrow="Admin Management"
+          title="Create Admin Account"
+          description="Admin accounts have full access to this console. Only create one for someone you trust."
+        />
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Admin Full Name" value={fullName} onChange={setFullName} />
-          <Field label="Username" value={username} onChange={setUsername} />
-          <Field label="Password" value={password} onChange={setPassword} type="password" />
+          <Field label="Full Name" value={fullName} onChange={setFullName} placeholder="Admin Name" />
+          <Field label="Username" value={username} onChange={setUsername} placeholder="admin_name" />
+          <div className="sm:col-span-2">
+            <Field label="Password" value={password} onChange={setPassword} type="password" />
+          </div>
         </div>
 
         {error ? (
@@ -381,26 +415,23 @@ function AdminAccountsSection({
           </p>
         ) : null}
 
-        <div className="mt-5">
+        <div className="mt-5 border-t border-emerald-500/10 pt-5">
           <button
             onClick={() => void handleCreate()}
             className="rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-[#04150c] hover:bg-emerald-400"
           >
-            Create Admin Account
+            + Create Admin Account
           </button>
         </div>
       </section>
 
       <section className="rounded-3xl border border-emerald-500/20 bg-[#0a1f14]/80 p-6 backdrop-blur-sm">
-        <div className="mb-6 flex items-center justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-bold text-white">Admin Accounts</h2>
-            <p className="text-sm text-gray-400">Reset an admin's password if they've lost it.</p>
-          </div>
-          <div className="text-sm text-gray-400">
-            {loading ? "Loading..." : `${admins.length} account(s)`}
-          </div>
-        </div>
+        <SectionHeader
+          eyebrow="Admin Roster"
+          title="Admin Accounts"
+          description="Reset an admin's password if they've lost it."
+          action={<CountBadge loading={loading} count={admins.length} />}
+        />
 
         <div className="space-y-3">
           {admins.map((account) => (
@@ -409,6 +440,7 @@ function AdminAccountsSection({
               fullName={account.fullName}
               username={account.username}
               status={account.accountStatus}
+              role="Administrator"
               isSelf={ownId === account.id}
               onToggleStatus={ownId === account.id ? undefined : () => toggleStatus(account)}
               onResetPassword={(newPassword) => resetAccountPassword(account.id, newPassword)}
@@ -428,6 +460,7 @@ function AccountRow({
   fullName,
   username,
   status,
+  role,
   isSelf,
   onToggleStatus,
   onResetPassword
@@ -435,6 +468,7 @@ function AccountRow({
   fullName: string;
   username: string;
   status?: AccountStatus;
+  role: string;
   isSelf?: boolean;
   onToggleStatus?: () => Promise<void>;
   onResetPassword: (newPassword: string) => Promise<void>;
@@ -490,15 +524,32 @@ function AccountRow({
   return (
     <div className="rounded-2xl border border-emerald-500/15 bg-white/5 p-3.5">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div>
-          <div className="font-medium text-white">
-            {fullName}
-            {isSelf ? <span className="ml-2 text-xs font-normal text-emerald-400">(You)</span> : null}
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-sm font-bold text-[#04150c]">
+            {fullName.charAt(0).toUpperCase() || "?"}
           </div>
-          <div className="text-sm text-gray-400">@{username}</div>
-          {status ? <div className="text-xs text-gray-500">Status: {status}</div> : null}
+          <div>
+            <div className="font-medium text-white">
+              {fullName}
+              {isSelf ? <span className="ml-2 text-xs font-normal text-emerald-400">(You)</span> : null}
+            </div>
+            <div className="text-sm text-gray-400">
+              @{username} · {role}
+            </div>
+          </div>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {status ? (
+            <span
+              className={`rounded-full border px-3 py-1 text-xs font-semibold ${
+                status === "Active"
+                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                  : "border-red-500/30 bg-red-500/10 text-red-400"
+              }`}
+            >
+              {status}
+            </span>
+          ) : null}
           {onToggleStatus ? (
             <ConfirmButton
               label={statusSaving ? "Saving..." : status === "Active" ? "Block" : "Unblock"}
@@ -520,7 +571,7 @@ function AccountRow({
             onClick={openReset}
             className="rounded-2xl border border-emerald-500/20 bg-white/5 px-3.5 py-2.5 text-sm font-semibold text-white hover:bg-white/10"
           >
-            {resetting ? "Cancel" : "Reset Password"}
+            {resetting ? "Cancel" : "Reset PW"}
           </button>
         </div>
       </div>
@@ -561,20 +612,23 @@ function Field({
   label,
   value,
   onChange,
-  type = "text"
+  type = "text",
+  placeholder
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   type?: string;
+  placeholder?: string;
 }) {
   return (
     <label className="block">
-      <div className="mb-2 text-sm font-semibold text-gray-300">{label}</div>
+      <div className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">{label}</div>
       <input
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
         className="w-full rounded-2xl border border-emerald-500/20 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-gray-500 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/20"
       />
     </label>
