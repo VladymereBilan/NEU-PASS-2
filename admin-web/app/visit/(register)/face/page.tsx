@@ -2,17 +2,19 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { useRegistrationDraft } from "@/lib/registrationDraft";
 import { uploadVisitorImage } from "@/lib/visitorImageUpload";
+import { submitVisitorRegistration } from "@/actions/visitorRegistration";
 import {
   EMAIL_PATTERN,
-  FACE_VERIFICATION_READY_FOR_GUARD_REVIEW,
   ID_NUMBER_PATTERN,
   NAME_DIGIT_PATTERN,
   NAME_LETTER_PATTERN
 } from "@/lib/visitorRegistrationConstants";
 import { VisitShell, PrimaryButton, SecondaryButton, ErrorBanner } from "@/components/VisitShell";
+import { Turnstile } from "@/components/Turnstile";
+
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
 export default function VisitFaceCapturePage() {
   const router = useRouter();
@@ -21,6 +23,8 @@ export default function VisitFaceCapturePage() {
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
 
   // Clearing the draft here (rather than right before the router.push below)
   // matters: router.push to /visit/status is an async client-side navigation,
@@ -97,51 +101,39 @@ export default function VisitFaceCapturePage() {
       setError("Please capture or upload a face photo before submitting.");
       return;
     }
+    if (TURNSTILE_SITE_KEY && !turnstileToken) {
+      setError("Please complete the verification check before submitting.");
+      return;
+    }
 
     setSubmitting(true);
     setError("");
 
-    const supabase = createClient();
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-
-    if (userError || !userData.user) {
-      setError("Your session expired. Please reload this page and start again.");
-      setSubmitting(false);
-      return;
-    }
-
-    const { error: insertError } = await supabase.from("visitor_registrations").insert({
-      visitor_user_id: userData.user.id,
-      full_name: draft.fullName,
+    // All fields are re-validated server-side in submitVisitorRegistration
+    // before the insert — this client-side hasValidDetails check above is
+    // only for UX (route back to the right step), not a security boundary.
+    const { error: submitError } = await submitVisitorRegistration({
+      fullName: draft.fullName,
       address: draft.address,
-      contact_number: draft.contactNumber,
+      contactNumber: draft.contactNumber,
       email: draft.email,
-      id_type: draft.idType,
-      id_number: draft.idNumber,
-      id_image_path: draft.idImagePath,
-      purpose_of_visit: draft.purposeOfVisit,
-      other_agenda: draft.otherAgenda,
-      consent_accepted: draft.consentAccepted,
-      ocr_reviewed: true,
-      face_verification_status: FACE_VERIFICATION_READY_FOR_GUARD_REVIEW,
-      face_image_path: draft.faceImagePath,
-      registration_status: "Pending",
-      qr_status: "Inactive",
-      checkout_status: "None"
+      idType: draft.idType,
+      idNumber: draft.idNumber,
+      idImagePath: draft.idImagePath,
+      purposeOfVisit: draft.purposeOfVisit,
+      otherAgenda: draft.otherAgenda,
+      consentAccepted: draft.consentAccepted,
+      faceImagePath: draft.faceImagePath,
+      turnstileToken
     });
 
-    if (insertError) {
-      // Postgres unique-violation — a partial unique index on id_number
-      // (active registrations only) blocks a second Pending/Active
-      // registration under the same ID number, even from a different
-      // anonymous session (a new browser/incognito/device would otherwise
-      // bypass the same-session check in (register)/layout.tsx).
-      setError(
-        insertError.code === "23505"
-          ? "This ID already has an active or pending registration. Please wait for it to be checked out, or check its status if it's yours."
-          : insertError.message
-      );
+    if (submitError) {
+      setError(submitError);
       setSubmitting(false);
+      // Turnstile tokens are single-use — force a fresh widget/token before
+      // the visitor can retry, rather than resubmitting an already-spent one.
+      setTurnstileToken("");
+      setTurnstileResetKey((value) => value + 1);
       return;
     }
 
@@ -186,7 +178,19 @@ export default function VisitFaceCapturePage() {
           </label>
         )}
 
-        <PrimaryButton onClick={handleSubmit} disabled={uploading || submitting}>
+        {TURNSTILE_SITE_KEY ? (
+          <Turnstile
+            key={turnstileResetKey}
+            siteKey={TURNSTILE_SITE_KEY}
+            onToken={setTurnstileToken}
+            onExpire={() => setTurnstileToken("")}
+          />
+        ) : null}
+
+        <PrimaryButton
+          onClick={handleSubmit}
+          disabled={uploading || submitting || (Boolean(TURNSTILE_SITE_KEY) && !turnstileToken)}
+        >
           {submitting ? "Submitting…" : "Submit for Guard Verification"}
         </PrimaryButton>
       </div>
