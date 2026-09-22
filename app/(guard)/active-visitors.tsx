@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useAuth } from "../../src/context/AuthContext";
 import { getActiveVisitors } from "../../src/services/PrototypeRegistrationStore";
+import { isOverdue } from "../../src/services/ExpirationService";
 import { DashboardScreen } from "../../src/components/dashboard/DashboardScreen";
 import type { BottomNavTab } from "../../src/components/dashboard/BottomNavBar";
 import { NEU_DARK } from "../../src/theme/brand";
@@ -28,7 +29,16 @@ export default function ActiveVisitorsScreen() {
     setError("");
     try {
       const data = await getActiveVisitors();
-      setActive(data);
+      // Overdue visitors (past their pass expiration and still not checked
+      // out) surface first — they're the ones a guard needs to chase down,
+      // not someone who just walked in.
+      const sorted = [...data].sort((a, b) => {
+        const aOverdue = isOverdue(a.expirationTime);
+        const bOverdue = isOverdue(b.expirationTime);
+        if (aOverdue === bOverdue) return 0;
+        return aOverdue ? -1 : 1;
+      });
+      setActive(sorted);
     } catch (err) {
       setError("Unable to load active visitors.");
     } finally {
@@ -74,24 +84,37 @@ export default function ActiveVisitorsScreen() {
       ) : active.length === 0 ? (
         <Text style={styles.body}>No active visitors.</Text>
       ) : (
-        active.map((registration) => (
-          <View key={registration.id} style={styles.itemCard}>
-            <View style={styles.badgeRow}>
-              <Text style={styles.itemTitle}>{registration.fullName}</Text>
-              <View style={styles.activeBadge}>
-                <Text style={styles.activeBadgeText}>Active</Text>
+        active.map((registration) => {
+          const overdue = isOverdue(registration.expirationTime);
+          return (
+            <View
+              key={registration.id}
+              style={[styles.itemCard, overdue && styles.itemCardOverdue]}
+            >
+              <View style={styles.badgeRow}>
+                <Text style={styles.itemTitle}>{registration.fullName}</Text>
+                <View style={overdue ? styles.overdueBadge : styles.activeBadge}>
+                  <Text style={overdue ? styles.overdueBadgeText : styles.activeBadgeText}>
+                    {overdue ? "Overdue" : "Active"}
+                  </Text>
+                </View>
               </View>
+              {overdue ? (
+                <Text style={styles.overdueNote}>
+                  Past pass expiration and not checked out — please follow up.
+                </Text>
+              ) : null}
+              <Text style={styles.itemText}>Purpose: {registration.purposeOfVisit}</Text>
+              {registration.purposeOfVisit === "Others" && registration.otherAgenda ? (
+                <Text style={styles.itemText}>Other Agenda: {registration.otherAgenda}</Text>
+              ) : null}
+              <Text style={styles.itemText}>Time In: {formatDateTime(registration.timeIn)}</Text>
+              <Text style={styles.itemText}>Visitor Pass: {registration.visitorPassNumber}</Text>
+              <Text style={styles.itemText}>Expiration: {formatDateTime(registration.expirationTime)}</Text>
+              <Text style={styles.itemText}>QR Status: {registration.qrStatus}</Text>
             </View>
-            <Text style={styles.itemText}>Purpose: {registration.purposeOfVisit}</Text>
-            {registration.purposeOfVisit === "Others" && registration.otherAgenda ? (
-              <Text style={styles.itemText}>Other Agenda: {registration.otherAgenda}</Text>
-            ) : null}
-            <Text style={styles.itemText}>Time In: {formatDateTime(registration.timeIn)}</Text>
-            <Text style={styles.itemText}>Visitor Pass: {registration.visitorPassNumber}</Text>
-            <Text style={styles.itemText}>Expiration: {formatDateTime(registration.expirationTime)}</Text>
-            <Text style={styles.itemText}>QR Status: {registration.qrStatus}</Text>
-          </View>
-        ))
+          );
+        })
       )}
     </DashboardScreen>
   );
@@ -124,6 +147,25 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 6,
     backgroundColor: NEU_DARK.card
+  },
+  itemCardOverdue: {
+    borderColor: "#ef4444"
+  },
+  overdueBadge: {
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 999,
+    backgroundColor: "rgba(239, 68, 68, 0.15)"
+  },
+  overdueBadgeText: {
+    fontSize: 12,
+    color: "#ef4444",
+    fontWeight: "700"
+  },
+  overdueNote: {
+    fontSize: 12,
+    color: "#ef4444",
+    fontWeight: "600"
   },
   badgeRow: {
     flexDirection: "row",

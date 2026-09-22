@@ -18,7 +18,7 @@ import {
   getActiveVisitors,
   getVisitorPassByVisitorId
 } from "../../src/services/PrototypeRegistrationStore";
-import { getExpirationStatus } from "../../src/services/ExpirationService";
+import { getExpirationStatus, isOverdue } from "../../src/services/ExpirationService";
 import { getVisitorImageSignedUrl } from "../../src/lib/imageUpload";
 import { compareFaces } from "../../src/services/FaceMatchService";
 import { parseQRValue } from "../../src/services/QRService";
@@ -97,8 +97,19 @@ export default function CheckoutVerificationScreen() {
     // from this list so its face-match controls (live camera, match state)
     // aren't rendered twice for the same id at once, which previously caused
     // two simultaneous CameraViews fighting over one shared camera ref.
-    if (!scannedVisitor) return base;
-    return base.filter((visitor) => visitor.id !== scannedVisitor.id);
+    const withoutScanned = scannedVisitor
+      ? base.filter((visitor) => visitor.id !== scannedVisitor.id)
+      : base;
+
+    // Overdue visitors (past pass expiration, still not checked out) surface
+    // first so a guard working this list checks them out before newer
+    // arrivals.
+    return [...withoutScanned].sort((a, b) => {
+      const aOverdue = isOverdue(a.expirationTime);
+      const bOverdue = isOverdue(b.expirationTime);
+      if (aOverdue === bOverdue) return 0;
+      return aOverdue ? -1 : 1;
+    });
   }, [manualQuery, activeVisitors, scannedVisitor]);
 
   const handleSelect = (
@@ -462,9 +473,23 @@ export default function CheckoutVerificationScreen() {
               {filteredActiveVisitors.length === 0 ? (
                 <Text style={styles.body}>No matching visitors.</Text>
               ) : (
-                filteredActiveVisitors.map((visitor) => (
-                  <View key={visitor.id} style={styles.itemCard}>
-                    <Text style={styles.itemTitle}>{visitor.fullName}</Text>
+                filteredActiveVisitors.map((visitor) => {
+                  const overdue = isOverdue(visitor.expirationTime);
+                  return (
+                  <View key={visitor.id} style={[styles.itemCard, overdue && styles.itemCardOverdue]}>
+                    <View style={styles.badgeRow}>
+                      <Text style={styles.itemTitle}>{visitor.fullName}</Text>
+                      {overdue ? (
+                        <View style={styles.overdueBadge}>
+                          <Text style={styles.overdueBadgeText}>Overdue</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                    {overdue ? (
+                      <Text style={styles.overdueNote}>
+                        Past pass expiration and not checked out — please follow up.
+                      </Text>
+                    ) : null}
                     <Text style={styles.itemText}>
                       Purpose: {visitor.purposeOfVisit}
                     </Text>
@@ -519,14 +544,32 @@ export default function CheckoutVerificationScreen() {
                       </Text>
                     </Pressable>
                   </View>
-                ))
+                  );
+                })
               )}
             </View>
           )}
 
           {scannedVisitor ? (
-            <View style={styles.scannedCard}>
-              <Text style={styles.sectionTitle}>Scanned Visitor</Text>
+            <View
+              style={[
+                styles.scannedCard,
+                isOverdue(scannedVisitor.expirationTime) && styles.itemCardOverdue
+              ]}
+            >
+              <View style={styles.badgeRow}>
+                <Text style={styles.sectionTitle}>Scanned Visitor</Text>
+                {isOverdue(scannedVisitor.expirationTime) ? (
+                  <View style={styles.overdueBadge}>
+                    <Text style={styles.overdueBadgeText}>Overdue</Text>
+                  </View>
+                ) : null}
+              </View>
+              {isOverdue(scannedVisitor.expirationTime) ? (
+                <Text style={styles.overdueNote}>
+                  Past pass expiration and not checked out — please follow up.
+                </Text>
+              ) : null}
               <Text style={styles.itemTitle}>{scannedVisitor.fullName}</Text>
               <Text style={styles.itemText}>
                 Purpose: {scannedVisitor.purposeOfVisit}
@@ -731,6 +774,31 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 6,
     backgroundColor: NEU_DARK.card
+  },
+  itemCardOverdue: {
+    borderColor: "#ef4444"
+  },
+  badgeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8
+  },
+  overdueBadge: {
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 999,
+    backgroundColor: "rgba(239, 68, 68, 0.15)"
+  },
+  overdueBadgeText: {
+    fontSize: 12,
+    color: "#ef4444",
+    fontWeight: "700"
+  },
+  overdueNote: {
+    fontSize: 12,
+    color: "#ef4444",
+    fontWeight: "600"
   },
   scannedCard: {
     borderWidth: 1,
