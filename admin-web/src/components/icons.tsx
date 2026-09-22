@@ -73,6 +73,15 @@ export function MenuIcon({ className }: { className?: string }) {
   );
 }
 
+export function ClockIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 7.5V12l3 2" />
+    </svg>
+  );
+}
+
 export function CloseIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>

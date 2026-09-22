@@ -1,50 +1,9 @@
-// PostgREST caps how many rows a single query returns (the project's
-// max-rows setting, 1000 by default) — a plain .select() with no .range()
-// silently truncates once visitor_registrations grows past that cap, with
-// no error to signal it. Page through with .range() until a page comes back
-// smaller than requested, which is the only reliable "that was the last
-// page" signal (an exact multiple of FETCH_PAGE_SIZE still needs one more
-// empty-page fetch to confirm there's nothing left).
-const FETCH_PAGE_SIZE = 1000;
-
-export async function fetchAllRows<T>(
-  // PromiseLike, not Promise: a Supabase PostgrestFilterBuilder is thenable
-  // (usable with `await`) but isn't a real Promise (no .catch/.finally), so
-  // typing this as Promise<...> would reject passing a query builder here
-  // directly without an explicit `await` inside the callback.
-  fetchPage: (
-    from: number,
-    to: number
-  ) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>
-): Promise<{ rows: T[]; error: string | null }> {
-  const rows: T[] = [];
-  let from = 0;
-
-  for (;;) {
-    const { data, error } = await fetchPage(from, from + FETCH_PAGE_SIZE - 1);
-    if (error) return { rows, error: error.message };
-
-    const page = data ?? [];
-    rows.push(...page);
-    if (page.length < FETCH_PAGE_SIZE) break;
-    from += FETCH_PAGE_SIZE;
-  }
-
-  return { rows, error: null };
-}
-
-export type VisitorRow = {
-  id: string;
-  full_name: string;
-  purpose_of_visit: string;
-  registration_status: string;
-  checkout_status: string;
-  qr_status: string;
-  time_in: string | null;
-  time_out: string | null;
-  expiration_time: string | null;
-  created_at: string;
-};
+// Aggregate visitor stats (dashboard/reports) are computed SQL-side now —
+// see dashboardStats.ts — rather than fetching every visitor_registrations
+// row and reducing in JS, which got slower as the table grew and every page
+// load transferred the entire table. This module keeps the pieces that
+// logic still needs: the month-range URL-param resolver, the purpose list,
+// and the Manila-timezone day/month boundary helpers.
 
 export const PURPOSE_OPTIONS = [
   "Inquiries",
@@ -56,9 +15,9 @@ export const PURPOSE_OPTIONS = [
 
 // Philippines has no DST, so a fixed UTC+8 offset is safe — kept consistent
 // with the approve_visitor RPC's own "Asia/Manila" expiration-time logic.
-const MANILA_OFFSET_MS = 8 * 60 * 60 * 1000;
+export const MANILA_OFFSET_MS = 8 * 60 * 60 * 1000;
 
-function startOfDayManila(reference: Date) {
+export function startOfDayManila(reference: Date): Date {
   const shifted = new Date(reference.getTime() + MANILA_OFFSET_MS);
   return new Date(
     Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate()) -
@@ -66,13 +25,13 @@ function startOfDayManila(reference: Date) {
   );
 }
 
-function startOfMonthManila(reference: Date) {
+export function startOfMonthManila(reference: Date): Date {
   const shifted = new Date(reference.getTime() + MANILA_OFFSET_MS);
   return new Date(Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), 1) - MANILA_OFFSET_MS);
 }
 
 // "YYYY-MM" in Manila-local terms, e.g. for building prev/next month links.
-function monthParamOf(reference: Date) {
+function monthParamOf(reference: Date): string {
   const shifted = new Date(reference.getTime() + MANILA_OFFSET_MS);
   const year = shifted.getUTCFullYear();
   const month = String(shifted.getUTCMonth() + 1).padStart(2, "0");
@@ -80,7 +39,7 @@ function monthParamOf(reference: Date) {
 }
 
 // "YYYY-MM-DD" in Manila-local terms.
-function dayParamOf(reference: Date) {
+export function dayParamOf(reference: Date): string {
   const shifted = new Date(reference.getTime() + MANILA_OFFSET_MS);
   const year = shifted.getUTCFullYear();
   const month = String(shifted.getUTCMonth() + 1).padStart(2, "0");
@@ -130,94 +89,10 @@ export function resolveMonthRange(monthParam?: string) {
   };
 }
 
-export function computePurposeCounts(visitors: VisitorRow[]) {
-  const purposeCounts = Object.fromEntries(
-    PURPOSE_OPTIONS.map((purpose) => [purpose, 0])
-  ) as Record<(typeof PURPOSE_OPTIONS)[number], number>;
-
-  visitors.forEach((visitor) => {
-    const purpose = visitor.purpose_of_visit as (typeof PURPOSE_OPTIONS)[number];
-    if (purpose in purposeCounts) {
-      purposeCounts[purpose] += 1;
-    }
-  });
-
-  return purposeCounts;
-}
+export type MonthRange = ReturnType<typeof resolveMonthRange>;
 
 export type DailyBreakdownRow = {
   date: string;
   visitorsCount: number;
   completedCount: number;
 };
-
-// One row per calendar day in [monthStart, monthEnd) — pass a range already
-// scoped to a single month (see resolveMonthRange) and rows already filtered
-// to that range for efficiency, though filtering again here would be
-// harmless (each day-bucket check is independent of what's outside it).
-export function computeDailyBreakdown(
-  visitors: VisitorRow[],
-  monthStart: Date,
-  monthEnd: Date
-): DailyBreakdownRow[] {
-  const days: DailyBreakdownRow[] = [];
-
-  for (
-    let dayStart = monthStart;
-    dayStart.getTime() < monthEnd.getTime();
-    dayStart = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000)
-  ) {
-    const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
-
-    const visitorsCount = visitors.filter((visitor) => {
-      const created = new Date(visitor.created_at).getTime();
-      return created >= dayStart.getTime() && created < dayEnd.getTime();
-    }).length;
-
-    const completedCount = visitors.filter((visitor) => {
-      if (!visitor.time_out) return false;
-      const completed = new Date(visitor.time_out).getTime();
-      return completed >= dayStart.getTime() && completed < dayEnd.getTime();
-    }).length;
-
-    days.push({ date: dayParamOf(dayStart), visitorsCount, completedCount });
-  }
-
-  return days;
-}
-
-export function computeReportStats(visitors: VisitorRow[]) {
-  const now = new Date();
-  const today = startOfDayManila(now);
-  const monthStart = startOfMonthManila(now);
-  const purposeCounts = computePurposeCounts(visitors);
-
-  return {
-    totalVisitors: visitors.length,
-    activeVisitors: visitors.filter((v) => v.registration_status === "Active").length,
-    completedVisitors: visitors.filter((v) => v.checkout_status === "Completed").length,
-    pendingVisitors: visitors.filter((v) => v.registration_status === "Pending").length,
-    // A pass past its expiration time that was never used/checked out — not
-    // simply "any used pass", which is what the old sample data conflated.
-    expiredQrPasses: visitors.filter((v) => {
-      if (!v.expiration_time) return false;
-      return (
-        new Date(v.expiration_time).getTime() < now.getTime() && v.qr_status !== "Used/Invalid"
-      );
-    }).length,
-    purposeCounts,
-    daily: {
-      visitorsToday: visitors.filter((v) => new Date(v.created_at) >= today).length,
-      completedToday: visitors.filter((v) => v.time_out && new Date(v.time_out) >= today).length,
-      activeToday: visitors.filter(
-        (v) => v.time_in && new Date(v.time_in) >= today && v.registration_status === "Active"
-      ).length
-    },
-    monthly: {
-      visitorsThisMonth: visitors.filter((v) => new Date(v.created_at) >= monthStart).length,
-      completedThisMonth: visitors.filter((v) => v.time_out && new Date(v.time_out) >= monthStart)
-        .length
-    },
-    generatedAt: now.toISOString()
-  };
-}

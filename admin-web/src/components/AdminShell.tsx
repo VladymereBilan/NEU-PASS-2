@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { ClockIcon } from "@/components/icons";
 import { createClient } from "@/lib/supabase/client";
 import {
   AuditIcon,
@@ -47,16 +48,38 @@ export function AdminShell({
     return "Dashboard";
   }, [pathname]);
 
-  const today = useMemo(
+  // Adviser-requested: a prominent, live-updating date/time in the header —
+  // previously this was computed once via an empty-deps useMemo, so it went
+  // stale the moment a tab was left open (never mind not showing time at
+  // all). Ticks every second so it reads as a genuine live clock, not a
+  // static timestamp from whenever the page loaded.
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const dateLabel = useMemo(
     () =>
-      new Date().toLocaleDateString("en-US", {
+      now.toLocaleDateString("en-US", {
         weekday: "long",
         year: "numeric",
         month: "long",
         day: "numeric",
         timeZone: "Asia/Manila"
       }),
-    []
+    [now]
+  );
+  const timeLabel = useMemo(
+    () =>
+      now.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+        timeZone: "Asia/Manila"
+      }),
+    [now]
   );
 
   const signOut = async () => {
@@ -228,7 +251,12 @@ export function AdminShell({
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="hidden text-sm text-gray-400 md:block">{today}</div>
+              <div className="hidden items-center gap-2.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5 sm:flex">
+                <ClockIcon className="h-4 w-4 shrink-0 text-emerald-400" />
+                <span className="text-sm font-semibold text-white">{dateLabel}</span>
+                <span className="h-3.5 w-px bg-emerald-500/30" />
+                <span className="text-sm font-bold tabular-nums text-emerald-400">{timeLabel}</span>
+              </div>
               <div className="hidden items-center gap-2 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-400 sm:flex">
                 <span className="relative flex h-1.5 w-1.5">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />

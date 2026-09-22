@@ -3,14 +3,8 @@ import { MiniStat, Panel } from "@/components/Panel";
 import { MonthlyArchiveButton } from "@/components/MonthlyArchiveButton";
 import { BarChart } from "@/components/BarChart";
 import { DonutChart } from "@/components/DonutChart";
-import {
-  computeDailyBreakdown,
-  computePurposeCounts,
-  computeReportStats,
-  fetchAllRows,
-  resolveMonthRange,
-  type VisitorRow
-} from "@/lib/reportStats";
+import { fetchDashboardData } from "@/lib/dashboardStats";
+import { resolveMonthRange } from "@/lib/reportStats";
 import { createClient } from "@/lib/supabase/server";
 
 function formatRelativeTime(iso: string, now: Date) {
@@ -25,16 +19,10 @@ function formatRelativeTime(iso: string, now: Date) {
 
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const { rows: fetchedRows, error } = await fetchAllRows<VisitorRow>((from, to) =>
-    supabase
-      .from("visitor_registrations")
-      .select(
-        "id, full_name, purpose_of_visit, registration_status, checkout_status, qr_status, time_in, time_out, expiration_time, created_at"
-      )
-      .range(from, to)
-  );
+  const monthRange = resolveMonthRange();
+  const { data, error } = await fetchDashboardData(supabase, monthRange);
 
-  if (error) {
+  if (error || !data) {
     return (
       <div className="rounded-3xl border border-emerald-500/20 bg-[#0a1f14]/80 p-6">
         <div className="py-10 text-center text-red-400">Unable to load dashboard data.</div>
@@ -42,40 +30,8 @@ export default async function DashboardPage() {
     );
   }
 
-  const rows = fetchedRows;
-  const stats = computeReportStats(rows);
-
-  const monthRange = resolveMonthRange();
-  const monthRows = rows.filter((row) => {
-    const created = new Date(row.created_at).getTime();
-    return created >= monthRange.start.getTime() && created < monthRange.end.getTime();
-  });
-  const monthPurposeCounts = computePurposeCounts(monthRows);
-  // computeDailyBreakdown buckets visitorsCount by created_at and
-  // completedCount by time_out independently, so its input must include a
-  // row if EITHER falls in this month — otherwise a row registered last
-  // month but checked out this month is invisible to the "Completed" bucket,
-  // silently undercounting it versus stats.monthly.completedThisMonth
-  // (computed from the unfiltered `rows`). monthRows above stays scoped to
-  // created_at only, since Purpose-Based Counts should reflect this month's
-  // registrations, not checkouts of visits registered elsewhere.
-  const dailyBreakdownRows = rows.filter((row) => {
-    const created = new Date(row.created_at).getTime();
-    if (created >= monthRange.start.getTime() && created < monthRange.end.getTime()) return true;
-    if (!row.time_out) return false;
-    const completed = new Date(row.time_out).getTime();
-    return completed >= monthRange.start.getTime() && completed < monthRange.end.getTime();
-  });
-  const dailyBreakdown = computeDailyBreakdown(dailyBreakdownRows, monthRange.start, monthRange.end);
-
+  const { stats, monthPurposeCounts, dailyBreakdown, lastCheckInTime } = data;
   const now = new Date();
-  const lastCheckIn = rows.reduce<VisitorRow | null>((latest, row) => {
-    if (!row.time_in) return latest;
-    if (!latest || new Date(row.time_in).getTime() > new Date(latest.time_in as string).getTime()) {
-      return row;
-    }
-    return latest;
-  }, null);
 
   return (
     <div className="space-y-6">
@@ -150,12 +106,10 @@ export default async function DashboardPage() {
       <div className="flex flex-col gap-2 rounded-2xl border border-emerald-500/15 bg-[#0a1f14]/60 px-5 py-4 text-sm text-gray-400 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <span className="h-2 w-2 rounded-full bg-emerald-400" />
-          {lastCheckIn ? (
+          {lastCheckInTime ? (
             <span>
               Last visitor check-in:{" "}
-              <span className="font-semibold text-white">
-                {formatRelativeTime(lastCheckIn.time_in as string, now)}
-              </span>
+              <span className="font-semibold text-white">{formatRelativeTime(lastCheckInTime, now)}</span>
             </span>
           ) : (
             <span>No visitor check-ins recorded yet.</span>
