@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
 import { Redirect, useRouter } from "expo-router";
 import { useAuth } from "../src/context/AuthContext";
@@ -18,6 +18,27 @@ export default function GuardLoginScreen() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  // Ticks `now` every second while a lockout is active so the "Try again in
+  // Xs" message actually counts down instead of showing a value frozen at
+  // whatever it was when the lockout started.
+  const [lockedUntil, setLockedUntil] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!lockedUntil) return;
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, [lockedUntil]);
+
+  const lockedSecondsLeft = lockedUntil ? Math.max(0, Math.ceil((lockedUntil - now) / 1000)) : 0;
+  const isLocked = lockedSecondsLeft > 0;
+
+  useEffect(() => {
+    if (lockedUntil && !isLocked) {
+      setLockedUntil(null);
+      setError("");
+    }
+  }, [lockedUntil, isLocked]);
 
   if (authLoading) {
     return (
@@ -49,14 +70,10 @@ export default function GuardLoginScreen() {
 
       const attempt = attemptRows?.[0];
       if (attempt?.status === "locked") {
-        const seconds = attempt.locked_until
-          ? Math.max(1, Math.ceil((new Date(attempt.locked_until).getTime() - Date.now()) / 1000))
-          : null;
-        throw new Error(
-          seconds
-            ? `Too many failed attempts. Try again in ${seconds}s.`
-            : "Too many failed attempts. Please wait before trying again."
-        );
+        setLockedUntil(new Date(attempt.locked_until).getTime());
+        setNow(Date.now());
+        Alert.alert("Guard Login", "Too many failed attempts. Please wait before trying again.");
+        return;
       }
       if (attempt?.status === "blocked") {
         throw new Error("This guard account is blocked by admin.");
@@ -92,6 +109,8 @@ export default function GuardLoginScreen() {
     }
   };
 
+  const displayError = isLocked ? `Too many failed attempts. Try again in ${lockedSecondsLeft}s.` : error;
+
   return (
     <AuthScreen>
       <BackButton />
@@ -100,21 +119,23 @@ export default function GuardLoginScreen() {
       <AuthField label="Username" value={username} onChangeText={setUsername} icon="account" autoCapitalize="none" />
       <AuthField label="Password" value={password} onChangeText={setPassword} icon="lock" secureTextEntry />
 
-      {error ? <Text style={authStyles.error}>{error}</Text> : null}
+      {displayError ? <Text style={authStyles.error}>{displayError}</Text> : null}
 
       <Pressable
         style={({ pressed }) => [
           authStyles.primaryButton,
           isHovered && authStyles.primaryButtonHover,
           pressed && authStyles.primaryButtonPressed,
-          loading && authStyles.primaryButtonDisabled
+          (loading || isLocked) && authStyles.primaryButtonDisabled
         ]}
         onPress={handleLogin}
         onHoverIn={() => setIsHovered(true)}
         onHoverOut={() => setIsHovered(false)}
-        disabled={loading}
+        disabled={loading || isLocked}
       >
-        <Text style={authStyles.primaryButtonText}>{loading ? "Signing in..." : "Sign In"}</Text>
+        <Text style={authStyles.primaryButtonText}>
+          {loading ? "Signing in..." : isLocked ? `Try again in ${lockedSecondsLeft}s` : "Sign In"}
+        </Text>
       </Pressable>
     </AuthScreen>
   );
