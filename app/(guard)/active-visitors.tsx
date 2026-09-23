@@ -62,7 +62,12 @@ export default function ActiveVisitorsScreen() {
   const roleLabel = username ? `Guard · ${username}` : "Guard";
 
   return (
-    <DashboardScreen roleLabel={roleLabel} onSignOut={() => void handleSignOut()} tabs={GUARD_TABS}>
+    <DashboardScreen
+      roleLabel={roleLabel}
+      onSignOut={() => void handleSignOut()}
+      onProfilePicturePress={() => router.push("/(guard)/profile")}
+      tabs={GUARD_TABS}
+    >
       <Text style={styles.title}>Active Visitors</Text>
       <Pressable
         style={({ pressed }) => [

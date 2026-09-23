@@ -93,6 +93,8 @@ export default function GuardHomeScreen() {
     router.replace("/");
   };
 
+  const openProfilePicture = () => router.push("/(guard)/profile");
+
   // Guards don't have a fetched full name anywhere today — their username
   // (the part of their synthetic email before "@") is real, truthful, and
   // needs no extra query.
@@ -100,7 +102,12 @@ export default function GuardHomeScreen() {
   const roleLabel = username ? `Guard · ${username}` : "Guard";
 
   return (
-    <DashboardScreen roleLabel={roleLabel} onSignOut={() => void handleSignOut()} tabs={GUARD_TABS}>
+    <DashboardScreen
+      roleLabel={roleLabel}
+      onSignOut={() => void handleSignOut()}
+      onProfilePicturePress={openProfilePicture}
+      tabs={GUARD_TABS}
+    >
       <Greeting name={username} />
 
       {loading ? (

@@ -1,5 +1,16 @@
 import { useCallback, useState } from "react";
-import { Alert, Image, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import {
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View
+} from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useAuth } from "../../src/context/AuthContext";
 import {
@@ -33,11 +44,8 @@ export default function PendingVerificationsScreen() {
   const [processing, setProcessing] = useState<
     { id: string; action: "approve" | "reject" } | null
   >(null);
-  // Which pending card currently has its "reason for rejection" field open —
-  // a reason is required before Reject can actually be confirmed, so this is
-  // a two-step reveal rather than an immediate action on the first tap.
   const [rejectingId, setRejectingId] = useState<string | null>(null);
-  const [rejectReasons, setRejectReasons] = useState<Record<string, string>>({});
+  const [rejectionReason, setRejectionReason] = useState("");
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -85,13 +93,28 @@ export default function PendingVerificationsScreen() {
     setProcessing(null);
   };
 
-  const handleConfirmReject = async (id: string) => {
+  const openRejectDialog = (id: string) => {
     if (processing) return;
-    const reason = (rejectReasons[id] || "").trim();
+    setRejectionReason("");
+    setRejectingId(id);
+  };
+
+  const closeRejectDialog = () => {
+    if (processing) return;
+    setRejectingId(null);
+    setRejectionReason("");
+  };
+
+  const handleReject = async () => {
+    if (!rejectingId || processing) return;
+    const reason = rejectionReason.trim();
     if (!reason) {
-      Alert.alert("Please enter a reason for rejecting this visitor.");
+      Alert.alert("Reason required", "Please enter a reason for rejecting this visitor.");
       return;
     }
+
+    const id = rejectingId;
+    setRejectingId(null);
     setProcessing({ id, action: "reject" });
     try {
       await rejectRegistration(id, reason);
@@ -101,12 +124,6 @@ export default function PendingVerificationsScreen() {
       return;
     }
     Alert.alert("Visitor rejected.");
-    setRejectingId(null);
-    setRejectReasons((prev) => {
-      const next = { ...prev };
-      delete next[id];
-      return next;
-    });
     await refresh().catch(() => setError("Visitor rejected, but the list failed to refresh."));
     setProcessing(null);
   };
@@ -120,7 +137,12 @@ export default function PendingVerificationsScreen() {
   const roleLabel = username ? `Guard · ${username}` : "Guard";
 
   return (
-    <DashboardScreen roleLabel={roleLabel} onSignOut={() => void handleSignOut()} tabs={GUARD_TABS}>
+    <DashboardScreen
+      roleLabel={roleLabel}
+      onSignOut={() => void handleSignOut()}
+      onProfilePicturePress={() => router.push("/(guard)/profile")}
+      tabs={GUARD_TABS}
+    >
       <Text style={styles.title}>Pending Verifications</Text>
       <Pressable
         style={({ pressed }) => [
@@ -180,80 +202,78 @@ export default function PendingVerificationsScreen() {
               </View>
             </View>
 
-            {rejectingId === registration.id ? (
-              <View style={styles.rejectReasonBox}>
-                <Text style={styles.rejectReasonLabel}>Reason for rejection (required)</Text>
-                <TextInput
-                  value={rejectReasons[registration.id] || ""}
-                  onChangeText={(value) =>
-                    setRejectReasons((prev) => ({ ...prev, [registration.id]: value }))
-                  }
-                  placeholder="e.g. Invalid ID, incomplete details..."
-                  placeholderTextColor={NEU_DARK.textMuted}
-                  style={styles.rejectReasonInput}
-                  multiline
-                />
-                <View style={styles.actionRow}>
-                  <Pressable
-                    style={[styles.actionButton, styles.reject]}
-                    onPress={() => {
-                      setRejectingId(null);
-                      setRejectReasons((prev) => {
-                        const next = { ...prev };
-                        delete next[registration.id];
-                        return next;
-                      });
-                    }}
-                    disabled={!!processing}
-                  >
-                    <Text style={styles.actionText}>Cancel</Text>
-                  </Pressable>
-                  <Pressable
-                    style={[
-                      styles.actionButton,
-                      styles.confirmReject,
-                      processing?.id === registration.id && styles.actionDisabled
-                    ]}
-                    onPress={() => handleConfirmReject(registration.id)}
-                    disabled={!!processing}
-                  >
-                    <Text style={styles.actionText}>
-                      {processing?.id === registration.id && processing.action === "reject"
-                        ? "Rejecting..."
-                        : "Confirm Reject"}
-                    </Text>
-                  </Pressable>
-                </View>
-              </View>
-            ) : (
-              <View style={styles.actionRow}>
-                <Pressable
-                  style={[
-                    styles.actionButton,
-                    styles.approve,
-                    processing?.id === registration.id && styles.actionDisabled
-                  ]}
-                  onPress={() => handleApprove(registration.id)}
-                  disabled={!!processing}
-                >
-                  <Text style={[styles.actionText, styles.approveText]}>
-                    {processing?.id === registration.id && processing.action === "approve"
-                      ? "Approving..."
-                      : "Approve"}
-                  </Text>
-                </Pressable>
-                <Pressable
-                  style={[styles.actionButton, styles.reject]}
-                  onPress={() => setRejectingId(registration.id)}
-                  disabled={!!processing}
-                >
-                  <Text style={styles.actionText}>Reject</Text>
-                </Pressable>
-              </View>
-            )}
+            <View style={styles.actionRow}>
+              <Pressable
+                style={[
+                  styles.actionButton,
+                  styles.approve,
+                  processing?.id === registration.id && styles.actionDisabled
+                ]}
+                onPress={() => handleApprove(registration.id)}
+                disabled={!!processing}
+              >
+                <Text style={[styles.actionText, styles.approveText]}>
+                  {processing?.id === registration.id && processing.action === "approve"
+                    ? "Approving..."
+                    : "Approve"}
+                </Text>
+              </Pressable>
+              <Pressable
+                style={[
+                  styles.actionButton,
+                  styles.reject,
+                  processing?.id === registration.id && styles.actionDisabled
+                ]}
+                onPress={() => openRejectDialog(registration.id)}
+                disabled={!!processing}
+              >
+                <Text style={styles.actionText}>
+                  {processing?.id === registration.id && processing.action === "reject"
+                    ? "Rejecting..."
+                    : "Reject"}
+                </Text>
+              </Pressable>
+            </View>
           </View>
         ))
       )}
+
+      <Modal
+        visible={!!rejectingId}
+        transparent
+        animationType="fade"
+        onRequestClose={closeRejectDialog}
+      >
+        <KeyboardAvoidingView
+          style={styles.modalBackdrop}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Reject visitor</Text>
+            <Text style={styles.modalBody}>
+              Enter the reason the visitor should see on their registration status.
+            </Text>
+            <TextInput
+              value={rejectionReason}
+              onChangeText={setRejectionReason}
+              placeholder="Reason for rejection"
+              placeholderTextColor={NEU_DARK.textMuted}
+              multiline
+              maxLength={500}
+              autoFocus
+              style={styles.reasonInput}
+            />
+            <View style={styles.modalActions}>
+              <Pressable style={styles.cancelButton} onPress={closeRejectDialog}>
+                <Text style={styles.actionText}>Cancel</Text>
+              </Pressable>
+              <Pressable style={styles.confirmRejectButton} onPress={() => void handleReject()}>
+                <Text style={styles.actionText}>Reject visitor</Text>
+              </Pressable>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </DashboardScreen>
   );
 }
@@ -382,5 +402,57 @@ const styles = StyleSheet.create({
     color: NEU_DARK.white,
     fontSize: 14,
     fontWeight: "600"
+  },
+  modalBackdrop: {
+    flex: 1,
+    justifyContent: "center",
+    padding: 20,
+    backgroundColor: "rgba(0,0,0,0.7)"
+  },
+  modalCard: {
+    gap: 12,
+    padding: 20,
+    borderRadius: 14,
+    backgroundColor: NEU_DARK.card,
+    borderWidth: 1,
+    borderColor: NEU_DARK.border
+  },
+  modalTitle: {
+    color: NEU_DARK.white,
+    fontSize: 18,
+    fontWeight: "800"
+  },
+  modalBody: {
+    color: NEU_DARK.textMuted,
+    fontSize: 13,
+    lineHeight: 19
+  },
+  reasonInput: {
+    minHeight: 100,
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: NEU_DARK.border,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    color: NEU_DARK.white,
+    textAlignVertical: "top"
+  },
+  modalActions: {
+    flexDirection: "row",
+    gap: 10
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 11,
+    borderRadius: 10,
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.1)"
+  },
+  confirmRejectButton: {
+    flex: 1,
+    paddingVertical: 11,
+    borderRadius: 10,
+    alignItems: "center",
+    backgroundColor: "#b4233c"
   }
 });

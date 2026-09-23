@@ -154,18 +154,10 @@ export async function approveVisitor(id: string) {
   return mapRow(unwrap(data, error));
 }
 
-// Superseded by reject_visitor_with_reason (below), which additionally
-// records why — kept defined since reject_visitor still exists in the
-// schema, same as request_checkout elsewhere in this repository.
-export async function rejectVisitor(id: string) {
-  const { data, error } = await supabase.rpc("reject_visitor", { p_id: id });
-  return mapRow(unwrap(data, error));
-}
-
-export async function rejectVisitorWithReason(id: string, reason: string) {
-  const { data, error } = await supabase.rpc("reject_visitor_with_reason", {
+export async function rejectVisitor(id: string, reason: string) {
+  const { data, error } = await supabase.rpc("reject_visitor", {
     p_id: id,
-    p_reason: reason
+    p_rejection_reason: reason
   });
   return mapRow(unwrap(data, error));
 }

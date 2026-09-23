@@ -125,7 +125,12 @@ export default function ReportsScreen() {
   const roleLabel = username ? `Guard · ${username}` : "Guard";
 
   return (
-    <DashboardScreen roleLabel={roleLabel} onSignOut={() => void handleSignOut()} tabs={GUARD_TABS}>
+    <DashboardScreen
+      roleLabel={roleLabel}
+      onSignOut={() => void handleSignOut()}
+      onProfilePicturePress={() => router.push("/(guard)/profile")}
+      tabs={GUARD_TABS}
+    >
       <Text style={styles.title}>Reports Dashboard</Text>
       <Pressable
         style={({ pressed }) => [

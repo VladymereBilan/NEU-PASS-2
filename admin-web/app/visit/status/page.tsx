@@ -16,6 +16,7 @@ type RegistrationRow = {
   purpose_of_visit: string;
   other_agenda: string | null;
   registration_status: "Pending" | "Active" | "Rejected" | "Completed";
+  rejection_reason: string | null;
   qr_status: string;
   visitor_pass_number: string | null;
   time_in: string | null;
@@ -76,7 +77,7 @@ export default function VisitStatusPage() {
     const { data, error } = await supabase
       .from("visitor_registrations")
       .select(
-        "id, full_name, purpose_of_visit, other_agenda, registration_status, qr_status, visitor_pass_number, time_in, expiration_time"
+        "id, full_name, purpose_of_visit, other_agenda, registration_status, rejection_reason, qr_status, visitor_pass_number, time_in, expiration_time"
       )
       .eq("visitor_user_id", userId)
       .order("created_at", { ascending: false })
@@ -247,6 +248,12 @@ function renderBody(
       <>
         <h1 className="text-xl font-extrabold text-white">Registration declined</h1>
         <p className="mt-3 text-sm text-gray-400">You can submit a new registration anytime.</p>
+        {row.rejection_reason ? (
+          <p className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-3 text-sm text-red-200">
+            <span className="font-semibold text-red-100">Reason of rejection:</span>{" "}
+            {row.rejection_reason}
+          </p>
+        ) : null}
         <VisitLink />
       </>
     );
