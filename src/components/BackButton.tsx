@@ -24,9 +24,8 @@ export default function BackButton({ label = "Back" }: BackButtonProps) {
       {({ pressed, hovered }: PressableInteractionState) => (
         <MaterialCommunityIcons
           name="arrow-left"
-          size={22}
-          color="#000000"
-          style={(pressed || hovered) && styles.iconActive}
+          size={20}
+          color={pressed || hovered ? NEU_DARK.emerald : NEU_DARK.white}
         />
       )}
     </Pressable>
@@ -41,13 +40,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 20,
-    backgroundColor: NEU_DARK.emerald
+    borderWidth: 1,
+    borderColor: NEU_DARK.border,
+    backgroundColor: NEU_DARK.card
   },
   buttonActive: {
-    backgroundColor: NEU_DARK.emeraldStrong,
+    borderColor: NEU_DARK.emerald,
+    backgroundColor: NEU_DARK.emeraldSoft,
     transform: [{ scale: 1.04 }]
-  },
-  iconActive: {
-    opacity: 0.7
   }
 });
