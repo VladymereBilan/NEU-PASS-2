@@ -32,7 +32,6 @@ export default function GuardLayout() {
       <Stack.Screen name="reports" options={{ headerShown: false }} />
       <Stack.Screen name="checkout" options={{ headerShown: false }} />
       <Stack.Screen name="visitor-logs" options={{ headerShown: false }} />
-      <Stack.Screen name="profile" options={{ headerShown: false }} />
     </Stack>
   );
 }

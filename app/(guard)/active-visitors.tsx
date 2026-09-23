@@ -65,7 +65,6 @@ export default function ActiveVisitorsScreen() {
     <DashboardScreen
       roleLabel={roleLabel}
       onSignOut={() => void handleSignOut()}
-      onProfilePicturePress={() => router.push("/(guard)/profile")}
       tabs={GUARD_TABS}
     >
       <Text style={styles.title}>Active Visitors</Text>

@@ -9,7 +9,6 @@ import { BottomNavBar, type BottomNavTab } from "./BottomNavBar";
 type Props = {
   roleLabel: string;
   onSignOut: () => void;
-  onProfilePicturePress?: () => void;
   tabs: BottomNavTab[];
   children: ReactNode;
 };
@@ -19,25 +18,20 @@ type Props = {
 // screens, a slim branded header with sign-out, and a bottom nav bar whose
 // tabs are role-specific (see BottomNavBar.tsx for why it's a styled bar and
 // not a real navigator).
-export function DashboardScreen({ roleLabel, onSignOut, onProfilePicturePress, tabs, children }: Props) {
+export function DashboardScreen({ roleLabel, onSignOut, tabs, children }: Props) {
   const [hovered, setHovered] = useState(false);
 
   return (
     <AppBackground>
       <SafeAreaView style={styles.flex} edges={["top", "left", "right"]}>
         <View style={styles.header}>
-          <Pressable style={styles.badge} onPress={onProfilePicturePress} disabled={!onProfilePicturePress}>
+          <View style={styles.badge}>
             <Image
               source={require("../../../assets/branding/neu-logo.png")}
               style={styles.logo}
               resizeMode="cover"
             />
-            {onProfilePicturePress ? (
-              <View style={styles.pictureSwitch}>
-                <MaterialCommunityIcons name="camera-switch-outline" size={13} color={NEU_DARK.white} />
-              </View>
-            ) : null}
-          </Pressable>
+          </View>
           <View style={styles.headerText}>
             <Text style={styles.appName}>NEU PASS</Text>
             <Text style={styles.roleLabel}>{roleLabel}</Text>
@@ -83,25 +77,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    overflow: "hidden",
-    position: "relative"
+    overflow: "hidden"
   },
   logo: {
     width: "100%",
     height: "100%"
-  },
-  pictureSwitch: {
-    position: "absolute",
-    right: 0,
-    bottom: 0,
-    width: 19,
-    height: 19,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: NEU_DARK.emeraldStrong,
-    borderWidth: 1,
-    borderColor: NEU_DARK.card
   },
   headerText: {
     flex: 1
