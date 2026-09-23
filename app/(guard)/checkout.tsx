@@ -23,6 +23,7 @@ import { getVisitorImageSignedUrl } from "../../src/lib/imageUpload";
 import { compareFaces } from "../../src/services/FaceMatchService";
 import { parseQRValue } from "../../src/services/QRService";
 import { AppBackground } from "../../src/components/AppBackground";
+import BackButton from "../../src/components/BackButton";
 import { NEU_DARK } from "../../src/theme/brand";
 import type {
   FaceCheckoutVerificationStatus,
@@ -388,10 +389,13 @@ export default function CheckoutVerificationScreen() {
 
   return (
     <AppBackground>
-      <SafeAreaView style={styles.flex} edges={["bottom", "left", "right"]}>
+      <SafeAreaView style={styles.flex} edges={["top", "bottom", "left", "right"]}>
+      <View style={styles.screenHeader}>
+        <BackButton />
+        <Text style={styles.screenHeaderTitle}>Checkout Verification</Text>
+      </View>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.card}>
-          <Text style={styles.title}>Checkout Verification</Text>
           <Pressable
             style={({ pressed }) => [
               styles.refreshButton,
@@ -645,6 +649,19 @@ const styles = StyleSheet.create({
   flex: {
     flex: 1
   },
+  screenHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 4
+  },
+  screenHeaderTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: NEU_DARK.white
+  },
   scrollContent: {
     padding: 20,
     paddingBottom: 32
@@ -656,11 +673,6 @@ const styles = StyleSheet.create({
     gap: 12,
     borderWidth: 1,
     borderColor: NEU_DARK.cardBorder
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: NEU_DARK.white
   },
   body: {
     fontSize: 14,

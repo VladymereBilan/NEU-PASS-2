@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "expo-router";
 import { getCompletedRegistrationsPage } from "../../src/services/PrototypeRegistrationStore";
 import { AppBackground } from "../../src/components/AppBackground";
+import BackButton from "../../src/components/BackButton";
 import { NEU_DARK } from "../../src/theme/brand";
 import type { VisitorRegistration } from "../../src/types/VisitorRegistration";
 
@@ -62,7 +63,11 @@ export default function VisitorLogsScreen() {
 
   return (
     <AppBackground>
-      <SafeAreaView style={styles.flex} edges={["bottom", "left", "right"]}>
+      <SafeAreaView style={styles.flex} edges={["top", "bottom", "left", "right"]}>
+        <View style={styles.screenHeader}>
+          <BackButton />
+          <Text style={styles.screenHeaderTitle}>Visitor Logs</Text>
+        </View>
         <View style={styles.card}>
           <FlatList
             style={styles.flex}
@@ -79,7 +84,6 @@ export default function VisitorLogsScreen() {
             onEndReachedThreshold={0.5}
             ListHeaderComponent={
               <View style={styles.headerRow}>
-                <Text style={styles.title}>Visitor Logs</Text>
                 <Pressable
                   style={({ pressed }) => [
                     styles.refreshButton,
@@ -148,6 +152,19 @@ const styles = StyleSheet.create({
   flex: {
     flex: 1
   },
+  screenHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 4
+  },
+  screenHeaderTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: NEU_DARK.white
+  },
   card: {
     flex: 1,
     margin: 20,
@@ -166,11 +183,6 @@ const styles = StyleSheet.create({
   },
   headerRow: {
     gap: 12
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: NEU_DARK.white
   },
   body: {
     fontSize: 14,

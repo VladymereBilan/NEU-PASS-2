@@ -75,7 +75,6 @@ export default function ActiveVisitorsScreen() {
       >
         <Text style={styles.refreshText}>Refresh</Text>
       </Pressable>
-      <Text style={styles.note}>QR code generation will be added in the next phase.</Text>
 
       {loading ? (
         <Text style={styles.body}>Loading active visitors...</Text>
@@ -130,11 +129,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "800",
     color: NEU_DARK.white
-  },
-  note: {
-    fontSize: 12,
-    color: NEU_DARK.textFaint,
-    lineHeight: 18
   },
   body: {
     fontSize: 14,

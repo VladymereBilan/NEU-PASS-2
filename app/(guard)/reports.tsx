@@ -138,9 +138,6 @@ export default function ReportsScreen() {
       >
         <Text style={styles.refreshText}>Refresh</Text>
       </Pressable>
-      <Text style={styles.note}>
-        Exportable reports and full web-based admin dashboard will be implemented in the next phase.
-      </Text>
 
       {loading ? (
         <Text style={styles.body}>Loading reports...</Text>
@@ -226,11 +223,6 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "800",
     color: NEU_DARK.white
-  },
-  note: {
-    fontSize: 12,
-    color: NEU_DARK.textFaint,
-    lineHeight: 18
   },
   body: {
     fontSize: 14,

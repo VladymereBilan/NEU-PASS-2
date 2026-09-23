@@ -14,8 +14,8 @@ export default function GuardLoginScreen() {
   const router = useRouter();
   const { role, loading: authLoading } = useAuth();
   const [isHovered, setIsHovered] = useState(false);
-  const [username, setUsername] = useState("guard01");
-  const [password, setPassword] = useState("guard123");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -40,6 +40,31 @@ export default function GuardLoginScreen() {
     try {
       setLoading(true);
       setError("");
+
+      const { data: attemptRows, error: attemptError } = await supabase.rpc("guard_login_attempt", {
+        p_username: username,
+        p_password: password
+      });
+      if (attemptError) throw new Error("Unable to reach the login service. Please try again.");
+
+      const attempt = attemptRows?.[0];
+      if (attempt?.status === "locked") {
+        const seconds = attempt.locked_until
+          ? Math.max(1, Math.ceil((new Date(attempt.locked_until).getTime() - Date.now()) / 1000))
+          : null;
+        throw new Error(
+          seconds
+            ? `Too many failed attempts. Try again in ${seconds}s.`
+            : "Too many failed attempts. Please wait before trying again."
+        );
+      }
+      if (attempt?.status === "blocked") {
+        throw new Error("This guard account is blocked by admin.");
+      }
+      if (attempt?.status !== "ok") {
+        throw new Error("Invalid guard username or password.");
+      }
+
       const { data, error: authError } = await supabase.auth.signInWithPassword({
         email: guardUsernameToEmail(username),
         password

@@ -15,7 +15,13 @@
     "plugins": [
       "expo-router",
       "expo-font",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "NEU PASS uses the camera to scan visitor QR passes and capture a live photo for checkout face verification."
+        }
+      ]
     ],
     "android": {
       "package": "com.vladymere.neupass",
