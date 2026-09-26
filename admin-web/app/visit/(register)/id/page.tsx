@@ -48,7 +48,7 @@ export default function VisitIdCapturePage() {
   };
 
   return (
-    <VisitShell step={2} title="Capture Your ID" subtitle="Take a clear photo of a valid government ID.">
+    <VisitShell step={2} title="Capture Your ID" subtitle="Take a clear photo of a valid ID.">
       <div className="space-y-4">
         <div className="flex h-48 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-emerald-500/25 bg-white/5">
           {previewUrl ? (

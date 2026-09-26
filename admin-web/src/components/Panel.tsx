@@ -27,11 +27,20 @@ export function Panel({
   );
 }
 
-export function MiniStat({ label, value }: { label: string; value: number }) {
+export function MiniStat({
+  label,
+  value,
+  caption
+}: {
+  label: string;
+  value: number;
+  caption?: string;
+}) {
   return (
     <div className="rounded-2xl border border-emerald-500/15 bg-white/5 p-4">
       <div className="text-2xl font-bold text-white">{value}</div>
       <div className="mt-1 text-sm text-gray-400">{label}</div>
+      {caption ? <div className="mt-0.5 text-xs text-gray-600">{caption}</div> : null}
     </div>
   );
 }

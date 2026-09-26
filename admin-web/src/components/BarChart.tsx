@@ -1,7 +1,17 @@
-const CHART_HEIGHT_DEFAULT = 160;
-const BAR_GROUP_WIDTH = 24;
-const BAR_GAP = 3;
-const LABEL_ROW_HEIGHT = 20;
+"use client";
+
+import {
+  Bar,
+  BarChart as RechartsBarChart,
+  CartesianGrid,
+  Legend,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis
+} from "recharts";
+
+const CHART_HEIGHT_DEFAULT = 220;
 
 export function BarChart({
   data,
@@ -22,70 +32,49 @@ export function BarChart({
     );
   }
 
-  const max = Math.max(1, ...data.flatMap((d) => d.values));
-  const seriesCount = seriesLabels.length;
-  const barWidth = (BAR_GROUP_WIDTH - BAR_GAP * (seriesCount - 1)) / seriesCount;
-  const chartWidth = data.length * BAR_GROUP_WIDTH + (data.length - 1) * BAR_GAP;
-  const svgHeight = height + LABEL_ROW_HEIGHT;
-  const labelStride = data.length > 15 ? 5 : data.length > 8 ? 2 : 1;
+  const chartData = data.map((d) => {
+    const row: Record<string, string | number> = { label: d.label };
+    seriesLabels.forEach((seriesLabel, i) => {
+      row[seriesLabel] = d.values[i] ?? 0;
+    });
+    return row;
+  });
 
   return (
-    <div>
-      <div className="overflow-x-auto">
-        <svg
-          role="img"
-          aria-label="Bar chart"
-          height={svgHeight}
-          viewBox={`0 0 ${chartWidth} ${svgHeight}`}
-          preserveAspectRatio="none"
-          style={{ width: "100%", minWidth: chartWidth }}
-        >
-          <line x1={0} y1={height} x2={chartWidth} y2={height} stroke="rgba(148,163,184,0.15)" />
-          {data.map((d, i) => {
-            const groupX = i * (BAR_GROUP_WIDTH + BAR_GAP);
-            return (
-              <g key={d.label}>
-                {d.values.map((v, s) => {
-                  const barHeight = (v / max) * (height - 4);
-                  return (
-                    <rect
-                      key={s}
-                      x={groupX + s * (barWidth + BAR_GAP)}
-                      y={height - barHeight}
-                      width={barWidth}
-                      height={barHeight}
-                      rx={1.5}
-                      fill={seriesColors[s % seriesColors.length]}
-                    />
-                  );
-                })}
-                {i % labelStride === 0 ? (
-                  <text
-                    x={groupX + BAR_GROUP_WIDTH / 2}
-                    y={height + 14}
-                    fontSize={9}
-                    textAnchor="middle"
-                    fill="#93a4be"
-                  >
-                    {d.label}
-                  </text>
-                ) : null}
-              </g>
-            );
-          })}
-        </svg>
-      </div>
-      <div className="mt-3 flex flex-wrap gap-4">
-        {seriesLabels.map((label, i) => (
-          <div key={label} className="flex items-center gap-2 text-xs text-gray-400">
-            <span
-              className="h-2.5 w-2.5 rounded-full"
-              style={{ backgroundColor: seriesColors[i % seriesColors.length] }}
+    <div style={{ width: "100%", height }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <RechartsBarChart data={chartData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" vertical={false} />
+          <XAxis
+            dataKey="label"
+            tick={{ fill: "#93a4be", fontSize: 11 }}
+            axisLine={{ stroke: "rgba(148,163,184,0.15)" }}
+            tickLine={false}
+          />
+          <YAxis tick={{ fill: "#93a4be", fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
+          <Tooltip
+            cursor={{ fill: "rgba(255,255,255,0.06)" }}
+            contentStyle={{
+              backgroundColor: "#0a1f14",
+              border: "1px solid rgba(16,185,129,0.25)",
+              borderRadius: 12,
+              color: "#fff"
+            }}
+            labelStyle={{ color: "#93a4be" }}
+          />
+          <Legend wrapperStyle={{ fontSize: 12, color: "#93a4be", paddingTop: 8 }} iconType="circle" />
+          {seriesLabels.map((seriesLabel, i) => (
+            <Bar
+              key={seriesLabel}
+              dataKey={seriesLabel}
+              fill={seriesColors[i % seriesColors.length]}
+              radius={[4, 4, 0, 0]}
+              maxBarSize={22}
+              animationDuration={400}
             />
-            {label}
-          </div>
-        ))}
-      </div>
+          ))}
+        </RechartsBarChart>
+      </ResponsiveContainer>
     </div>
   );
 }

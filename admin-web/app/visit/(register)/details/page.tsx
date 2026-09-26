@@ -38,7 +38,7 @@ type FormState = {
 
 type FormErrors = Partial<Record<keyof FormState, string>>;
 // Only the fields AWS Textract can actually inform — contact number, email,
-// and purpose of visit aren't on a government ID, so they're never touched.
+// and purpose of visit aren't on a valid ID, so they're never touched.
 type AutoFilledFields = Partial<Record<"fullName" | "address" | "idType" | "idNumber", boolean>>;
 
 const ID_TYPE_SELECT_OPTIONS = ID_TYPE_OPTIONS.map((option) => ({ value: option, label: option }));
@@ -63,12 +63,14 @@ export default function VisitDetailsPage() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [autoFilled, setAutoFilled] = useState<AutoFilledFields>({});
   const [ocrLoading, setOcrLoading] = useState(false);
-  // true only when Textract successfully scanned the photo and found no text
-  // at all — the strongest available signal that the "ID photo" isn't a
-  // document (a selfie, scenery, a blank photo). A failed/unavailable OCR
-  // call (network error, AWS outage) must NOT set this — that's an
-  // infrastructure problem, not evidence of a bad photo, so it fails open.
-  const [noTextDetected, setNoTextDetected] = useState(false);
+  // true only when Textract successfully scanned the photo but
+  // extractIdFields() couldn't recognize an ID type keyword or an
+  // ID-number-shaped token anywhere in it — i.e. the photo doesn't look like
+  // a valid ID at all (a selfie, scenery, a receipt, a book page...), not
+  // just "hard to read." A failed/unavailable OCR call (network error,
+  // AWS outage) must NOT set this — that's an infrastructure problem, not
+  // evidence of a bad photo, so it fails open.
+  const [idNotRecognized, setIdNotRecognized] = useState(false);
 
   useEffect(() => {
     if (!draft.idImagePath) return;
@@ -95,12 +97,6 @@ export default function VisitDetailsPage() {
       setOcrLoading(false);
       if (error || !data?.success) return;
 
-      if (data.lines.length === 0) {
-        setNoTextDetected(true);
-        return;
-      }
-      setNoTextDetected(false);
-
       // AWS Textract (DetectDocumentText via the extract-id-text edge
       // function) returns raw text lines with no field labels of its own;
       // extractIdFields() applies best-effort label/keyword heuristics (see
@@ -109,6 +105,16 @@ export default function VisitDetailsPage() {
       // stays editable, and nothing here is trusted without the visitor's
       // own confirmation before Continue.
       const extracted = extractIdFields(data.lines);
+
+      // Neither an ID type keyword nor an ID-number-shaped token was found
+      // anywhere on the photo — treat it as "this isn't a recognizable ID"
+      // rather than merely failing to pre-fill silently.
+      if (!extracted.idType && !extracted.idNumber) {
+        setIdNotRecognized(true);
+        return;
+      }
+      setIdNotRecognized(false);
+
       const nextAutoFilled: AutoFilledFields = {};
       setForm((prev) => {
         const next = { ...prev };
@@ -200,7 +206,7 @@ export default function VisitDetailsPage() {
   };
 
   const handleSubmit = () => {
-    if (noTextDetected) return;
+    if (idNotRecognized) return;
     const nextErrors = validate();
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
@@ -232,11 +238,11 @@ export default function VisitDetailsPage() {
       }
     >
       <div className="space-y-4">
-        {noTextDetected ? (
+        {idNotRecognized ? (
           <div className="space-y-3">
             <ErrorBanner>
-              We couldn&apos;t find any readable text on that photo, so it doesn&apos;t look like a
-              valid ID. Please retake the photo of your ID.
+              We couldn&apos;t recognize that photo as a valid ID. Please retake a clear photo of
+              your ID.
             </ErrorBanner>
             <SecondaryButton onClick={retakeIdPhoto}>Retake ID Photo</SecondaryButton>
           </div>
@@ -332,7 +338,7 @@ export default function VisitDetailsPage() {
           />
         ) : null}
 
-        <PrimaryButton onClick={handleSubmit} disabled={noTextDetected}>
+        <PrimaryButton onClick={handleSubmit} disabled={idNotRecognized}>
           Continue
         </PrimaryButton>
       </div>

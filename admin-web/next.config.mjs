@@ -10,9 +10,17 @@ const supabaseWs = supabaseHost ? `wss://${supabaseHost}` : "";
 // allowed — challenges.cloudflare.com covers all three uses.
 const TURNSTILE_ORIGIN = "https://challenges.cloudflare.com";
 
+// next dev's Fast Refresh/HMR runtime (react-refresh-utils) evaluates code
+// via eval() — without 'unsafe-eval' the browser throws an EvalError on
+// every page load and React never hydrates, so every client interaction
+// (including this login form's onSubmit) silently falls back to a native,
+// unhandled HTML form submission instead of running any app JS. `next build`
+// never uses eval, so this carve-out only ever widens the policy in dev.
+const SCRIPT_SRC_EXTRA = process.env.NODE_ENV === "production" ? "" : " 'unsafe-eval'";
+
 const csp = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline' ${TURNSTILE_ORIGIN}`,
+  `script-src 'self' 'unsafe-inline'${SCRIPT_SRC_EXTRA} ${TURNSTILE_ORIGIN}`,
   "style-src 'self' 'unsafe-inline'",
   `img-src 'self' data: blob:${supabaseHost ? ` https://${supabaseHost}` : ""}`,
   "font-src 'self'",

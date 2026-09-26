@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { MetricCard, PURPOSE_ACCENTS } from "@/components/MetricCard";
 import { Panel } from "@/components/Panel";
-import { DataTable } from "@/components/DataTable";
+import { DailyBreakdownTable } from "@/components/DailyBreakdownTable";
 import { fetchDashboardData } from "@/lib/dashboardStats";
 import { resolveMonthRange } from "@/lib/reportStats";
 import { createClient } from "@/lib/supabase/server";
@@ -26,7 +26,7 @@ export default async function ReportsPage({
     );
   }
 
-  const { stats, monthPurposeCounts, dailyBreakdown } = data;
+  const { monthPurposeCounts, dailyBreakdown } = data;
 
   const totalPages = Math.max(1, Math.ceil(dailyBreakdown.length / DAILY_BREAKDOWN_PAGE_SIZE));
   const requestedPage = Number(searchParams.page) || 1;
@@ -38,13 +38,6 @@ export default async function ReportsPage({
 
   return (
     <div className="space-y-6">
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Daily Visitors" value={stats.daily.visitorsToday} accent="from-emerald-400 to-emerald-600" />
-        <MetricCard label="Monthly Visitors" value={stats.monthly.visitorsThisMonth} accent="from-sky-400 to-sky-600" />
-        <MetricCard label="Completed Today" value={stats.daily.completedToday} accent="from-emerald-400 to-emerald-600" />
-        <MetricCard label="Expired QR Count" value={stats.expiredQrPasses} accent="from-amber-400 to-amber-600" />
-      </section>
-
       <Panel
         title="Purpose-Based Counts"
         eyebrow="By month"
@@ -83,14 +76,7 @@ export default async function ReportsPage({
       </Panel>
 
       <Panel title="Daily Breakdown" eyebrow={monthRange.label}>
-        <DataTable
-          columns={["Date", "Visitors", "Completed"]}
-          rows={pagedBreakdown.map((day) => [
-            day.date,
-            String(day.visitorsCount),
-            String(day.completedCount)
-          ])}
-        />
+        <DailyBreakdownTable rows={pagedBreakdown} allRows={dailyBreakdown} />
         {totalPages > 1 ? (
           <div className="mt-4 flex items-center justify-between">
             {page > 1 ? (

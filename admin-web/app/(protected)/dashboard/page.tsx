@@ -35,8 +35,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Total Visitors" value={stats.totalVisitors} accent="from-emerald-400 to-emerald-600" />
+      <section className="grid gap-4 md:grid-cols-3">
         <MetricCard label="Active Visitors" value={stats.activeVisitors} accent="from-sky-400 to-sky-600" />
         <MetricCard label="Pending Visitors" value={stats.pendingVisitors} accent="from-amber-400 to-amber-600" />
         <MetricCard label="Expired QR Passes" value={stats.expiredQrPasses} accent="from-amber-400 to-amber-600" />
@@ -66,8 +65,11 @@ export default async function DashboardPage() {
           <div className="grid grid-cols-2 gap-3">
             <MiniStat label="Visitors Today" value={stats.daily.visitorsToday} />
             <MiniStat label="Completed Today" value={stats.daily.completedToday} />
-            <MiniStat label="Active Today" value={stats.daily.activeToday} />
-            <MiniStat label="Visitors This Month" value={stats.monthly.visitorsThisMonth} />
+            <MiniStat
+              label="Visitors This Month"
+              value={stats.monthly.visitorsThisMonth}
+              caption="Resets on the 1st of each month"
+            />
             <MiniStat label="Completed This Month" value={stats.monthly.completedThisMonth} />
           </div>
         </Panel>

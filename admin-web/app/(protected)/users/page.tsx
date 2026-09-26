@@ -16,7 +16,7 @@ import {
   type GuardAccount
 } from "@/actions/accounts";
 import { ConfirmButton } from "@/components/ConfirmButton";
-import { SearchIcon } from "@/components/icons";
+import { EyeIcon, EyeOffIcon, SearchIcon } from "@/components/icons";
 import { passwordPolicyError } from "@/lib/passwordPolicy";
 import { usernamePolicyError } from "@/lib/usernamePolicy";
 
@@ -474,6 +474,7 @@ function AccountRow({
 }) {
   const [resetting, setResetting] = useState(false);
   const [newPassword, setNewPassword] = useState("");
+  const [passwordRevealed, setPasswordRevealed] = useState(false);
   const [resetError, setResetError] = useState("");
   const [resetMessage, setResetMessage] = useState("");
   const [saving, setSaving] = useState(false);
@@ -498,6 +499,7 @@ function AccountRow({
     setResetError("");
     setResetMessage("");
     setNewPassword("");
+    setPasswordRevealed(false);
   };
 
   const handleReset = async () => {
@@ -577,13 +579,23 @@ function AccountRow({
 
       {resetting ? (
         <div className="mt-4 flex flex-col gap-2 border-t border-emerald-500/15 pt-4 sm:flex-row sm:items-center">
-          <input
-            type="password"
-            value={newPassword}
-            onChange={(event) => setNewPassword(event.target.value)}
-            placeholder="New password"
-            className="w-full max-w-xs rounded-2xl border border-emerald-500/20 bg-white/5 px-4 py-2.5 text-white outline-none placeholder:text-gray-500 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/20"
-          />
+          <div className="relative w-full max-w-xs">
+            <input
+              type={passwordRevealed ? "text" : "password"}
+              value={newPassword}
+              onChange={(event) => setNewPassword(event.target.value)}
+              placeholder="New password"
+              className="w-full rounded-2xl border border-emerald-500/20 bg-white/5 px-4 py-2.5 pr-11 text-white outline-none placeholder:text-gray-500 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/20"
+            />
+            <button
+              type="button"
+              onClick={() => setPasswordRevealed((prev) => !prev)}
+              aria-label={passwordRevealed ? "Hide password" : "Show password"}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-emerald-400"
+            >
+              {passwordRevealed ? <EyeOffIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+            </button>
+          </div>
           <ConfirmButton
             label={saving ? "Saving..." : "Save Password"}
             confirmLabel="Confirm New Password"
@@ -620,16 +632,33 @@ function Field({
   type?: string;
   placeholder?: string;
 }) {
+  const [revealed, setRevealed] = useState(false);
+  const isPassword = type === "password";
+
   return (
     <label className="block">
       <div className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">{label}</div>
-      <input
-        type={type}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
-        className="w-full rounded-2xl border border-emerald-500/20 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-gray-500 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/20"
-      />
+      <div className="relative">
+        <input
+          type={isPassword && revealed ? "text" : type}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={placeholder}
+          className={`w-full rounded-2xl border border-emerald-500/20 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-gray-500 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/20 ${
+            isPassword ? "pr-11" : ""
+          }`}
+        />
+        {isPassword ? (
+          <button
+            type="button"
+            onClick={() => setRevealed((prev) => !prev)}
+            aria-label={revealed ? "Hide password" : "Show password"}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-emerald-400"
+          >
+            {revealed ? <EyeOffIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+          </button>
+        ) : null}
+      </div>
     </label>
   );
 }

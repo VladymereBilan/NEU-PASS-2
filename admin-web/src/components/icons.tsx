@@ -98,3 +98,22 @@ export function CloseIcon({ className }: { className?: string }) {
     </svg>
   );
 }
+
+export function EyeIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+export function EyeOffIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3.5 3.5l17 17" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M10.6 5.7c.45-.1.92-.15 1.4-.15 6 0 9.5 6.5 9.5 6.5a15.6 15.6 0 0 1-3.15 4.05M6.6 6.7A15.5 15.5 0 0 0 2.5 12s3.5 6.5 9.5 6.5c1.5 0 2.85-.4 4-1" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+    </svg>
+  );
+}

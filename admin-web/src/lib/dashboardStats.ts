@@ -13,11 +13,10 @@ type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 const TABLE = "visitor_registrations";
 
 export type DashboardStats = {
-  totalVisitors: number;
   activeVisitors: number;
   pendingVisitors: number;
   expiredQrPasses: number;
-  daily: { visitorsToday: number; completedToday: number; activeToday: number };
+  daily: { visitorsToday: number; completedToday: number };
   monthly: { visitorsThisMonth: number; completedThisMonth: number };
 };
 
@@ -57,20 +56,17 @@ export async function fetchDashboardData(
     const nowIso = now.toISOString();
 
     const [
-      totalVisitors,
       activeVisitors,
       pendingVisitors,
       expiredQrPasses,
       visitorsToday,
       completedToday,
-      activeToday,
       visitorsThisMonth,
       completedThisMonth,
       purposeCountEntries,
       dailyBreakdownResult,
       lastCheckInResult
     ] = await Promise.all([
-      countRows((q) => q.select("*", { count: "exact", head: true }), supabase),
       countRows(
         (q) => q.select("*", { count: "exact", head: true }).eq("registration_status", "Active"),
         supabase
@@ -93,14 +89,6 @@ export async function fetchDashboardData(
       ),
       countRows(
         (q) => q.select("*", { count: "exact", head: true }).gte("time_out", todayStartIso),
-        supabase
-      ),
-      countRows(
-        (q) =>
-          q
-            .select("*", { count: "exact", head: true })
-            .gte("time_in", todayStartIso)
-            .eq("registration_status", "Active"),
         supabase
       ),
       countRows(
@@ -152,11 +140,10 @@ export async function fetchDashboardData(
     return {
       data: {
         stats: {
-          totalVisitors,
           activeVisitors,
           pendingVisitors,
           expiredQrPasses,
-          daily: { visitorsToday, completedToday, activeToday },
+          daily: { visitorsToday, completedToday },
           monthly: { visitorsThisMonth, completedThisMonth }
         },
         monthPurposeCounts: Object.fromEntries(purposeCountEntries),
