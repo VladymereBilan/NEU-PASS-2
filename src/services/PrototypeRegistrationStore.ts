@@ -30,10 +30,6 @@ export async function getVisitorPassByVisitorId(id: string) {
   return getVisitorById(id);
 }
 
-export async function approveRegistration(id: string) {
-  return approveVisitor(id);
-}
-
 export async function rejectRegistration(id: string, reason: string) {
   return rejectVisitor(id, reason);
 }

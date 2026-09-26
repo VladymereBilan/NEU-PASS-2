@@ -66,6 +66,8 @@ export default function ActiveVisitorsScreen() {
       roleLabel={roleLabel}
       onSignOut={() => void handleSignOut()}
       tabs={GUARD_TABS}
+      refreshing={loading}
+      onRefresh={() => void refresh()}
     >
       <Text style={styles.title}>Active Visitors</Text>
       <Pressable

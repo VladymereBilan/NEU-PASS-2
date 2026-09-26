@@ -6,6 +6,7 @@ import {
   getActiveVisitors,
   getPendingRegistrations
 } from "../../src/services/PrototypeRegistrationStore";
+import { isOverdue } from "../../src/services/ExpirationService";
 import { DashboardScreen } from "../../src/components/dashboard/DashboardScreen";
 import type { BottomNavTab } from "../../src/components/dashboard/BottomNavBar";
 import { StatusCard, type StatusTone } from "../../src/components/dashboard/StatusCard";
@@ -21,7 +22,7 @@ const GUARD_TABS: BottomNavTab[] = [
   { key: "reports", label: "Reports", icon: "chart-bar", route: "/(guard)/reports" }
 ];
 
-type Counts = { pending: number; active: number };
+type Counts = { pending: number; active: number; overdue: number };
 
 type StatusView = {
   tone: StatusTone;
@@ -32,6 +33,10 @@ type StatusView = {
   ctaRoute: string;
 };
 
+// Pending review always takes priority (a registration is sitting untouched),
+// but a guard with zero pending items can still have visitors who overstayed
+// their pass and never checked out — without this check the card would say
+// "All Clear" while overdue visitors go unnoticed on the Active Visitors list.
 function resolveStatusView(counts: Counts): StatusView {
   if (counts.pending > 0) {
     return {
@@ -41,6 +46,17 @@ function resolveStatusView(counts: Counts): StatusView {
       description: "New visitor registrations are waiting for your review.",
       ctaLabel: "Review Now",
       ctaRoute: "/(guard)/pending"
+    };
+  }
+
+  if (counts.overdue > 0) {
+    return {
+      tone: "warning",
+      badge: "Attention Needed",
+      title: `${counts.overdue} Overdue Visitor${counts.overdue === 1 ? "" : "s"}`,
+      description: "Past their pass expiration and still not checked out.",
+      ctaLabel: "View Active Visitors",
+      ctaRoute: "/(guard)/active-visitors"
     };
   }
 
@@ -57,7 +73,7 @@ function resolveStatusView(counts: Counts): StatusView {
 export default function GuardHomeScreen() {
   const router = useRouter();
   const { email, signOut } = useAuth();
-  const [counts, setCounts] = useState<Counts>({ pending: 0, active: 0 });
+  const [counts, setCounts] = useState<Counts>({ pending: 0, active: 0, overdue: 0 });
   const [loading, setLoading] = useState(true);
   const [ctaHovered, setCtaHovered] = useState(false);
 
@@ -70,10 +86,11 @@ export default function GuardHomeScreen() {
       ]);
       setCounts({
         pending: pending.length,
-        active: active.length
+        active: active.length,
+        overdue: active.filter((visitor) => isOverdue(visitor.expirationTime)).length
       });
     } catch {
-      setCounts({ pending: 0, active: 0 });
+      setCounts({ pending: 0, active: 0, overdue: 0 });
     } finally {
       setLoading(false);
     }
@@ -104,6 +121,8 @@ export default function GuardHomeScreen() {
       roleLabel={roleLabel}
       onSignOut={() => void handleSignOut()}
       tabs={GUARD_TABS}
+      refreshing={loading}
+      onRefresh={() => void refresh()}
     >
       <Greeting name={username} />
 

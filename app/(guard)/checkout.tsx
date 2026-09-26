@@ -3,7 +3,10 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -410,7 +413,22 @@ export default function CheckoutVerificationScreen() {
         <BackButton />
         <Text style={styles.screenHeaderTitle}>Checkout Verification</Text>
       </View>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl
+            refreshing={loading}
+            onRefresh={() => void refresh()}
+            tintColor={NEU_DARK.emerald}
+            colors={[NEU_DARK.emerald]}
+          />
+        }
+      >
         <View style={styles.card}>
           <Pressable
             style={({ pressed }) => [
@@ -644,6 +662,7 @@ export default function CheckoutVerificationScreen() {
           ) : null}
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
       </SafeAreaView>
     </AppBackground>
   );

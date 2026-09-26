@@ -154,6 +154,8 @@ export default function PendingVerificationsScreen() {
       roleLabel={roleLabel}
       onSignOut={() => void handleSignOut()}
       tabs={GUARD_TABS}
+      refreshing={loading}
+      onRefresh={() => void refresh()}
     >
       <Text style={styles.title}>Pending Verifications</Text>
       <Pressable

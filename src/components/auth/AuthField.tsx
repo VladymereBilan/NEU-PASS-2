@@ -11,6 +11,8 @@ type Props = {
   secureTextEntry?: boolean;
   keyboardType?: "default" | "email-address" | "phone-pad";
   autoCapitalize?: "none" | "sentences" | "words" | "characters";
+  placeholder?: string;
+  helperText?: string;
 };
 
 // Labeled TextInput shared by every auth screen. When secureTextEntry is
@@ -24,7 +26,9 @@ export function AuthField({
   icon,
   secureTextEntry,
   keyboardType,
-  autoCapitalize = "none"
+  autoCapitalize = "none",
+  placeholder,
+  helperText
 }: Props) {
   const [revealed, setRevealed] = useState(false);
 
@@ -43,6 +47,7 @@ export function AuthField({
           secureTextEntry={secureTextEntry && !revealed}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
+          placeholder={placeholder}
           placeholderTextColor={NEU_DARK.textFaint}
           style={[
             styles.input,
@@ -60,6 +65,7 @@ export function AuthField({
           </Pressable>
         ) : null}
       </View>
+      {helperText ? <Text style={styles.helperText}>{helperText}</Text> : null}
     </View>
   );
 }
@@ -107,5 +113,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
     color: NEU_DARK.emerald
+  },
+  helperText: {
+    marginTop: 6,
+    fontSize: 12,
+    color: NEU_DARK.textMuted,
+    lineHeight: 16
   }
 });

@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Pressable, StyleSheet } from "react-native";
+import { Pressable, StyleSheet, Text } from "react-native";
 import { useRouter } from "expo-router";
 import type { PressableInteractionState } from "../types/PressableState";
 import { NEU_DARK } from "../theme/brand";
@@ -8,6 +8,10 @@ type BackButtonProps = {
   label?: string;
 };
 
+// Flat "< Back" text link (no circular chip) — matches the guard-facing
+// screens' reference design. Shared by guard-login and every guard screen
+// that isn't part of the bottom tab bar (checkout, visitor-logs), so a
+// change here is intentionally global rather than a per-screen override.
 export default function BackButton({ label = "Back" }: BackButtonProps) {
   const router = useRouter();
 
@@ -20,13 +24,17 @@ export default function BackButton({ label = "Back" }: BackButtonProps) {
       onPress={() => router.back()}
       accessibilityLabel={label}
       accessibilityRole="button"
+      hitSlop={8}
     >
       {({ pressed, hovered }: PressableInteractionState) => (
-        <MaterialCommunityIcons
-          name="arrow-left"
-          size={20}
-          color={pressed || hovered ? NEU_DARK.emerald : NEU_DARK.white}
-        />
+        <>
+          <MaterialCommunityIcons
+            name="chevron-left"
+            size={24}
+            color={pressed || hovered ? NEU_DARK.emerald : NEU_DARK.white}
+          />
+          <Text style={[styles.label, (pressed || hovered) && styles.labelActive]}>{label}</Text>
+        </>
       )}
     </Pressable>
   );
@@ -35,18 +43,20 @@ export default function BackButton({ label = "Back" }: BackButtonProps) {
 const styles = StyleSheet.create({
   button: {
     alignSelf: "flex-start",
-    width: 40,
-    height: 40,
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: NEU_DARK.border,
-    backgroundColor: NEU_DARK.card
+    paddingVertical: 6,
+    paddingRight: 10
   },
   buttonActive: {
-    borderColor: NEU_DARK.emerald,
-    backgroundColor: NEU_DARK.emeraldSoft,
-    transform: [{ scale: 1.04 }]
+    opacity: 0.85
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: NEU_DARK.white
+  },
+  labelActive: {
+    color: NEU_DARK.emerald
   }
 });

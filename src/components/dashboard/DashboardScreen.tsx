@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AppBackground } from "../AppBackground";
 import { NEU_DARK } from "../../theme/brand";
@@ -11,6 +11,10 @@ type Props = {
   onSignOut: () => void;
   tabs: BottomNavTab[];
   children: ReactNode;
+  // Optional so screens that don't have a refreshable list (none today, but
+  // kept optional for any future caller) aren't forced to wire it up.
+  refreshing?: boolean;
+  onRefresh?: () => void;
 };
 
 // Shared chrome for the post-login dashboards (visitor/guard home + their
@@ -18,7 +22,7 @@ type Props = {
 // screens, a slim branded header with sign-out, and a bottom nav bar whose
 // tabs are role-specific (see BottomNavBar.tsx for why it's a styled bar and
 // not a real navigator).
-export function DashboardScreen({ roleLabel, onSignOut, tabs, children }: Props) {
+export function DashboardScreen({ roleLabel, onSignOut, tabs, children, refreshing, onRefresh }: Props) {
   const [hovered, setHovered] = useState(false);
 
   return (
@@ -50,7 +54,21 @@ export function DashboardScreen({ roleLabel, onSignOut, tabs, children }: Props)
           </Pressable>
         </View>
 
-        <ScrollView contentContainerStyle={styles.content}>{children}</ScrollView>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          refreshControl={
+            onRefresh ? (
+              <RefreshControl
+                refreshing={!!refreshing}
+                onRefresh={onRefresh}
+                tintColor={NEU_DARK.emerald}
+                colors={[NEU_DARK.emerald]}
+              />
+            ) : undefined
+          }
+        >
+          {children}
+        </ScrollView>
       </SafeAreaView>
       <SafeAreaView edges={["bottom"]} style={styles.tabBarSafeArea}>
         <BottomNavBar tabs={tabs} />

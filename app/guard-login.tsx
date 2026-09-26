@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { Redirect, useRouter } from "expo-router";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useAuth } from "../src/context/AuthContext";
 import { guardUsernameToEmail } from "../src/lib/guardAuth";
 import { supabase } from "../src/lib/supabaseClient";
@@ -9,6 +10,7 @@ import { BrandHeader } from "../src/components/auth/BrandHeader";
 import { AuthField } from "../src/components/auth/AuthField";
 import { authStyles } from "../src/components/auth/authStyles";
 import BackButton from "../src/components/BackButton";
+import { NEU_DARK } from "../src/theme/brand";
 
 export default function GuardLoginScreen() {
   const router = useRouter();
@@ -114,10 +116,29 @@ export default function GuardLoginScreen() {
   return (
     <AuthScreen>
       <BackButton />
-      <BrandHeader title="Guard Login" subtitle="Admin-managed accounts only." />
+      <BrandHeader
+        eyebrow="NEU PASS · STAFF ACCESS"
+        title="Guard Sign In"
+        subtitle="Enter the account details provided by your NEU administrator."
+      />
 
-      <AuthField label="Username" value={username} onChangeText={setUsername} icon="account" autoCapitalize="none" />
-      <AuthField label="Password" value={password} onChangeText={setPassword} icon="lock" secureTextEntry />
+      <AuthField
+        label="Username"
+        value={username}
+        onChangeText={setUsername}
+        icon="account"
+        autoCapitalize="none"
+        placeholder="Enter your guard username"
+        helperText="Use the username given to you by your administrator."
+      />
+      <AuthField
+        label="Password"
+        value={password}
+        onChangeText={setPassword}
+        icon="lock"
+        secureTextEntry
+        placeholder="Enter your password"
+      />
 
       {displayError ? <Text style={authStyles.error}>{displayError}</Text> : null}
 
@@ -137,6 +158,34 @@ export default function GuardLoginScreen() {
           {loading ? "Signing in..." : isLocked ? `Try again in ${lockedSecondsLeft}s` : "Sign In"}
         </Text>
       </Pressable>
+
+      <View style={styles.helpBox}>
+        <MaterialCommunityIcons name="information-outline" size={16} color={NEU_DARK.emerald} />
+        <Text style={styles.helpText}>
+          Having trouble signing in? Ask your shift supervisor or NEU administrator to check your
+          account.
+        </Text>
+      </View>
     </AuthScreen>
   );
 }
+
+const styles = StyleSheet.create({
+  helpBox: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    marginTop: 4,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: NEU_DARK.border,
+    backgroundColor: NEU_DARK.emeraldSoft
+  },
+  helpText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 17,
+    color: NEU_DARK.textMuted
+  }
+});

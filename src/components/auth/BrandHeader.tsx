@@ -1,7 +1,15 @@
 import { Image, StyleSheet, Text, View } from "react-native";
 import { NEU_DARK } from "../../theme/brand";
 
-export function BrandHeader({ title, subtitle }: { title: string; subtitle: string }) {
+export function BrandHeader({
+  title,
+  subtitle,
+  eyebrow = "NEW ERA UNIVERSITY"
+}: {
+  title: string;
+  subtitle: string;
+  eyebrow?: string;
+}) {
   return (
     <View style={styles.container}>
       <View style={styles.badge}>
@@ -11,7 +19,7 @@ export function BrandHeader({ title, subtitle }: { title: string; subtitle: stri
           resizeMode="cover"
         />
       </View>
-      <Text style={styles.eyebrow}>NEW ERA UNIVERSITY</Text>
+      <Text style={styles.eyebrow}>{eyebrow}</Text>
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.subtitle}>{subtitle}</Text>
     </View>

@@ -82,6 +82,8 @@ export default function VisitorLogsScreen() {
             windowSize={7}
             onEndReached={() => void loadMore()}
             onEndReachedThreshold={0.5}
+            refreshing={loading}
+            onRefresh={() => void refresh()}
             ListHeaderComponent={
               <View style={styles.headerRow}>
                 <Pressable

@@ -56,7 +56,6 @@ export default function ReportsScreen() {
   const summary = useMemo(() => {
     const now = new Date();
     return {
-      totalVisitors: visitors.length,
       activeVisitors: visitors.filter((v) => v.registrationStatus === "Active").length,
       completedVisitors: visitors.filter((v) => v.checkoutStatus === "Completed").length,
       pendingVisitors: visitors.filter((v) => v.registrationStatus === "Pending").length,
@@ -94,12 +93,7 @@ export default function ReportsScreen() {
       return timeOut ? timeOut >= today : false;
     }).length;
 
-    const activeToday = visitors.filter((visitor) => {
-      const timeIn = visitor.timeIn ? new Date(visitor.timeIn) : null;
-      return timeIn ? timeIn >= today && visitor.registrationStatus === "Active" : false;
-    }).length;
-
-    return { visitorsToday, completedToday, activeToday };
+    return { visitorsToday, completedToday };
   }, [today, visitors]);
 
   const monthly = useMemo(() => {
@@ -129,6 +123,8 @@ export default function ReportsScreen() {
       roleLabel={roleLabel}
       onSignOut={() => void handleSignOut()}
       tabs={GUARD_TABS}
+      refreshing={loading}
+      onRefresh={() => void refresh()}
     >
       <Text style={styles.title}>Reports Dashboard</Text>
       <Pressable
@@ -152,7 +148,6 @@ export default function ReportsScreen() {
       ) : (
         <>
           <View style={styles.summaryGrid}>
-            <MetricCard label="Total Visitors" value={summary.totalVisitors} />
             <MetricCard label="Active Visitors" value={summary.activeVisitors} />
             <MetricCard label="Completed Visitors" value={summary.completedVisitors} />
             <MetricCard label="Pending Visitors" value={summary.pendingVisitors} />
@@ -177,7 +172,6 @@ export default function ReportsScreen() {
             <View style={styles.summaryGrid}>
               <MetricCard label="Visitors Today" value={daily.visitorsToday} />
               <MetricCard label="Completed Today" value={daily.completedToday} />
-              <MetricCard label="Active Today" value={daily.activeToday} />
             </View>
           </View>
 
