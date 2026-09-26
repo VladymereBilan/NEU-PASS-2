@@ -137,6 +137,10 @@ export default function VisitFaceCapturePage() {
       setError("Please capture or upload a face photo before submitting.");
       return;
     }
+    if (detectLoading) {
+      setError("Still checking your photo — please wait a moment and try again.");
+      return;
+    }
     if (noFaceDetected) {
       setError("We couldn't detect a face in that photo. Please retake it.");
       return;
@@ -238,6 +242,7 @@ export default function VisitFaceCapturePage() {
           onClick={handleSubmit}
           disabled={
             uploading ||
+            detectLoading ||
             submitting ||
             noFaceDetected ||
             (Boolean(TURNSTILE_SITE_KEY) && !turnstileToken)

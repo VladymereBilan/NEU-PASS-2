@@ -62,6 +62,29 @@ async function verifyTurnstileToken(token: string): Promise<boolean> {
   }
 }
 
+// The face-capture step's own client-side check (face/page.tsx, calling
+// detect-face directly) is UX only — same as every other check in this
+// file, it's browser JS anyone can skip, whether by calling this action
+// directly or by racing past the client check before its response lands.
+// Re-verified here for the same reason everything else below is. Fails
+// open on any error — an infrastructure hiccup must never block a
+// legitimate registration.
+async function checkFacePresent(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  faceImagePath: string
+): Promise<{ present: boolean }> {
+  try {
+    const { data, error } = await supabase.functions.invoke<{
+      success: boolean;
+      faceCount: number;
+    }>("detect-face", { body: { faceImagePath } });
+    if (error || !data?.success) return { present: true };
+    return { present: data.faceCount > 0 };
+  } catch {
+    return { present: true };
+  }
+}
+
 // Catches what the id_number unique index below can't: the same physical
 // person registering again from a fresh anonymous session under a
 // *different* ID document. Compares the new face photo against every
@@ -167,6 +190,11 @@ export async function submitVisitorRegistration(
   const ownPrefix = `${userData.user.id}/`;
   if (!input.idImagePath.startsWith(ownPrefix) || !input.faceImagePath.startsWith(ownPrefix)) {
     return { error: "ID or face photo does not belong to this session." };
+  }
+
+  const facePresence = await checkFacePresent(supabase, input.faceImagePath);
+  if (!facePresence.present) {
+    return { error: "We couldn't detect a face in your face photo. Please go back and retake it." };
   }
 
   const duplicateCheck = await checkDuplicateFace(supabase, input.faceImagePath);
