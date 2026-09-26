@@ -62,6 +62,31 @@ async function verifyTurnstileToken(token: string): Promise<boolean> {
   }
 }
 
+// Catches what the id_number unique index below can't: the same physical
+// person registering again from a fresh anonymous session under a
+// *different* ID document. Compares the new face photo against every
+// currently Pending/Active registration's stored face photo via the
+// check-duplicate-face edge function (AWS Rekognition) — admin-web has no
+// direct AWS access of its own (see extract-id-text/compare-faces), so this
+// has to go through an edge function rather than a local helper. Fails open
+// on any error (misconfiguration, AWS outage, etc.) — an infrastructure
+// hiccup here must never block a legitimate registration.
+async function checkDuplicateFace(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  faceImagePath: string
+): Promise<{ duplicate: boolean }> {
+  try {
+    const { data, error } = await supabase.functions.invoke<{
+      success: boolean;
+      duplicate: boolean;
+    }>("check-duplicate-face", { body: { faceImagePath } });
+    if (error || !data?.success) return { duplicate: false };
+    return { duplicate: data.duplicate === true };
+  } catch {
+    return { duplicate: false };
+  }
+}
+
 // The Details/Face steps already validate all of this client-side for UX
 // (instant feedback), but that's browser JS anyone can bypass by calling
 // this action directly with arbitrary values — so every rule is re-checked
@@ -142,6 +167,14 @@ export async function submitVisitorRegistration(
   const ownPrefix = `${userData.user.id}/`;
   if (!input.idImagePath.startsWith(ownPrefix) || !input.faceImagePath.startsWith(ownPrefix)) {
     return { error: "ID or face photo does not belong to this session." };
+  }
+
+  const duplicateCheck = await checkDuplicateFace(supabase, input.faceImagePath);
+  if (duplicateCheck.duplicate) {
+    return {
+      error:
+        "A registration matching your face photo is already active or pending. Please wait for it to be checked out, or check its status if it's yours."
+    };
   }
 
   const { error: insertError } = await supabase.from("visitor_registrations").insert({

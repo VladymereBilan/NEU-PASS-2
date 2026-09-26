@@ -30,6 +30,7 @@ export const ID_TYPE_OPTIONS = [
   "Pag-IBIG ID / Loyalty Card",
   "Company / Employee ID",
   "Barangay ID",
+  "QC ID (Quezon City Citizen Card)",
   "Other Government-Issued ID",
   "Other"
 ] as const;

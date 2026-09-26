@@ -53,7 +53,14 @@ const ID_TYPE_KEYWORDS: Array<{
   { type: "PhilHealth ID", keywords: ["PHILHEALTH", "PHILIPPINE HEALTH INSURANCE"] },
   { type: "TIN ID", keywords: ["BUREAU OF INTERNAL REVENUE", "TAXPAYER IDENTIFICATION"] },
   { type: "Pag-IBIG ID / Loyalty Card", keywords: ["PAG-IBIG", "HDMF", "HOME DEVELOPMENT MUTUAL FUND"] },
-  { type: "Barangay ID", keywords: ["BARANGAY"] }
+  { type: "Barangay ID", keywords: ["BARANGAY"] },
+  // "QCitizenCard" is printed as a large stylized wordmark, not a plain
+  // label — kept as several plausible OCR readings of it alongside the
+  // card's own tagline, which reads reliably since it's in plain print.
+  {
+    type: "QC ID (Quezon City Citizen Card)",
+    keywords: ["QCITIZENCARD", "QCITIZEN CARD", "Q CITIZEN CARD", "KASAMA KA SA PAG-UNLAD"]
+  }
 ];
 
 const NAME_LABELS = ["FULL NAME", "NAME", "PANGALAN", "BUONG PANGALAN"];

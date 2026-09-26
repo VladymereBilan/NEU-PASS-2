@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { useRegistrationDraft } from "@/lib/registrationDraft";
 import { uploadVisitorImage } from "@/lib/visitorImageUpload";
 import { submitVisitorRegistration } from "@/actions/visitorRegistration";
@@ -25,6 +26,41 @@ export default function VisitFaceCapturePage() {
   const [error, setError] = useState("");
   const [turnstileToken, setTurnstileToken] = useState("");
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
+  const [detectLoading, setDetectLoading] = useState(false);
+  // true only when Rekognition successfully scanned the photo and found no
+  // face at all — the same "fails open on a service error, blocks on a
+  // confident negative" pattern as the ID step's OCR gate.
+  const [noFaceDetected, setNoFaceDetected] = useState(false);
+
+  useEffect(() => {
+    if (!draft.faceImagePath) return;
+
+    // Same Strict-Mode-safe pattern as the ID step's OCR effect (see
+    // details/page.tsx) — no "already requested" ref guard, since
+    // that would leave the second (uncancelled) dev-mode run's request
+    // permanently stuck on "loading" if the first (cancelled) run's result
+    // is dropped.
+    let cancelled = false;
+    setDetectLoading(true);
+
+    (async () => {
+      const supabase = createClient();
+      const { data, error: invokeError } = await supabase.functions.invoke<{
+        success: boolean;
+        faceCount: number;
+      }>("detect-face", { body: { faceImagePath: draft.faceImagePath } });
+
+      if (cancelled) return;
+      setDetectLoading(false);
+      if (invokeError || !data?.success) return;
+
+      setNoFaceDetected(data.faceCount === 0);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [draft.faceImagePath]);
 
   // Clearing the draft here (rather than right before the router.push below)
   // matters: router.push to /visit/status is an async client-side navigation,
@@ -66,6 +102,7 @@ export default function VisitFaceCapturePage() {
   const retake = () => {
     setPreviewUrl("");
     updateDraft({ faceImagePath: "" });
+    setNoFaceDetected(false);
   };
 
   const handleSubmit = async () => {
@@ -98,6 +135,10 @@ export default function VisitFaceCapturePage() {
     }
     if (!draft.faceImagePath) {
       setError("Please capture or upload a face photo before submitting.");
+      return;
+    }
+    if (noFaceDetected) {
+      setError("We couldn't detect a face in that photo. Please retake it.");
       return;
     }
     if (TURNSTILE_SITE_KEY && !turnstileToken) {
@@ -157,6 +198,13 @@ export default function VisitFaceCapturePage() {
         </div>
 
         {uploading ? <p className="text-sm text-gray-400">Uploading…</p> : null}
+        {detectLoading ? <p className="text-sm text-gray-400">Checking your photo…</p> : null}
+        {noFaceDetected ? (
+          <ErrorBanner>
+            We couldn&apos;t detect a face in that photo. Please retake it, making sure your face
+            is clearly visible and well-lit.
+          </ErrorBanner>
+        ) : null}
         {error ? <ErrorBanner>{error}</ErrorBanner> : null}
 
         {draft.faceImagePath ? (
@@ -188,7 +236,12 @@ export default function VisitFaceCapturePage() {
 
         <PrimaryButton
           onClick={handleSubmit}
-          disabled={uploading || submitting || (Boolean(TURNSTILE_SITE_KEY) && !turnstileToken)}
+          disabled={
+            uploading ||
+            submitting ||
+            noFaceDetected ||
+            (Boolean(TURNSTILE_SITE_KEY) && !turnstileToken)
+          }
         >
           {submitting ? "Submitting…" : "Submit for Guard Verification"}
         </PrimaryButton>
