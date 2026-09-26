@@ -166,6 +166,19 @@ export default function CheckoutVerificationScreen() {
       Alert.alert("Camera permission was denied. You can still select a status manually.");
       return;
     }
+    // Clear any prior comparison result for this visitor — otherwise, if the
+    // new capture's compareFaces call fails before setMatchScores/setMatchReasons
+    // run, the old result stays on screen looking like it's still current.
+    setMatchScores((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    setMatchReasons((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
     setLiveCameraReady(false);
     setLiveCaptureFor(id);
   };
@@ -178,7 +191,10 @@ export default function CheckoutVerificationScreen() {
         quality: 0.7
       });
       setLiveCaptureFor(null);
-      if (!photo?.uri) return;
+      if (!photo?.uri) {
+        Alert.alert("No photo was captured. Please tap \"Capture Live Photo for Match\" and try again.");
+        return;
+      }
 
       // Set the lock as soon as we have a photo so a second comparison cannot
       // start while this request is preparing the live image.

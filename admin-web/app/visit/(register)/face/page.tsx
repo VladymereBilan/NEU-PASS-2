@@ -79,7 +79,6 @@ export default function VisitFaceCapturePage() {
       !NAME_DIGIT_PATTERN.test(draft.fullName) &&
       draft.address.trim() &&
       /[A-Za-zÀ-ÖØ-öø-ÿ]/.test(draft.address) &&
-      /\d/.test(draft.address) &&
       draft.contactNumber.trim() &&
       draft.email.trim() &&
       EMAIL_PATTERN.test(draft.email.trim()) &&

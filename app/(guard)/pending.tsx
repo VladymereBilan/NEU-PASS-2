@@ -31,7 +31,20 @@ const GUARD_TABS: BottomNavTab[] = [
   { key: "reports", label: "Reports", icon: "chart-bar", route: "/(guard)/reports" }
 ];
 
-type ImageUrls = { idUrl: string | null; faceUrl: string | null };
+type ImageState = { url: string | null; failed: boolean };
+type ImageUrls = { id: ImageState; face: ImageState };
+
+// Distinguishes "nothing to show" (empty path / legacy prototype:// sentinel
+// — getVisitorImageSignedUrl resolves these to null on purpose) from a real
+// failure to fetch a signed URL for an actual photo, so the two don't both
+// collapse into the same misleading "Sample image" placeholder.
+async function resolveImage(bucket: "visitor-ids" | "visitor-faces", path: string): Promise<ImageState> {
+  try {
+    return { url: await getVisitorImageSignedUrl(bucket, path), failed: false };
+  } catch {
+    return { url: null, failed: true };
+  }
+}
 
 export default function PendingVerificationsScreen() {
   const router = useRouter();
@@ -56,11 +69,11 @@ export default function PendingVerificationsScreen() {
 
       const entries = await Promise.all(
         data.map(async (registration) => {
-          const [idUrl, faceUrl] = await Promise.all([
-            getVisitorImageSignedUrl("visitor-ids", registration.idImageUri).catch(() => null),
-            getVisitorImageSignedUrl("visitor-faces", registration.faceImageUri).catch(() => null)
+          const [id, face] = await Promise.all([
+            resolveImage("visitor-ids", registration.idImageUri),
+            resolveImage("visitor-faces", registration.faceImageUri)
           ]);
-          return [registration.id, { idUrl, faceUrl }] as const;
+          return [registration.id, { id, face }] as const;
         })
       );
       setImageUrls(Object.fromEntries(entries));
@@ -175,11 +188,13 @@ export default function PendingVerificationsScreen() {
             <View style={styles.imageRow}>
               <View style={styles.imageSlot}>
                 <Text style={styles.imageLabel}>ID Photo</Text>
-                {imageUrls[registration.id]?.idUrl ? (
+                {imageUrls[registration.id]?.id.url ? (
                   <Image
-                    source={{ uri: imageUrls[registration.id]!.idUrl! }}
+                    source={{ uri: imageUrls[registration.id]!.id.url! }}
                     style={styles.thumbnail}
                   />
+                ) : imageUrls[registration.id]?.id.failed ? (
+                  <Text style={styles.imagePlaceholder}>Failed to load — tap Refresh</Text>
                 ) : (
                   <Text style={styles.imagePlaceholder}>
                     {registration.idImageUri ? "Sample image" : "No image"}
@@ -188,11 +203,13 @@ export default function PendingVerificationsScreen() {
               </View>
               <View style={styles.imageSlot}>
                 <Text style={styles.imageLabel}>Face Photo</Text>
-                {imageUrls[registration.id]?.faceUrl ? (
+                {imageUrls[registration.id]?.face.url ? (
                   <Image
-                    source={{ uri: imageUrls[registration.id]!.faceUrl! }}
+                    source={{ uri: imageUrls[registration.id]!.face.url! }}
                     style={styles.thumbnail}
                   />
+                ) : imageUrls[registration.id]?.face.failed ? (
+                  <Text style={styles.imagePlaceholder}>Failed to load — tap Refresh</Text>
                 ) : (
                   <Text style={styles.imagePlaceholder}>
                     {registration.faceImageUri ? "Sample image" : "No image"}

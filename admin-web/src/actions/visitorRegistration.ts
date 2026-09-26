@@ -75,7 +75,7 @@ function validate(input: VisitorRegistrationInput): string | null {
   }
 
   const address = input.address.trim();
-  if (!address || !/[A-Za-zÀ-ÖØ-öø-ÿ]/.test(address) || !/\d/.test(address)) {
+  if (!address || !/[A-Za-zÀ-ÖØ-öø-ÿ]/.test(address)) {
     return "Address is missing or invalid.";
   }
 

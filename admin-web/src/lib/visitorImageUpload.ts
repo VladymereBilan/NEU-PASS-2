@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/client";
 
 export type ImageBucket = "visitor-ids" | "visitor-faces";
 
-async function normalizeFaceImage(file: File): Promise<Blob> {
+async function normalizeImage(file: File): Promise<Blob> {
   if (file.type === "image/jpeg" && file.size <= 4 * 1024 * 1024) return file;
 
   const imageUrl = URL.createObjectURL(file);
@@ -24,7 +24,7 @@ async function normalizeFaceImage(file: File): Promise<Blob> {
     const blob = await new Promise<Blob | null>((resolve) =>
       canvas.toBlob(resolve, "image/jpeg", 0.85)
     );
-    if (!blob) throw new Error("Unable to convert the face image to JPEG.");
+    if (!blob) throw new Error("Unable to convert the image to JPEG.");
     return blob;
   } finally {
     URL.revokeObjectURL(imageUrl);
@@ -42,13 +42,13 @@ export async function uploadVisitorImage(bucket: ImageBucket, file: File): Promi
     throw new Error("You must have an active session to upload an image.");
   }
 
-  const uploadFile = bucket === "visitor-faces" ? await normalizeFaceImage(file) : file;
+  const uploadFile = await normalizeImage(file);
   const bytes = await uploadFile.arrayBuffer();
   const path = `${userData.user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
 
   const { error: uploadError } = await supabase.storage
     .from(bucket)
-    .upload(path, bytes, { contentType: bucket === "visitor-faces" ? "image/jpeg" : file.type || "image/jpeg" });
+    .upload(path, bytes, { contentType: "image/jpeg" });
 
   if (uploadError) throw new Error(uploadError.message);
 

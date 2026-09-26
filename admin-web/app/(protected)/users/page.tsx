@@ -28,6 +28,7 @@ export default function UsersPage() {
 
   const refresh = async () => {
     try {
+      setLoading(true);
       setError("");
       const [guardData, adminData] = await Promise.all([listGuardAccounts(), listAdminAccounts()]);
       setGuards(guardData);

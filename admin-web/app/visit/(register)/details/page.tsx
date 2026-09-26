@@ -15,7 +15,14 @@ import {
   normalizePhilippineMobile,
   PURPOSE_OPTIONS
 } from "@/lib/visitorRegistrationConstants";
-import { VisitShell, TextField, SelectField, PrimaryButton } from "@/components/VisitShell";
+import {
+  VisitShell,
+  TextField,
+  SelectField,
+  PrimaryButton,
+  SecondaryButton,
+  ErrorBanner
+} from "@/components/VisitShell";
 
 type FormState = {
   fullName: string;
@@ -56,6 +63,12 @@ export default function VisitDetailsPage() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [autoFilled, setAutoFilled] = useState<AutoFilledFields>({});
   const [ocrLoading, setOcrLoading] = useState(false);
+  // true only when Textract successfully scanned the photo and found no text
+  // at all — the strongest available signal that the "ID photo" isn't a
+  // document (a selfie, scenery, a blank photo). A failed/unavailable OCR
+  // call (network error, AWS outage) must NOT set this — that's an
+  // infrastructure problem, not evidence of a bad photo, so it fails open.
+  const [noTextDetected, setNoTextDetected] = useState(false);
 
   useEffect(() => {
     if (!draft.idImagePath) return;
@@ -80,7 +93,13 @@ export default function VisitDetailsPage() {
 
       if (cancelled) return;
       setOcrLoading(false);
-      if (error || !data?.success || data.lines.length === 0) return;
+      if (error || !data?.success) return;
+
+      if (data.lines.length === 0) {
+        setNoTextDetected(true);
+        return;
+      }
+      setNoTextDetected(false);
 
       // AWS Textract (DetectDocumentText via the extract-id-text edge
       // function) returns raw text lines with no field labels of its own;
@@ -145,8 +164,8 @@ export default function VisitDetailsPage() {
     }
     if (!form.address.trim()) {
       nextErrors.address = "Address is required.";
-    } else if (!/[A-Za-zÀ-ÖØ-öø-ÿ]/.test(form.address) || !/\d/.test(form.address)) {
-      nextErrors.address = "Address must contain both letters and a number.";
+    } else if (!/[A-Za-zÀ-ÖØ-öø-ÿ]/.test(form.address)) {
+      nextErrors.address = "Address must contain letters.";
     }
     if (!form.contactNumber.trim()) {
       nextErrors.contactNumber = "Contact Number is required.";
@@ -175,7 +194,13 @@ export default function VisitDetailsPage() {
     return nextErrors;
   };
 
+  const retakeIdPhoto = () => {
+    updateDraft({ idImagePath: "" });
+    router.push("/visit/id");
+  };
+
   const handleSubmit = () => {
+    if (noTextDetected) return;
     const nextErrors = validate();
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
@@ -207,6 +232,15 @@ export default function VisitDetailsPage() {
       }
     >
       <div className="space-y-4">
+        {noTextDetected ? (
+          <div className="space-y-3">
+            <ErrorBanner>
+              We couldn&apos;t find any readable text on that photo, so it doesn&apos;t look like a
+              valid ID. Please retake the photo of your ID.
+            </ErrorBanner>
+            <SecondaryButton onClick={retakeIdPhoto}>Retake ID Photo</SecondaryButton>
+          </div>
+        ) : null}
         <TextField
           label="Full Name"
           value={form.fullName}
@@ -298,7 +332,9 @@ export default function VisitDetailsPage() {
           />
         ) : null}
 
-        <PrimaryButton onClick={handleSubmit}>Continue</PrimaryButton>
+        <PrimaryButton onClick={handleSubmit} disabled={noTextDetected}>
+          Continue
+        </PrimaryButton>
       </div>
     </VisitShell>
   );
