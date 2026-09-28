@@ -1,1 +1,44 @@
-admin-web/.next/
+# .easignore REPLACES .gitignore for EAS Build uploads (it doesn't extend
+# it), so everything that must stay off EAS's servers has to be listed here
+# explicitly — keep this in sync with .gitignore.
+
+# Dependencies (EAS installs its own)
+node_modules/
+
+# Expo
+.expo/
+.expo-shared/
+expo-env.d.ts
+
+# Generated native projects. Excluding them makes EAS run prebuild from
+# app.json, so icon/splash/plugin changes actually apply instead of building
+# from a stale local copy.
+/android/
+/ios/
+
+# Build outputs
+dist/
+build/
+web-build/
+*.tsbuildinfo
+
+# Environment files — never upload secrets (the root .env.local holds the
+# service_role key for scripts/seed-accounts.mjs). Builds get their
+# EXPO_PUBLIC_* values from EAS environment variables instead.
+.env
+.env.local
+.env*.local
+supabase/functions/.env.local
+
+# Not part of the guard mobile app at all (separate Next.js project with its
+# own .env.local, plus build output under admin-web/.next/).
+admin-web/
+
+# Supabase CLI metadata, logs, backups, OS files
+supabase/.temp/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+app.json.backup
+.DS_Store
+Thumbs.db
