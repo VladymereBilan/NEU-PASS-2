@@ -62,6 +62,10 @@ export default function CheckoutVerificationScreen() {
   const [secondaryHovered, setSecondaryHovered] = useState(false);
   const [completeHovered, setCompleteHovered] = useState(false);
   const liveCameraRef = useRef<any>(null);
+  // onBarcodeScanned fires on consecutive camera frames before a state
+  // update re-renders, so a state-only busy flag lets the same QR through
+  // two or three times (stacked duplicate alerts). A ref flips synchronously.
+  const scanLockRef = useRef(false);
 
   const loadFaceUrl = useCallback(async (registration: VisitorRegistration) => {
     const url = await getVisitorImageSignedUrl("visitor-faces", registration.faceImageUri).catch(
@@ -241,10 +245,12 @@ export default function CheckoutVerificationScreen() {
   const closeScanner = () => {
     setScannerState("idle");
     setScannerBusy(false);
+    scanLockRef.current = false;
   };
 
   const handleBarcodeScanned = async ({ data }: { data: string }) => {
-    if (scannerBusy) return;
+    if (scanLockRef.current || scannerBusy) return;
+    scanLockRef.current = true;
     setScannerBusy(true);
 
     try {
@@ -288,7 +294,8 @@ export default function CheckoutVerificationScreen() {
           "This QR is expired. Manual review is required before checkout."
         );
         Alert.alert(
-          "Your visitor pass has expired. Please proceed to the guard for review."
+          "Expired pass",
+          "This visitor's pass has expired. Verify their identity manually before completing checkout."
         );
       } else {
         setScanMessage("QR scanned successfully.");
@@ -300,6 +307,7 @@ export default function CheckoutVerificationScreen() {
       Alert.alert("Invalid or expired QR.");
     } finally {
       setScannerBusy(false);
+      scanLockRef.current = false;
     }
   };
 
@@ -500,6 +508,79 @@ export default function CheckoutVerificationScreen() {
             </Pressable>
           </View>
 
+          {scannedVisitor ? (
+            <View
+              style={[
+                styles.scannedCard,
+                isOverdue(scannedVisitor.expirationTime) && styles.itemCardOverdue
+              ]}
+            >
+              <View style={styles.badgeRow}>
+                <Text style={styles.sectionTitle}>Scanned Visitor</Text>
+                {isOverdue(scannedVisitor.expirationTime) ? (
+                  <View style={styles.overdueBadge}>
+                    <Text style={styles.overdueBadgeText}>Overdue</Text>
+                  </View>
+                ) : null}
+              </View>
+              {isOverdue(scannedVisitor.expirationTime) ? (
+                <Text style={styles.overdueNote}>
+                  Past pass expiration and not checked out — please follow up.
+                </Text>
+              ) : null}
+              <Text style={styles.itemTitle}>{scannedVisitor.fullName}</Text>
+              <Text style={styles.itemText}>
+                Purpose: {scannedVisitor.purposeOfVisit}
+              </Text>
+              <Text style={styles.itemText}>
+                Visitor Pass: {scannedVisitor.visitorPassNumber}
+              </Text>
+              <Text style={styles.itemText}>
+                Time In: {formatDate(scannedVisitor.timeIn)}
+              </Text>
+              <Text style={styles.itemText}>
+                Expiration: {formatDate(scannedVisitor.expirationTime)}
+              </Text>
+              <Text style={styles.itemText}>QR Status: {scannedVisitor.qrStatus}</Text>
+              {faceUrls[scannedVisitor.id] ? (
+                <Image source={{ uri: faceUrls[scannedVisitor.id]! }} style={styles.thumbnail} />
+              ) : null}
+              {renderFaceMatchControls(scannedVisitor.id)}
+              <View style={styles.selectorRow}>
+                {(["Matched", "Not Matched", "Manual Review"] as const).map(
+                  (status) => (
+                    <Pressable
+                      key={status}
+                      style={[
+                        styles.selectorButton,
+                        selectedStatus[scannedVisitor.id] === status &&
+                          styles.selectorActive
+                      ]}
+                      onPress={() => handleSelect(scannedVisitor.id, status)}
+                    >
+                      <Text style={styles.selectorText}>{status}</Text>
+                    </Pressable>
+                  )
+                )}
+              </View>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.completeButton,
+                  (pressed || completeHovered) && styles.completeButtonActive,
+                  !!completingId && styles.completeButtonDisabled
+                ]}
+                disabled={!!completingId}
+                onPress={() => handleComplete(scannedVisitor.id)}
+                onHoverIn={() => setCompleteHovered(true)}
+                onHoverOut={() => setCompleteHovered(false)}
+              >
+                <Text style={[styles.completeText, (completeHovered || false) && styles.completeTextActive]}>
+                  {completingId === scannedVisitor.id ? "Completing..." : "Complete Checkout"}
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
+
           {loading ? (
             <Text style={styles.body}>Loading active visitors...</Text>
           ) : error ? (
@@ -588,78 +669,6 @@ export default function CheckoutVerificationScreen() {
             </View>
           )}
 
-          {scannedVisitor ? (
-            <View
-              style={[
-                styles.scannedCard,
-                isOverdue(scannedVisitor.expirationTime) && styles.itemCardOverdue
-              ]}
-            >
-              <View style={styles.badgeRow}>
-                <Text style={styles.sectionTitle}>Scanned Visitor</Text>
-                {isOverdue(scannedVisitor.expirationTime) ? (
-                  <View style={styles.overdueBadge}>
-                    <Text style={styles.overdueBadgeText}>Overdue</Text>
-                  </View>
-                ) : null}
-              </View>
-              {isOverdue(scannedVisitor.expirationTime) ? (
-                <Text style={styles.overdueNote}>
-                  Past pass expiration and not checked out — please follow up.
-                </Text>
-              ) : null}
-              <Text style={styles.itemTitle}>{scannedVisitor.fullName}</Text>
-              <Text style={styles.itemText}>
-                Purpose: {scannedVisitor.purposeOfVisit}
-              </Text>
-              <Text style={styles.itemText}>
-                Visitor Pass: {scannedVisitor.visitorPassNumber}
-              </Text>
-              <Text style={styles.itemText}>
-                Time In: {formatDate(scannedVisitor.timeIn)}
-              </Text>
-              <Text style={styles.itemText}>
-                Expiration: {formatDate(scannedVisitor.expirationTime)}
-              </Text>
-              <Text style={styles.itemText}>QR Status: {scannedVisitor.qrStatus}</Text>
-              {faceUrls[scannedVisitor.id] ? (
-                <Image source={{ uri: faceUrls[scannedVisitor.id]! }} style={styles.thumbnail} />
-              ) : null}
-              {renderFaceMatchControls(scannedVisitor.id)}
-              <View style={styles.selectorRow}>
-                {(["Matched", "Not Matched", "Manual Review"] as const).map(
-                  (status) => (
-                    <Pressable
-                      key={status}
-                      style={[
-                        styles.selectorButton,
-                        selectedStatus[scannedVisitor.id] === status &&
-                          styles.selectorActive
-                      ]}
-                      onPress={() => handleSelect(scannedVisitor.id, status)}
-                    >
-                      <Text style={styles.selectorText}>{status}</Text>
-                    </Pressable>
-                  )
-                )}
-              </View>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.completeButton,
-                  (pressed || completeHovered) && styles.completeButtonActive,
-                  !!completingId && styles.completeButtonDisabled
-                ]}
-                disabled={!!completingId}
-                onPress={() => handleComplete(scannedVisitor.id)}
-                onHoverIn={() => setCompleteHovered(true)}
-                onHoverOut={() => setCompleteHovered(false)}
-              >
-                <Text style={[styles.completeText, (completeHovered || false) && styles.completeTextActive]}>
-                  {completingId === scannedVisitor.id ? "Completing..." : "Complete Checkout"}
-                </Text>
-              </Pressable>
-            </View>
-          ) : null}
         </View>
       </ScrollView>
       </KeyboardAvoidingView>
