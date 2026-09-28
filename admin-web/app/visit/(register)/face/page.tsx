@@ -32,8 +32,32 @@ export default function VisitFaceCapturePage() {
   // confident negative" pattern as the ID step's OCR gate.
   const [noFaceDetected, setNoFaceDetected] = useState(false);
 
+  // The local preview blob only lives in this page's state — after going
+  // back a step or reloading, the photo is still uploaded (its path survives
+  // in the draft) but the preview box would be empty next to a "Retake"
+  // button, looking like the photo was lost. Re-show it from Storage.
   useEffect(() => {
-    if (!draft.faceImagePath) return;
+    if (!draft.faceImagePath || previewUrl) return;
+    let cancelled = false;
+    void createClient()
+      .storage.from("visitor-faces")
+      .createSignedUrl(draft.faceImagePath, 300)
+      .then(({ data }) => {
+        if (!cancelled && data?.signedUrl) setPreviewUrl(data.signedUrl);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [draft.faceImagePath, previewUrl]);
+
+  useEffect(() => {
+    if (!draft.faceImagePath) {
+      // Retake while a check was still in flight cancels that check below —
+      // clear the loading flag here too, or it stays stuck on until the next
+      // photo finishes uploading.
+      setDetectLoading(false);
+      return;
+    }
 
     // Same Strict-Mode-safe pattern as the ID step's OCR effect (see
     // details/page.tsx) — no "already requested" ref guard, since
@@ -156,20 +180,27 @@ export default function VisitFaceCapturePage() {
     // All fields are re-validated server-side in submitVisitorRegistration
     // before the insert — this client-side hasValidDetails check above is
     // only for UX (route back to the right step), not a security boundary.
-    const { error: submitError } = await submitVisitorRegistration({
-      fullName: draft.fullName,
-      address: draft.address,
-      contactNumber: draft.contactNumber,
-      email: draft.email,
-      idType: draft.idType,
-      idNumber: draft.idNumber,
-      idImagePath: draft.idImagePath,
-      purposeOfVisit: draft.purposeOfVisit,
-      otherAgenda: draft.otherAgenda,
-      consentAccepted: draft.consentAccepted,
-      faceImagePath: draft.faceImagePath,
-      turnstileToken
-    });
+    let submitError: string | null;
+    try {
+      ({ error: submitError } = await submitVisitorRegistration({
+        fullName: draft.fullName,
+        address: draft.address,
+        contactNumber: draft.contactNumber,
+        email: draft.email,
+        idType: draft.idType,
+        idNumber: draft.idNumber,
+        idImagePath: draft.idImagePath,
+        purposeOfVisit: draft.purposeOfVisit,
+        otherAgenda: draft.otherAgenda,
+        consentAccepted: draft.consentAccepted,
+        faceImagePath: draft.faceImagePath,
+        turnstileToken
+      }));
+    } catch {
+      // The action itself rejected (dropped connection, server timeout) —
+      // without this the button would stay on "Submitting…" forever.
+      submitError = "Unable to reach the server. Please check your connection and try again.";
+    }
 
     if (submitError) {
       setError(submitError);

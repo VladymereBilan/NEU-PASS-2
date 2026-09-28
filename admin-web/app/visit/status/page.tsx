@@ -130,11 +130,19 @@ export default function VisitStatusPage() {
       Notification.permission === "granted";
 
     if (justEnteredNearExpiration && canNotify) {
-      new Notification("Your NEU-Pass visitor pass is expiring soon", {
-        body: `Pass ${state.row.visitor_pass_number ?? ""} expires at ${formatDate(
-          state.row.expiration_time
-        )}. Please proceed to checkout.`
-      });
+      // Android Chrome throws "Illegal constructor" on `new Notification()`
+      // even with permission granted (it only allows service-worker
+      // notifications). The on-page amber warning still shows either way, so
+      // a failed notification must never crash the pass page.
+      try {
+        new Notification("Your NEU-Pass visitor pass is expiring soon", {
+          body: `Pass ${state.row.visitor_pass_number ?? ""} expires at ${formatDate(
+            state.row.expiration_time
+          )}. Please proceed to checkout.`
+        });
+      } catch {
+        // Ignore — see above.
+      }
     }
   }, [state]);
 

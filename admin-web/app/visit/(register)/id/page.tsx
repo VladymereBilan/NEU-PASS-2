@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { useRegistrationDraft } from "@/lib/registrationDraft";
 import { uploadVisitorImage } from "@/lib/visitorImageUpload";
 import { VisitShell, PrimaryButton, SecondaryButton, ErrorBanner } from "@/components/VisitShell";
@@ -12,6 +13,24 @@ export default function VisitIdCapturePage() {
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+
+  // The local preview blob only lives in this page's state — after coming
+  // back from Details or reloading, the photo is still uploaded (its path
+  // survives in the draft) but the preview box would be empty next to a
+  // "Retake" button, looking like the photo was lost. Re-show it from Storage.
+  useEffect(() => {
+    if (!draft.idImagePath || previewUrl) return;
+    let cancelled = false;
+    void createClient()
+      .storage.from("visitor-ids")
+      .createSignedUrl(draft.idImagePath, 300)
+      .then(({ data }) => {
+        if (!cancelled && data?.signedUrl) setPreviewUrl(data.signedUrl);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [draft.idImagePath, previewUrl]);
 
   const handleFileSelected = async (file: File | undefined) => {
     if (!file) return;
