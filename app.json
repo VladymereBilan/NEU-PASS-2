@@ -8,9 +8,9 @@
     "newArchEnabled": false,
     "icon": "./assets/branding/neu-pass-icon.png",
     "splash": {
-      "image": "./assets/branding/neu-logo.png",
+      "image": "./assets/branding/neu-pass-adaptive-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#F5F7F4"
     },
     "plugins": [
       "expo-router",
