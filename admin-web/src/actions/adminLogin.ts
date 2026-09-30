@@ -1,16 +1,18 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { adminUsernameToEmail, isSuperuserUsername } from "@/lib/syntheticAuth";
 
 // Callable while signed out, like passwordReset.ts's actions — this IS the
 // sign-in check, so it has no requireAdmin() gate of its own.
 
-// Server-side lockout tracking, same shape/caveats as passwordReset.ts's
-// cooldown Map: per-process and in-memory (resets on restart, not shared
-// across server instances), but unlike the old client-side sessionStorage
-// version, it can't be bypassed by clearing browser storage or scripting
-// requests directly — the credential check itself only happens here.
+// Lockout state lives in Postgres (admin_login_attempts, see
+// supabase/admin-login-lockout-migration.sql) so it holds across serverless
+// instances and restarts — an in-memory Map alone doesn't on Vercel. The Map
+// below is only a per-process fallback used if the RPCs are unreachable
+// (e.g. the migration hasn't been applied yet), so a database hiccup
+// degrades to the old best-effort behavior instead of blocking every login.
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_MS = 30_000;
 const STALE_AFTER_MS = 5 * 60_000;
@@ -36,6 +38,44 @@ function setState(key: string, state: AttemptState) {
   attempts.set(key, state);
 }
 
+type AdminClient = ReturnType<typeof createAdminClient>;
+
+// Each helper prefers the Postgres-backed state and falls back to the
+// in-memory Map on any RPC error.
+async function getLockedUntil(admin: AdminClient, key: string, now: number): Promise<number> {
+  const { data, error } = await admin.rpc("admin_login_check", { p_key: key });
+  if (!error) return data ? new Date(data as string).getTime() : 0;
+  return sweepAndGet(key, now).lockedUntil;
+}
+
+async function recordFailure(
+  admin: AdminClient,
+  key: string,
+  now: number
+): Promise<number | undefined> {
+  const { data, error } = await admin.rpc("admin_login_record_failure", {
+    p_key: key,
+    p_max_attempts: MAX_ATTEMPTS,
+    p_lockout_seconds: LOCKOUT_MS / 1000
+  });
+  if (!error) return data ? new Date(data as string).getTime() : undefined;
+
+  const state = sweepAndGet(key, now);
+  const nextCount = state.count + 1;
+  if (nextCount >= MAX_ATTEMPTS) {
+    const lockedUntil = now + LOCKOUT_MS;
+    setState(key, { count: 0, lockedUntil, lastAttemptAt: now });
+    return lockedUntil;
+  }
+  setState(key, { count: nextCount, lockedUntil: 0, lastAttemptAt: now });
+  return undefined;
+}
+
+async function clearAttempts(admin: AdminClient, key: string) {
+  attempts.delete(key);
+  await admin.rpc("admin_login_reset", { p_key: key });
+}
+
 export type AdminLoginResult =
   | { ok: true }
   | { ok: false; error: string; lockedUntil?: number };
@@ -48,25 +88,22 @@ export async function adminLogin(username: string, password: string): Promise<Ad
 
   const key = trimmedUsername.toLowerCase();
   const now = Date.now();
-  const state = sweepAndGet(key, now);
+  const admin = createAdminClient();
 
-  if (state.lockedUntil > now) {
+  const lockedUntil = await getLockedUntil(admin, key, now);
+  if (lockedUntil > now) {
     return {
       ok: false,
       error: "Too many failed attempts. Please wait before trying again.",
-      lockedUntil: state.lockedUntil
+      lockedUntil
     };
   }
 
-  const fail = (message: string): AdminLoginResult => {
-    const nextCount = state.count + 1;
-    if (nextCount >= MAX_ATTEMPTS) {
-      const lockedUntil = now + LOCKOUT_MS;
-      setState(key, { count: 0, lockedUntil, lastAttemptAt: now });
-      return { ok: false, error: message, lockedUntil };
-    }
-    setState(key, { count: nextCount, lockedUntil: 0, lastAttemptAt: now });
-    return { ok: false, error: message };
+  const fail = async (message: string): Promise<AdminLoginResult> => {
+    const newLockedUntil = await recordFailure(admin, key, now);
+    return newLockedUntil
+      ? { ok: false, error: message, lockedUntil: newLockedUntil }
+      : { ok: false, error: message };
   };
 
   const supabase = await createClient();
@@ -76,7 +113,7 @@ export async function adminLogin(username: string, password: string): Promise<Ad
   });
 
   if (authError || !data.user) {
-    return fail("Invalid admin username or password.");
+    return await fail("Invalid admin username or password.");
   }
 
   const { data: profile } = await supabase
@@ -87,7 +124,7 @@ export async function adminLogin(username: string, password: string): Promise<Ad
 
   if (profile?.account_type !== "admin") {
     await supabase.auth.signOut();
-    return fail("Invalid admin username or password.");
+    return await fail("Invalid admin username or password.");
   }
 
   if (profile.account_status !== "Active" && !isSuperuserUsername(profile.username)) {
@@ -96,6 +133,6 @@ export async function adminLogin(username: string, password: string): Promise<Ad
     return { ok: false, error: "This admin account has been blocked. Contact another administrator." };
   }
 
-  attempts.delete(key);
+  await clearAttempts(admin, key);
   return { ok: true };
 }
