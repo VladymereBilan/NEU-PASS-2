@@ -169,7 +169,7 @@ export function AdminShell({
 
       <div className="mx-auto flex min-h-screen w-full max-w-[1700px]">
         <aside
-          className={`hidden flex-col border-r border-emerald-500/15 bg-[#040f0a]/95 p-5 backdrop-blur-sm transition-all duration-200 lg:flex ${
+          className={`sticky top-0 hidden h-screen shrink-0 self-start flex-col border-r border-emerald-500/15 bg-[#040f0a]/95 p-5 backdrop-blur-sm transition-all duration-200 lg:flex ${
             collapsed ? "w-24" : "w-72"
           }`}
         >
@@ -200,7 +200,7 @@ export function AdminShell({
             </button>
           </div>
 
-          <nav className="flex flex-1 flex-col gap-1">
+          <nav className="flex flex-1 flex-col gap-1 overflow-y-auto">
             {navItems.map((item) => {
               const active = pathname === item.href;
               const Icon = item.icon;
@@ -233,7 +233,7 @@ export function AdminShell({
         </aside>
 
         <div className="flex min-h-screen flex-1 flex-col">
-          <header className="flex flex-wrap items-center justify-between gap-4 border-b border-emerald-500/15 bg-[#040f0a]/80 px-5 py-4 backdrop-blur-sm lg:px-8">
+          <header className="sticky top-0 z-40 flex flex-wrap items-center justify-between gap-4 border-b border-emerald-500/15 bg-[#040f0a]/95 px-5 py-4 backdrop-blur-sm lg:px-8">
             <div className="flex items-center gap-3">
               <button
                 type="button"
