@@ -28,7 +28,11 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/branding/neu-pass-adaptive-icon.png",
         "backgroundColor": "#F5F7F4"
-      }
+      },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "assetBundlePatterns": [
       "**/*"
@@ -36,9 +40,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "c4a9e062-08aa-4edb-b90c-8c9e02e9ddef"
+        "projectId": "592d99b3-6f89-46c0-b8be-1804a3d1f292"
       }
     },
-    "owner": "neu_bilan_vladymere"
+    "owner": "vsb.dev"
   }
 }
