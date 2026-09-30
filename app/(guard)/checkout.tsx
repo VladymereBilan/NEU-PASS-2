@@ -27,6 +27,8 @@ import { compareFaces } from "../../src/services/FaceMatchService";
 import { parseQRValue } from "../../src/services/QRService";
 import { AppBackground } from "../../src/components/AppBackground";
 import BackButton from "../../src/components/BackButton";
+import { StationFilterBar } from "../../src/components/dashboard/StationFilterBar";
+import { useStationFilter } from "../../src/hooks/useStationFilter";
 import { NEU_DARK } from "../../src/theme/brand";
 import type {
   FaceCheckoutVerificationStatus,
@@ -61,6 +63,7 @@ export default function CheckoutVerificationScreen() {
   const [scanHovered, setScanHovered] = useState(false);
   const [secondaryHovered, setSecondaryHovered] = useState(false);
   const [completeHovered, setCompleteHovered] = useState(false);
+  const { station, setStation } = useStationFilter();
   const liveCameraRef = useRef<any>(null);
   // onBarcodeScanned fires on consecutive camera frames before a state
   // update re-renders, so a state-only busy flag lets the same QR through
@@ -97,9 +100,16 @@ export default function CheckoutVerificationScreen() {
 
   const filteredActiveVisitors = useMemo(() => {
     const query = manualQuery.trim().toLowerCase();
-    const base = query
+    const byQuery = query
       ? activeVisitors.filter((visitor) => matchesManualQuery(visitor, query))
       : activeVisitors;
+
+    // Station view is a display-only convenience for a rotating guard — it
+    // only narrows this rendered list. QR scan resolution (handleBarcodeScanned)
+    // and manual lookup (manualLookup) both read from the full activeVisitors
+    // array above, not this filtered one, so a guard can still scan/checkout
+    // a visitor from any station regardless of which station is selected here.
+    const base = station === "All" ? byQuery : byQuery.filter((visitor) => visitor.building === station);
 
     // A scanned/looked-up visitor gets its own spotlight card below — drop it
     // from this list so its face-match controls (live camera, match state)
@@ -118,7 +128,7 @@ export default function CheckoutVerificationScreen() {
       if (aOverdue === bOverdue) return 0;
       return aOverdue ? -1 : 1;
     });
-  }, [manualQuery, activeVisitors, scannedVisitor]);
+  }, [manualQuery, activeVisitors, scannedVisitor, station]);
 
   const handleSelect = (
     id: string,
@@ -464,6 +474,8 @@ export default function CheckoutVerificationScreen() {
 
           {scanMessage ? <Text style={styles.note}>{scanMessage}</Text> : null}
 
+          <StationFilterBar value={station} onChange={setStation} />
+
           {scannerState === "camera" ? (
             <View style={styles.cameraShell}>
               <CameraView
@@ -532,6 +544,12 @@ export default function CheckoutVerificationScreen() {
               <Text style={styles.itemText}>
                 Purpose: {scannedVisitor.purposeOfVisit}
               </Text>
+              <Text style={styles.itemText}>Building: {scannedVisitor.building}</Text>
+              {scannedVisitor.accompanyingMinors > 0 ? (
+                <Text style={styles.itemText}>
+                  Accompanying Minors: {scannedVisitor.accompanyingMinors}
+                </Text>
+              ) : null}
               <Text style={styles.itemText}>
                 Visitor Pass: {scannedVisitor.visitorPassNumber}
               </Text>
@@ -612,6 +630,12 @@ export default function CheckoutVerificationScreen() {
                     <Text style={styles.itemText}>
                       Purpose: {visitor.purposeOfVisit}
                     </Text>
+                    <Text style={styles.itemText}>Building: {visitor.building}</Text>
+                    {visitor.accompanyingMinors > 0 ? (
+                      <Text style={styles.itemText}>
+                        Accompanying Minors: {visitor.accompanyingMinors}
+                      </Text>
+                    ) : null}
                     <Text style={styles.itemText}>
                       Visitor Pass: {visitor.visitorPassNumber}
                     </Text>

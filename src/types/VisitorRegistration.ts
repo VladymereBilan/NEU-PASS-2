@@ -31,6 +31,8 @@ export type VisitorRegistration = {
   idImageUri: string;
   purposeOfVisit: string;
   otherAgenda: string;
+  building: string;
+  accompanyingMinors: number;
   consentAccepted: boolean;
   ocrReviewed: boolean;
   faceVerificationStatus: FaceVerificationStatusType;

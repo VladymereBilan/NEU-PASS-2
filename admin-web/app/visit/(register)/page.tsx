@@ -1,14 +1,45 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useRegistrationDraft } from "@/lib/registrationDraft";
+import { BUILDING_OPTIONS } from "@/lib/visitorRegistrationConstants";
 import { VisitShell, PrimaryButton, SecondaryButton } from "@/components/VisitShell";
 
+const BUILDING_GATE_LABEL: Record<(typeof BUILDING_OPTIONS)[number], string> = {
+  MAIN: "MAIN gate",
+  SOM: "SOM gate",
+  PSB: "PSB gate"
+};
+
 export default function VisitConsentPage() {
+  // useSearchParams() requires a Suspense boundary or `next build` de-opts
+  // the page from static generation — this route is only ever reached via a
+  // gate's own printed QR, so a physical QR encodes ?station=SOM/PSB (or no
+  // param at all for MAIN).
+  return (
+    <Suspense fallback={null}>
+      <VisitConsentPageInner />
+    </Suspense>
+  );
+}
+
+function VisitConsentPageInner() {
   const router = useRouter();
-  const { updateDraft } = useRegistrationDraft();
+  const searchParams = useSearchParams();
+  const { draft, updateDraft } = useRegistrationDraft();
   const [declined, setDeclined] = useState(false);
+
+  useEffect(() => {
+    const station = searchParams.get("station")?.trim().toUpperCase();
+    if (station && (BUILDING_OPTIONS as readonly string[]).includes(station)) {
+      updateDraft({ building: station });
+    }
+    // No else branch: an absent/invalid param leaves draft.building as its
+    // already-defaulted "MAIN" (or whatever a prior scan in this session set)
+    // rather than force-overwriting it on a bare reload of this step.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const handleAccept = () => {
     updateDraft({ consentAccepted: true });
@@ -22,6 +53,9 @@ export default function VisitConsentPage() {
       subtitle="Please review and accept before continuing."
     >
       <div className="space-y-4">
+        <p className="text-xs font-semibold uppercase tracking-wide text-emerald-400">
+          Registering at: {BUILDING_GATE_LABEL[draft.building as keyof typeof BUILDING_GATE_LABEL] ?? draft.building}
+        </p>
         <p className="text-sm leading-relaxed text-gray-400">
           NEU-Pass collects personal information and a facial image for visitor verification and
           campus security, in compliance with the Data Privacy Act of 2012 (Republic Act No.

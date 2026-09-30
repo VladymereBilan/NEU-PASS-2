@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRegistrationDraft } from "@/lib/registrationDraft";
 import { extractIdFields } from "@/lib/idFieldExtraction";
 import {
+  ACCOMPANYING_MINORS_OPTIONS,
   EMAIL_PATTERN,
   ID_NUMBER_PATTERN,
   ID_TYPE_OPTIONS,
@@ -34,6 +35,7 @@ type FormState = {
   idNumber: string;
   purpose: string;
   agenda: string;
+  accompanyingMinors: string;
 };
 
 type FormErrors = Partial<Record<keyof FormState, string>>;
@@ -57,7 +59,8 @@ export default function VisitDetailsPage() {
       idDescription: isOther ? draft.idType.slice("Other: ".length) : "",
       idNumber: draft.idNumber,
       purpose: draft.purposeOfVisit,
-      agenda: draft.otherAgenda
+      agenda: draft.otherAgenda,
+      accompanyingMinors: String(draft.accompanyingMinors)
     };
   });
   const [errors, setErrors] = useState<FormErrors>({});
@@ -219,7 +222,8 @@ export default function VisitDetailsPage() {
       idType: form.idType === "Other" ? `Other: ${form.idDescription.trim()}` : form.idType.trim(),
       idNumber: form.idNumber.trim(),
       purposeOfVisit: form.purpose.trim(),
-      otherAgenda: form.agenda.trim()
+      otherAgenda: form.agenda.trim(),
+      accompanyingMinors: Number(form.accompanyingMinors)
     });
     router.push("/visit/face");
   };
@@ -337,6 +341,13 @@ export default function VisitDetailsPage() {
             required
           />
         ) : null}
+        <SelectField
+          label="Number of Accompanying Minors"
+          value={form.accompanyingMinors}
+          onChange={(value) => updateField("accompanyingMinors", value)}
+          options={ACCOMPANYING_MINORS_OPTIONS}
+          placeholder="Select number of accompanying minors"
+        />
 
         <PrimaryButton onClick={handleSubmit} disabled={idNotRecognized}>
           Continue

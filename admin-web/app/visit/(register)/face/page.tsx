@@ -7,6 +7,7 @@ import { useRegistrationDraft } from "@/lib/registrationDraft";
 import { uploadVisitorImage } from "@/lib/visitorImageUpload";
 import { submitVisitorRegistration } from "@/actions/visitorRegistration";
 import {
+  BUILDING_OPTIONS,
   EMAIL_PATTERN,
   ID_NUMBER_PATTERN,
   NAME_DIGIT_PATTERN,
@@ -147,7 +148,11 @@ export default function VisitFaceCapturePage() {
       draft.idNumber.trim() &&
       ID_NUMBER_PATTERN.test(draft.idNumber.trim()) &&
       draft.purposeOfVisit.trim() &&
-      (draft.purposeOfVisit !== "Others" || draft.otherAgenda.trim());
+      (draft.purposeOfVisit !== "Others" || draft.otherAgenda.trim()) &&
+      (BUILDING_OPTIONS as readonly string[]).includes(draft.building) &&
+      Number.isInteger(draft.accompanyingMinors) &&
+      draft.accompanyingMinors >= 0 &&
+      draft.accompanyingMinors <= 5;
 
     if (!hasValidDetails) {
       router.replace("/visit/details");
@@ -192,6 +197,8 @@ export default function VisitFaceCapturePage() {
         idImagePath: draft.idImagePath,
         purposeOfVisit: draft.purposeOfVisit,
         otherAgenda: draft.otherAgenda,
+        building: draft.building,
+        accompanyingMinors: draft.accompanyingMinors,
         consentAccepted: draft.consentAccepted,
         faceImagePath: draft.faceImagePath,
         turnstileToken

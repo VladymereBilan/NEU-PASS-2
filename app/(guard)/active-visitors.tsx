@@ -1,10 +1,12 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useAuth } from "../../src/context/AuthContext";
 import { getActiveVisitors } from "../../src/services/PrototypeRegistrationStore";
 import { isOverdue } from "../../src/services/ExpirationService";
 import { DashboardScreen } from "../../src/components/dashboard/DashboardScreen";
+import { StationFilterBar } from "../../src/components/dashboard/StationFilterBar";
+import { useStationFilter } from "../../src/hooks/useStationFilter";
 import type { BottomNavTab } from "../../src/components/dashboard/BottomNavBar";
 import { NEU_DARK } from "../../src/theme/brand";
 import type { VisitorRegistration } from "../../src/types/VisitorRegistration";
@@ -23,6 +25,12 @@ export default function ActiveVisitorsScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [refreshHovered, setRefreshHovered] = useState(false);
+  const { station, setStation } = useStationFilter();
+
+  const visibleActive = useMemo(
+    () => (station === "All" ? active : active.filter((r) => r.building === station)),
+    [active, station]
+  );
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -82,14 +90,18 @@ export default function ActiveVisitorsScreen() {
         <Text style={styles.refreshText}>Refresh</Text>
       </Pressable>
 
+      <StationFilterBar value={station} onChange={setStation} />
+
       {loading ? (
         <Text style={styles.body}>Loading active visitors...</Text>
       ) : error ? (
         <Text style={styles.body}>{error}</Text>
       ) : active.length === 0 ? (
         <Text style={styles.body}>No active visitors.</Text>
+      ) : visibleActive.length === 0 ? (
+        <Text style={styles.body}>No active visitors at this station.</Text>
       ) : (
-        active.map((registration) => {
+        visibleActive.map((registration) => {
           const overdue = isOverdue(registration.expirationTime);
           return (
             <View
@@ -110,6 +122,12 @@ export default function ActiveVisitorsScreen() {
                 </Text>
               ) : null}
               <Text style={styles.itemText}>Purpose: {registration.purposeOfVisit}</Text>
+              <Text style={styles.itemText}>Building: {registration.building}</Text>
+              {registration.accompanyingMinors > 0 ? (
+                <Text style={styles.itemText}>
+                  Accompanying Minors: {registration.accompanyingMinors}
+                </Text>
+              ) : null}
               {registration.purposeOfVisit === "Others" && registration.otherAgenda ? (
                 <Text style={styles.itemText}>Other Agenda: {registration.otherAgenda}</Text>
               ) : null}

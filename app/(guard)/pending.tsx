@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Alert,
   Image,
@@ -20,6 +20,8 @@ import {
 } from "../../src/services/PrototypeRegistrationStore";
 import { getVisitorImageSignedUrl } from "../../src/lib/imageUpload";
 import { DashboardScreen } from "../../src/components/dashboard/DashboardScreen";
+import { StationFilterBar } from "../../src/components/dashboard/StationFilterBar";
+import { useStationFilter } from "../../src/hooks/useStationFilter";
 import type { BottomNavTab } from "../../src/components/dashboard/BottomNavBar";
 import { NEU_DARK } from "../../src/theme/brand";
 import type { VisitorRegistration } from "../../src/types/VisitorRegistration";
@@ -59,6 +61,12 @@ export default function PendingVerificationsScreen() {
   >(null);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
+  const { station, setStation } = useStationFilter();
+
+  const visiblePending = useMemo(
+    () => (station === "All" ? pending : pending.filter((r) => r.building === station)),
+    [pending, station]
+  );
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -170,17 +178,27 @@ export default function PendingVerificationsScreen() {
         <Text style={styles.refreshText}>Refresh</Text>
       </Pressable>
 
+      <StationFilterBar value={station} onChange={setStation} />
+
       {loading ? (
         <Text style={styles.body}>Loading pending registrations...</Text>
       ) : error ? (
         <Text style={styles.body}>{error}</Text>
       ) : pending.length === 0 ? (
         <Text style={styles.body}>No pending visitor registrations.</Text>
+      ) : visiblePending.length === 0 ? (
+        <Text style={styles.body}>No pending visitors at this station.</Text>
       ) : (
-        pending.map((registration) => (
+        visiblePending.map((registration) => (
           <View key={registration.id} style={styles.itemCard}>
             <Text style={styles.itemTitle}>{registration.fullName}</Text>
             <Text style={styles.itemText}>Purpose: {registration.purposeOfVisit}</Text>
+            <Text style={styles.itemText}>Building: {registration.building}</Text>
+            {registration.accompanyingMinors > 0 ? (
+              <Text style={styles.itemText}>
+                Accompanying Minors: {registration.accompanyingMinors}
+              </Text>
+            ) : null}
             <Text style={styles.itemText}>
               Created: {new Date(registration.createdAt).toLocaleString()}
             </Text>

@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import {
+  BUILDING_OPTIONS,
   EMAIL_PATTERN,
   FACE_VERIFICATION_READY_FOR_GUARD_REVIEW,
   ID_NUMBER_PATTERN,
@@ -31,6 +32,8 @@ export type VisitorRegistrationInput = {
   idImagePath: string;
   purposeOfVisit: string;
   otherAgenda: string;
+  building: string;
+  accompanyingMinors: number;
   consentAccepted: boolean;
   faceImagePath: string;
   turnstileToken: string;
@@ -155,6 +158,19 @@ function validate(input: VisitorRegistrationInput): string | null {
     return "Please specify your agenda.";
   }
 
+  const building = input.building.trim();
+  if (!(BUILDING_OPTIONS as readonly string[]).includes(building)) {
+    return "Building is missing or invalid.";
+  }
+
+  if (
+    !Number.isInteger(input.accompanyingMinors) ||
+    input.accompanyingMinors < 0 ||
+    input.accompanyingMinors > 5
+  ) {
+    return "Number of Accompanying Minors is invalid.";
+  }
+
   if (!input.consentAccepted) {
     return "Consent must be accepted before submitting.";
   }
@@ -216,6 +232,8 @@ export async function submitVisitorRegistration(
     id_image_path: input.idImagePath,
     purpose_of_visit: input.purposeOfVisit.trim(),
     other_agenda: input.otherAgenda.trim(),
+    building: input.building.trim(),
+    accompanying_minors: input.accompanyingMinors,
     consent_accepted: input.consentAccepted,
     ocr_reviewed: true,
     face_verification_status: FACE_VERIFICATION_READY_FOR_GUARD_REVIEW,

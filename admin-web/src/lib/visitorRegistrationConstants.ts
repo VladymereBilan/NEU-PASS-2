@@ -13,6 +13,21 @@ export const PURPOSE_OPTIONS = [
   { value: "Others", label: "Others — Open 7:00 AM–6:00 PM" }
 ] as const;
 
+// Populated from which physical gate's QR code a visitor scanned
+// (?station=SOM/PSB, default MAIN if absent) — never a visitor-editable
+// dropdown, so there's no chance of picking the wrong building. See
+// app/visit/(register)/page.tsx.
+export const BUILDING_OPTIONS = ["SOM", "PSB", "MAIN"] as const;
+
+// Headcount only — deliberately no names field. See CLAUDE.md/project memory:
+// capturing named/identified minors was explicitly rejected (Data Privacy
+// Act — minors can't consent, and headcount alone covers the real need,
+// which is checkout reconciliation, not identity tracking).
+export const ACCOMPANYING_MINORS_OPTIONS = Array.from({ length: 6 }, (_, index) => ({
+  value: String(index),
+  label: index === 0 ? "0 — None" : String(index)
+})) as ReadonlyArray<{ value: string; label: string }>;
+
 export const ID_TYPE_OPTIONS = [
   "Philippine National ID (PhilID / ePhilID)",
   "Driver's License",

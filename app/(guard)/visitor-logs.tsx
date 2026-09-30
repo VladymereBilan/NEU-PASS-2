@@ -1,10 +1,12 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "expo-router";
 import { getCompletedRegistrationsPage } from "../../src/services/PrototypeRegistrationStore";
 import { AppBackground } from "../../src/components/AppBackground";
 import BackButton from "../../src/components/BackButton";
+import { StationFilterBar } from "../../src/components/dashboard/StationFilterBar";
+import { useStationFilter } from "../../src/hooks/useStationFilter";
 import { NEU_DARK } from "../../src/theme/brand";
 import type { VisitorRegistration } from "../../src/types/VisitorRegistration";
 
@@ -19,6 +21,16 @@ export default function VisitorLogsScreen() {
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState("");
   const [refreshHovered, setRefreshHovered] = useState(false);
+  const { station, setStation } = useStationFilter();
+
+  // Display-only filter over the already-loaded page(s) — "Load more" still
+  // paginates the full unfiltered history server-side (see loadMore below),
+  // so a narrow station filter can leave a page looking sparse until more is
+  // loaded; that's an acceptable MVP tradeoff for a purely local UI filter.
+  const visibleCompleted = useMemo(
+    () => (station === "All" ? completed : completed.filter((r) => r.building === station)),
+    [completed, station]
+  );
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -71,7 +83,7 @@ export default function VisitorLogsScreen() {
         <View style={styles.card}>
           <FlatList
             style={styles.flex}
-            data={completed}
+            data={visibleCompleted}
             keyExtractor={(registration) => registration.id}
             contentContainerStyle={styles.listContent}
             // Virtualized (unlike the old ScrollView+map) so rendering cost
@@ -101,6 +113,7 @@ export default function VisitorLogsScreen() {
                     Refresh
                   </Text>
                 </Pressable>
+                <StationFilterBar value={station} onChange={setStation} />
               </View>
             }
             ListEmptyComponent={
@@ -109,7 +122,9 @@ export default function VisitorLogsScreen() {
                   ? "Loading visitor logs..."
                   : error
                     ? error
-                    : "No completed visitors."}
+                    : completed.length > 0
+                      ? "No completed visitors at this station."
+                      : "No completed visitors."}
               </Text>
             }
             ListFooterComponent={
@@ -123,6 +138,12 @@ export default function VisitorLogsScreen() {
                 <Text style={styles.itemText}>
                   Purpose: {registration.purposeOfVisit}
                 </Text>
+                <Text style={styles.itemText}>Building: {registration.building}</Text>
+                {registration.accompanyingMinors > 0 ? (
+                  <Text style={styles.itemText}>
+                    Accompanying Minors: {registration.accompanyingMinors}
+                  </Text>
+                ) : null}
                 <Text style={styles.itemText}>
                   Time In: {formatDate(registration.timeIn)}
                 </Text>

@@ -16,6 +16,8 @@ function mapRow(row: any): VisitorRegistration {
     idImageUri: row.id_image_path || "",
     purposeOfVisit: row.purpose_of_visit,
     otherAgenda: row.other_agenda || "",
+    building: row.building || "",
+    accompanyingMinors: row.accompanying_minors || 0,
     consentAccepted: !!row.consent_accepted,
     ocrReviewed: !!row.ocr_reviewed,
     faceVerificationStatus: row.face_verification_status,
