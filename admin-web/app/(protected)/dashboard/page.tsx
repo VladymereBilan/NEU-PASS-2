@@ -41,7 +41,7 @@ export default async function DashboardPage() {
         <MetricCard label="Expired QR Passes" value={stats.expiredQrPasses} accent="from-amber-400 to-amber-600" />
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[1.3fr_0.9fr]">
+      <div className="grid gap-6 xl:grid-cols-2">
         <Panel
           title="Purpose-Based Counts"
           eyebrow="Breakdown"
@@ -52,7 +52,7 @@ export default async function DashboardPage() {
           }
         >
           <DonutChart
-            size={230}
+            size={210}
             segments={Object.entries(monthPurposeCounts).map(([label, value], index) => ({
               label,
               value,
@@ -61,37 +61,37 @@ export default async function DashboardPage() {
           />
         </Panel>
 
-        <Panel title="Daily and Monthly Logs" eyebrow="Activity">
-          <div className="grid grid-cols-2 gap-3">
-            <MiniStat label="Visitors Today" value={stats.daily.visitorsToday} />
-            <MiniStat label="Completed Today" value={stats.daily.completedToday} />
-            <MiniStat
-              label="Visitors This Month"
-              value={stats.monthly.visitorsThisMonth}
-              caption="Resets on the 1st of each month"
-            />
-            <MiniStat label="Completed This Month" value={stats.monthly.completedThisMonth} />
-          </div>
+        <Panel
+          title="Building-Based Counts"
+          eyebrow="Breakdown"
+          action={
+            <span className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400">
+              {monthRange.label}
+            </span>
+          }
+        >
+          <DonutChart
+            size={210}
+            segments={Object.entries(monthBuildingCounts).map(([label, value], index) => ({
+              label,
+              value,
+              color: PURPOSE_CHART_COLORS[index % PURPOSE_CHART_COLORS.length]
+            }))}
+          />
         </Panel>
       </div>
 
-      <Panel
-        title="Building-Based Counts"
-        eyebrow="Breakdown"
-        action={
-          <span className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400">
-            {monthRange.label}
-          </span>
-        }
-      >
-        <DonutChart
-          size={200}
-          segments={Object.entries(monthBuildingCounts).map(([label, value], index) => ({
-            label,
-            value,
-            color: PURPOSE_CHART_COLORS[index % PURPOSE_CHART_COLORS.length]
-          }))}
-        />
+      <Panel title="Daily and Monthly Logs" eyebrow="Activity">
+        <div className="grid gap-3 sm:grid-cols-4">
+          <MiniStat label="Visitors Today" value={stats.daily.visitorsToday} />
+          <MiniStat label="Completed Today" value={stats.daily.completedToday} />
+          <MiniStat
+            label="Visitors This Month"
+            value={stats.monthly.visitorsThisMonth}
+            caption="Resets on the 1st of each month"
+          />
+          <MiniStat label="Completed This Month" value={stats.monthly.completedThisMonth} />
+        </div>
       </Panel>
 
       <Panel title={`${monthRange.label} Trend`} eyebrow="Activity">
