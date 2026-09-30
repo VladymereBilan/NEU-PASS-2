@@ -30,7 +30,7 @@ export default async function DashboardPage() {
     );
   }
 
-  const { stats, monthPurposeCounts, dailyBreakdown, lastCheckInTime } = data;
+  const { stats, monthPurposeCounts, monthBuildingCounts, dailyBreakdown, lastCheckInTime } = data;
   const now = new Date();
 
   return (
@@ -74,6 +74,25 @@ export default async function DashboardPage() {
           </div>
         </Panel>
       </div>
+
+      <Panel
+        title="Building-Based Counts"
+        eyebrow="Breakdown"
+        action={
+          <span className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400">
+            {monthRange.label}
+          </span>
+        }
+      >
+        <DonutChart
+          size={200}
+          segments={Object.entries(monthBuildingCounts).map(([label, value], index) => ({
+            label,
+            value,
+            color: PURPOSE_CHART_COLORS[index % PURPOSE_CHART_COLORS.length]
+          }))}
+        />
+      </Panel>
 
       <Panel title={`${monthRange.label} Trend`} eyebrow="Activity">
         <BarChart

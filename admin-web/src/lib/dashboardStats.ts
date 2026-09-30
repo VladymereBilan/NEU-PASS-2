@@ -1,5 +1,6 @@
 import type { createClient } from "@/lib/supabase/server";
 import {
+  BUILDING_OPTIONS,
   PURPOSE_OPTIONS,
   dayParamOf,
   startOfDayManila,
@@ -23,6 +24,7 @@ export type DashboardStats = {
 export type DashboardData = {
   stats: DashboardStats;
   monthPurposeCounts: Record<string, number>;
+  monthBuildingCounts: Record<string, number>;
   dailyBreakdown: DailyBreakdownRow[];
   lastCheckInTime: string | null;
 };
@@ -64,6 +66,7 @@ export async function fetchDashboardData(
       visitorsThisMonth,
       completedThisMonth,
       purposeCountEntries,
+      buildingCountEntries,
       dailyBreakdownResult,
       lastCheckInResult
     ] = await Promise.all([
@@ -113,6 +116,20 @@ export async function fetchDashboardData(
           return [purpose, count] as const;
         })
       ),
+      Promise.all(
+        BUILDING_OPTIONS.map(async (building) => {
+          const count = await countRows(
+            (q) =>
+              q
+                .select("*", { count: "exact", head: true })
+                .eq("building", building)
+                .gte("created_at", monthRange.start.toISOString())
+                .lt("created_at", monthRange.end.toISOString()),
+            supabase
+          );
+          return [building, count] as const;
+        })
+      ),
       supabase.rpc("get_daily_breakdown", {
         p_month_start: monthRange.start.toISOString(),
         p_month_end: monthRange.end.toISOString()
@@ -147,6 +164,7 @@ export async function fetchDashboardData(
           monthly: { visitorsThisMonth, completedThisMonth }
         },
         monthPurposeCounts: Object.fromEntries(purposeCountEntries),
+        monthBuildingCounts: Object.fromEntries(buildingCountEntries),
         dailyBreakdown,
         lastCheckInTime: (lastCheckInResult.data as { time_in: string } | null)?.time_in ?? null
       },

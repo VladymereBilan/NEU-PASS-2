@@ -13,6 +13,11 @@ export const PURPOSE_OPTIONS = [
   "Others"
 ] as const;
 
+// Bare-string counterpart of visitorRegistrationConstants.ts's BUILDING_OPTIONS
+// (value/label pairs meant for the registration form) — this file only needs
+// the values, same split as PURPOSE_OPTIONS above.
+export const BUILDING_OPTIONS = ["MAIN", "SOM", "PSB"] as const;
+
 // Philippines has no DST, so a fixed UTC+8 offset is safe — kept consistent
 // with the approve_visitor RPC's own "Asia/Manila" expiration-time logic.
 export const MANILA_OFFSET_MS = 8 * 60 * 60 * 1000;
