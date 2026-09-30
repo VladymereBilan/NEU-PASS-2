@@ -22,7 +22,7 @@ import {
   getVisitorPassByVisitorId
 } from "../../src/services/PrototypeRegistrationStore";
 import { getExpirationStatus, isOverdue } from "../../src/services/ExpirationService";
-import { getVisitorImageSignedUrl } from "../../src/lib/imageUpload";
+import { getVisitorImageSignedUrls } from "../../src/lib/imageUpload";
 import { compareFaces } from "../../src/services/FaceMatchService";
 import { parseQRValue } from "../../src/services/QRService";
 import { AppBackground } from "../../src/components/AppBackground";
@@ -70,11 +70,29 @@ export default function CheckoutVerificationScreen() {
   // two or three times (stacked duplicate alerts). A ref flips synchronously.
   const scanLockRef = useRef(false);
 
-  const loadFaceUrl = useCallback(async (registration: VisitorRegistration) => {
-    const url = await getVisitorImageSignedUrl("visitor-faces", registration.faceImageUri).catch(
-      () => null
+  // Signed URLs live 5 minutes; reuse any signed under 4 minutes ago so
+  // re-focusing this screen doesn't re-sign every visitor each time.
+  const faceUrlSignedAtRef = useRef<Record<string, number>>({});
+
+  const loadFaceUrls = useCallback(async (registrations: VisitorRegistration[]) => {
+    const now = Date.now();
+    const stale = registrations.filter(
+      (registration) => now - (faceUrlSignedAtRef.current[registration.id] ?? 0) > 4 * 60_000
     );
-    setFaceUrls((prev) => ({ ...prev, [registration.id]: url }));
+    if (stale.length === 0) return;
+
+    const urlsByPath = await getVisitorImageSignedUrls(
+      "visitor-faces",
+      stale.map((registration) => registration.faceImageUri)
+    ).catch(() => ({}) as Record<string, string>);
+
+    const next: Record<string, string | null> = {};
+    for (const registration of stale) {
+      const url = urlsByPath[registration.faceImageUri] ?? null;
+      next[registration.id] = url;
+      if (url) faceUrlSignedAtRef.current[registration.id] = now;
+    }
+    setFaceUrls((prev) => ({ ...prev, ...next }));
   }, []);
 
   const refresh = useCallback(async () => {
@@ -83,13 +101,13 @@ export default function CheckoutVerificationScreen() {
     try {
       const data = await getActiveVisitors();
       setActiveVisitors(data);
-      void Promise.all(data.map(loadFaceUrl));
+      void loadFaceUrls(data);
     } catch {
       setError("Unable to load active visitors.");
     } finally {
       setLoading(false);
     }
-  }, [loadFaceUrl]);
+  }, [loadFaceUrls]);
 
   useFocusEffect(
     useCallback(() => {
