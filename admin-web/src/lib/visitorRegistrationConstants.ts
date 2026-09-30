@@ -10,23 +10,7 @@ export const PURPOSE_OPTIONS = [
   { value: "Enrollment", label: "Enrollment — Open 7:00 AM–4:45 PM" },
   { value: "Tuition Fee Payment", label: "Tuition Fee Payment — Open 7:00 AM–4:45 PM" },
   { value: "Other Payments", label: "Other Payments — Open 7:00 AM–4:45 PM" },
-  { value: "Dean's Office", label: "Dean's Office" },
-  { value: "President's Office", label: "President's Office" },
   { value: "Others", label: "Others — Open 7:00 AM–6:00 PM" }
-] as const;
-
-export const BUILDING_OPTIONS = [
-  { value: "SOM", label: "SOM" },
-  { value: "PSB", label: "PSB" },
-  { value: "MAIN", label: "MAIN" }
-] as const;
-
-export const CHILDREN_INCLUDED_OPTIONS = [
-  { value: "None", label: "None" },
-  ...Array.from({ length: 5 }, (_, index) => {
-    const count = String(index + 1);
-    return { value: count, label: count };
-  })
 ] as const;
 
 export const ID_TYPE_OPTIONS = [

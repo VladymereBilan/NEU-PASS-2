@@ -147,14 +147,7 @@ export default function VisitFaceCapturePage() {
       draft.idNumber.trim() &&
       ID_NUMBER_PATTERN.test(draft.idNumber.trim()) &&
       draft.purposeOfVisit.trim() &&
-      (draft.purposeOfVisit !== "Others" || draft.otherAgenda.trim()) &&
-      draft.building.trim() &&
-      draft.childrenIncluded &&
-      (draft.childrenIncluded === "None" ||
-        draft.childrenNames
-          .split(",")
-          .map((name) => name.trim())
-          .filter(Boolean).length === Number(draft.childrenIncluded));
+      (draft.purposeOfVisit !== "Others" || draft.otherAgenda.trim());
 
     if (!hasValidDetails) {
       router.replace("/visit/details");
@@ -199,9 +192,6 @@ export default function VisitFaceCapturePage() {
         idImagePath: draft.idImagePath,
         purposeOfVisit: draft.purposeOfVisit,
         otherAgenda: draft.otherAgenda,
-        building: draft.building,
-        childrenIncluded: draft.childrenIncluded,
-        childrenNames: draft.childrenNames,
         consentAccepted: draft.consentAccepted,
         faceImagePath: draft.faceImagePath,
         turnstileToken

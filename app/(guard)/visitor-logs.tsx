@@ -123,12 +123,6 @@ export default function VisitorLogsScreen() {
                 <Text style={styles.itemText}>
                   Purpose: {registration.purposeOfVisit}
                 </Text>
-                <Text style={styles.itemText}>Building: {registration.building}</Text>
-                {registration.childrenIncluded > 0 ? (
-                  <Text style={styles.itemText}>
-                    Children Included: {registration.childrenIncluded} ({registration.childrenNames})
-                  </Text>
-                ) : null}
                 <Text style={styles.itemText}>
                   Time In: {formatDate(registration.timeIn)}
                 </Text>

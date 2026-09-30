@@ -12,9 +12,6 @@ export type RegistrationDraft = {
   idImagePath: string;
   purposeOfVisit: string;
   otherAgenda: string;
-  building: string;
-  childrenIncluded: string;
-  childrenNames: string;
   consentAccepted: boolean;
   faceImagePath: string;
 };
@@ -29,9 +26,6 @@ const EMPTY_DRAFT: RegistrationDraft = {
   idImagePath: "",
   purposeOfVisit: "",
   otherAgenda: "",
-  building: "",
-  childrenIncluded: "None",
-  childrenNames: "",
   consentAccepted: false,
   faceImagePath: ""
 };
