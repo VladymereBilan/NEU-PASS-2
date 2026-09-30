@@ -31,6 +31,18 @@ export type AdminAccount = {
 // requests both attempt the same username.
 const UNIQUE_VIOLATION = "23505";
 
+// A profile flip alone only stops *new* logins (the apps check account_status
+// at sign-in). Banning the Auth user as well stops an already-signed-in
+// session from refreshing its token, so a blocked account can't keep working
+// for as long as its refresh token lives — e.g. a phone that missed the
+// realtime "Blocked" event. Unbanning on re-activation keeps the two in sync.
+async function syncAuthBan(admin: ReturnType<typeof createAdminClient>, id: string, status: AccountStatus) {
+  const { error } = await admin.auth.admin.updateUserById(id, {
+    ban_duration: status === "Blocked" ? "876000h" : "none"
+  });
+  if (error) throw new Error(error.message);
+}
+
 export async function listGuardAccounts(): Promise<GuardAccount[]> {
   await requireAdmin();
 
