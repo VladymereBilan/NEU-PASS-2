@@ -22,11 +22,13 @@ export const BUILDING_OPTIONS = ["SOM", "PSB", "MAIN"] as const;
 // Headcount only — deliberately no names field. See CLAUDE.md/project memory:
 // capturing named/identified minors was explicitly rejected (Data Privacy
 // Act — minors can't consent, and headcount alone covers the real need,
-// which is checkout reconciliation, not identity tracking).
-export const ACCOMPANYING_MINORS_OPTIONS = Array.from({ length: 6 }, (_, index) => ({
-  value: String(index),
-  label: index === 0 ? "0 — None" : String(index)
-})) as ReadonlyArray<{ value: string; label: string }>;
+// which is checkout reconciliation, not identity tracking). A visitor types
+// this directly (details/page.tsx) rather than picking from a list — blank
+// means none/"N/A", so this constant is just the shared upper bound both the
+// client-side and server-side (visitorRegistration.ts) validation checks
+// against, matching the DB check constraint in
+// supabase/visitor-building-minors-migration.sql.
+export const ACCOMPANYING_MINORS_MAX = 5;
 
 export const ID_TYPE_OPTIONS = [
   "Philippine National ID (PhilID / ePhilID)",

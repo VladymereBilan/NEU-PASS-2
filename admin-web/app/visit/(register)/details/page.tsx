@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRegistrationDraft } from "@/lib/registrationDraft";
 import { extractIdFields } from "@/lib/idFieldExtraction";
 import {
-  ACCOMPANYING_MINORS_OPTIONS,
+  ACCOMPANYING_MINORS_MAX,
   EMAIL_PATTERN,
   ID_NUMBER_PATTERN,
   ID_TYPE_OPTIONS,
@@ -60,7 +60,10 @@ export default function VisitDetailsPage() {
       idNumber: draft.idNumber,
       purpose: draft.purposeOfVisit,
       agenda: draft.otherAgenda,
-      accompanyingMinors: String(draft.accompanyingMinors)
+      // Blank (not "0") is the resting/no-minors state, shown as an "N/A"
+      // placeholder — a visitor only ever types something here when they
+      // actually have accompanying minors to report.
+      accompanyingMinors: draft.accompanyingMinors > 0 ? String(draft.accompanyingMinors) : ""
     };
   });
   const [errors, setErrors] = useState<FormErrors>({});
@@ -199,6 +202,13 @@ export default function VisitDetailsPage() {
     if (form.purpose === "Others" && !form.agenda.trim()) {
       nextErrors.agenda = "Please specify your agenda.";
     }
+    const minorsInput = form.accompanyingMinors.trim();
+    if (minorsInput) {
+      const minorsValue = Number(minorsInput);
+      if (!Number.isInteger(minorsValue) || minorsValue < 0 || minorsValue > ACCOMPANYING_MINORS_MAX) {
+        nextErrors.accompanyingMinors = `Enter a whole number from 0 to ${ACCOMPANYING_MINORS_MAX}, or leave blank for none.`;
+      }
+    }
 
     return nextErrors;
   };
@@ -223,7 +233,7 @@ export default function VisitDetailsPage() {
       idNumber: form.idNumber.trim(),
       purposeOfVisit: form.purpose.trim(),
       otherAgenda: form.agenda.trim(),
-      accompanyingMinors: Number(form.accompanyingMinors)
+      accompanyingMinors: form.accompanyingMinors.trim() ? Number(form.accompanyingMinors) : 0
     });
     router.push("/visit/face");
   };
@@ -341,12 +351,13 @@ export default function VisitDetailsPage() {
             required
           />
         ) : null}
-        <SelectField
+        <TextField
           label="Number of Accompanying Minors"
           value={form.accompanyingMinors}
           onChange={(value) => updateField("accompanyingMinors", value)}
-          options={ACCOMPANYING_MINORS_OPTIONS}
-          placeholder="Select number of accompanying minors"
+          type="number"
+          placeholder="N/A"
+          error={errors.accompanyingMinors}
         />
 
         <PrimaryButton onClick={handleSubmit} disabled={idNotRecognized}>

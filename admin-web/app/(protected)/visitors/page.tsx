@@ -50,7 +50,7 @@ function toRow(visitor: VisitorRow): Array<string> {
     visitor.full_name,
     visitor.purpose_of_visit,
     visitor.building,
-    visitor.accompanying_minors > 0 ? String(visitor.accompanying_minors) : "-",
+    visitor.accompanying_minors > 0 ? String(visitor.accompanying_minors) : "N/A",
     visitor.registration_status,
     formatDate(visitor.time_in),
     formatDate(visitor.time_out),

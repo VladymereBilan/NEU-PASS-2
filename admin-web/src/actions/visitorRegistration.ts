@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import {
+  ACCOMPANYING_MINORS_MAX,
   BUILDING_OPTIONS,
   EMAIL_PATTERN,
   FACE_VERIFICATION_READY_FOR_GUARD_REVIEW,
@@ -166,7 +167,7 @@ function validate(input: VisitorRegistrationInput): string | null {
   if (
     !Number.isInteger(input.accompanyingMinors) ||
     input.accompanyingMinors < 0 ||
-    input.accompanyingMinors > 5
+    input.accompanyingMinors > ACCOMPANYING_MINORS_MAX
   ) {
     return "Number of Accompanying Minors is invalid.";
   }

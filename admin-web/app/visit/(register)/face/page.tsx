@@ -7,6 +7,7 @@ import { useRegistrationDraft } from "@/lib/registrationDraft";
 import { uploadVisitorImage } from "@/lib/visitorImageUpload";
 import { submitVisitorRegistration } from "@/actions/visitorRegistration";
 import {
+  ACCOMPANYING_MINORS_MAX,
   BUILDING_OPTIONS,
   EMAIL_PATTERN,
   ID_NUMBER_PATTERN,
@@ -152,7 +153,7 @@ export default function VisitFaceCapturePage() {
       (BUILDING_OPTIONS as readonly string[]).includes(draft.building) &&
       Number.isInteger(draft.accompanyingMinors) &&
       draft.accompanyingMinors >= 0 &&
-      draft.accompanyingMinors <= 5;
+      draft.accompanyingMinors <= ACCOMPANYING_MINORS_MAX;
 
     if (!hasValidDetails) {
       router.replace("/visit/details");
