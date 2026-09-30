@@ -50,8 +50,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .select("account_type, account_status")
       .eq("id", session.user.id)
       .maybeSingle()
-      .then(async ({ data }) => {
+      .then(async ({ data, error }) => {
         if (!active) return;
+
+        // A failed lookup (flaky connection) says nothing about the account —
+        // keep the last known role instead of resetting it to null, which
+        // would bounce a signed-in guard back to the login screen.
+        if (error) {
+          setRoleResolved(true);
+          return;
+        }
 
         if (data?.account_status === "Blocked") {
           await supabase.auth.signOut();

@@ -70,14 +70,28 @@ export type VisitorStatsRow = {
 // addresses, contact info, ID numbers, and image paths for every visitor
 // ever registered off the wire, since nothing here needs them.
 export async function getVisitorStatsRows(): Promise<VisitorStatsRow[]> {
-  const { data, error } = await supabase
-    .from("visitor_registrations")
-    .select(
-      "purpose_of_visit, building, registration_status, checkout_status, qr_status, time_in, time_out, expiration_time, created_at"
-    );
+  // PostgREST silently caps one response at 1,000 rows, which would quietly
+  // truncate every report total once the table grows past that — so page
+  // through in a stable order until a short page comes back.
+  const PAGE_SIZE = 1000;
+  const rows: any[] = [];
 
-  if (error) throw new Error(error.message);
-  return (data || []).map((row) => ({
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from("visitor_registrations")
+      .select(
+        "purpose_of_visit, building, registration_status, checkout_status, qr_status, time_in, time_out, expiration_time, created_at"
+      )
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true })
+      .range(from, from + PAGE_SIZE - 1);
+
+    if (error) throw new Error(error.message);
+    rows.push(...(data || []));
+    if (!data || data.length < PAGE_SIZE) break;
+  }
+
+  return rows.map((row) => ({
     purposeOfVisit: row.purpose_of_visit,
     building: row.building || "",
     registrationStatus: row.registration_status,
