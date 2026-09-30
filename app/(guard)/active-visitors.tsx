@@ -110,6 +110,12 @@ export default function ActiveVisitorsScreen() {
                 </Text>
               ) : null}
               <Text style={styles.itemText}>Purpose: {registration.purposeOfVisit}</Text>
+              <Text style={styles.itemText}>Building: {registration.building}</Text>
+              {registration.childrenIncluded > 0 ? (
+                <Text style={styles.itemText}>
+                  Children Included: {registration.childrenIncluded} ({registration.childrenNames})
+                </Text>
+              ) : null}
               {registration.purposeOfVisit === "Others" && registration.otherAgenda ? (
                 <Text style={styles.itemText}>Other Agenda: {registration.otherAgenda}</Text>
               ) : null}

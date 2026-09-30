@@ -532,6 +532,12 @@ export default function CheckoutVerificationScreen() {
               <Text style={styles.itemText}>
                 Purpose: {scannedVisitor.purposeOfVisit}
               </Text>
+              <Text style={styles.itemText}>Building: {scannedVisitor.building}</Text>
+              {scannedVisitor.childrenIncluded > 0 ? (
+                <Text style={styles.itemText}>
+                  Children Included: {scannedVisitor.childrenIncluded} ({scannedVisitor.childrenNames})
+                </Text>
+              ) : null}
               <Text style={styles.itemText}>
                 Visitor Pass: {scannedVisitor.visitorPassNumber}
               </Text>
@@ -612,6 +618,12 @@ export default function CheckoutVerificationScreen() {
                     <Text style={styles.itemText}>
                       Purpose: {visitor.purposeOfVisit}
                     </Text>
+                    <Text style={styles.itemText}>Building: {visitor.building}</Text>
+                    {visitor.childrenIncluded > 0 ? (
+                      <Text style={styles.itemText}>
+                        Children Included: {visitor.childrenIncluded} ({visitor.childrenNames})
+                      </Text>
+                    ) : null}
                     <Text style={styles.itemText}>
                       Visitor Pass: {visitor.visitorPassNumber}
                     </Text>

@@ -9,6 +9,7 @@ import {
   NAME_DIGIT_PATTERN,
   NAME_LETTER_PATTERN,
   PURPOSE_OPTIONS,
+  BUILDING_OPTIONS,
   isValidPhilippineMobile,
   normalizePhilippineMobile
 } from "@/lib/visitorRegistrationConstants";
@@ -19,6 +20,8 @@ import {
 const UNIQUE_VIOLATION = "23505";
 
 const PURPOSE_VALUES = PURPOSE_OPTIONS.map((option) => option.value) as readonly string[];
+const BUILDING_VALUES = BUILDING_OPTIONS.map((option) => option.value) as readonly string[];
+const CHILDREN_INCLUDED_VALUES = ["None", "1", "2", "3", "4", "5"] as const;
 const KNOWN_ID_TYPES = ID_TYPE_OPTIONS.filter((option) => option !== "Other") as readonly string[];
 
 export type VisitorRegistrationInput = {
@@ -31,6 +34,9 @@ export type VisitorRegistrationInput = {
   idImagePath: string;
   purposeOfVisit: string;
   otherAgenda: string;
+  building: string;
+  childrenIncluded: string;
+  childrenNames: string;
   consentAccepted: boolean;
   faceImagePath: string;
   turnstileToken: string;
@@ -155,6 +161,21 @@ function validate(input: VisitorRegistrationInput): string | null {
     return "Please specify your agenda.";
   }
 
+  const building = input.building.trim();
+  if (!BUILDING_VALUES.includes(building)) return "Building is missing or invalid.";
+
+  if (!CHILDREN_INCLUDED_VALUES.includes(input.childrenIncluded as (typeof CHILDREN_INCLUDED_VALUES)[number])) {
+    return "Children included is missing or invalid.";
+  }
+  const childrenCount = input.childrenIncluded === "None" ? 0 : Number(input.childrenIncluded);
+  const childrenNames = input.childrenNames
+    .split(",")
+    .map((name) => name.trim())
+    .filter(Boolean);
+  if (childrenNames.length !== childrenCount) {
+    return `Please provide exactly ${childrenCount} children's name${childrenCount === 1 ? "" : "s"}.`;
+  }
+
   if (!input.consentAccepted) {
     return "Consent must be accepted before submitting.";
   }
@@ -205,6 +226,13 @@ export async function submitVisitorRegistration(
     };
   }
 
+  const building = input.building.trim();
+  const childrenCount = input.childrenIncluded === "None" ? 0 : Number(input.childrenIncluded);
+  const childrenNames = input.childrenNames
+    .split(",")
+    .map((name) => name.trim())
+    .filter(Boolean);
+
   const { error: insertError } = await supabase.from("visitor_registrations").insert({
     visitor_user_id: userData.user.id,
     full_name: input.fullName.trim(),
@@ -216,6 +244,9 @@ export async function submitVisitorRegistration(
     id_image_path: input.idImagePath,
     purpose_of_visit: input.purposeOfVisit.trim(),
     other_agenda: input.otherAgenda.trim(),
+    building,
+    children_included: childrenCount,
+    children_names: childrenNames.join(", "),
     consent_accepted: input.consentAccepted,
     ocr_reviewed: true,
     face_verification_status: FACE_VERIFICATION_READY_FOR_GUARD_REVIEW,

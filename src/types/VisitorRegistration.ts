@@ -5,6 +5,8 @@ export const PURPOSE_OPTIONS = [
   { value: "Enrollment", label: "Enrollment — Open 7:00 AM–4:45 PM" },
   { value: "Tuition Fee Payment", label: "Tuition Fee Payment — Open 7:00 AM–4:45 PM" },
   { value: "Other Payments", label: "Other Payments — Open 7:00 AM–4:45 PM" },
+  { value: "Dean's Office", label: "Dean's Office" },
+  { value: "President's Office", label: "President's Office" },
   { value: "Others", label: "Others — Open 7:00 AM–6:00 PM" }
 ] as const;
 
@@ -31,6 +33,9 @@ export type VisitorRegistration = {
   idImageUri: string;
   purposeOfVisit: string;
   otherAgenda: string;
+  building: string;
+  childrenIncluded: number;
+  childrenNames: string;
   consentAccepted: boolean;
   ocrReviewed: boolean;
   faceVerificationStatus: FaceVerificationStatusType;

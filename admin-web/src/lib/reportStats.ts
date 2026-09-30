@@ -10,6 +10,8 @@ export const PURPOSE_OPTIONS = [
   "Enrollment",
   "Tuition Fee Payment",
   "Other Payments",
+  "Dean's Office",
+  "President's Office",
   "Others"
 ] as const;
 

@@ -13,7 +13,9 @@ import {
   NAME_DIGIT_PATTERN,
   NAME_LETTER_PATTERN,
   normalizePhilippineMobile,
-  PURPOSE_OPTIONS
+  PURPOSE_OPTIONS,
+  BUILDING_OPTIONS,
+  CHILDREN_INCLUDED_OPTIONS
 } from "@/lib/visitorRegistrationConstants";
 import {
   VisitShell,
@@ -34,6 +36,9 @@ type FormState = {
   idNumber: string;
   purpose: string;
   agenda: string;
+  building: string;
+  childrenIncluded: string;
+  childrenNames: string;
 };
 
 type FormErrors = Partial<Record<keyof FormState, string>>;
@@ -57,7 +62,10 @@ export default function VisitDetailsPage() {
       idDescription: isOther ? draft.idType.slice("Other: ".length) : "",
       idNumber: draft.idNumber,
       purpose: draft.purposeOfVisit,
-      agenda: draft.otherAgenda
+      agenda: draft.otherAgenda,
+      building: draft.building,
+      childrenIncluded: draft.childrenIncluded,
+      childrenNames: draft.childrenNames
     };
   });
   const [errors, setErrors] = useState<FormErrors>({});
@@ -196,6 +204,17 @@ export default function VisitDetailsPage() {
     if (form.purpose === "Others" && !form.agenda.trim()) {
       nextErrors.agenda = "Please specify your agenda.";
     }
+    if (!form.building.trim()) nextErrors.building = "Building is required.";
+    if (!form.childrenIncluded) nextErrors.childrenIncluded = "Please select a choice.";
+
+    const childrenCount = form.childrenIncluded === "None" ? 0 : Number(form.childrenIncluded);
+    const childrenNames = form.childrenNames
+      .split(",")
+      .map((name) => name.trim())
+      .filter(Boolean);
+    if (childrenCount > 0 && childrenNames.length !== childrenCount) {
+      nextErrors.childrenNames = `Enter exactly ${childrenCount} children's name${childrenCount === 1 ? "" : "s"}, separated by commas.`;
+    }
 
     return nextErrors;
   };
@@ -219,7 +238,10 @@ export default function VisitDetailsPage() {
       idType: form.idType === "Other" ? `Other: ${form.idDescription.trim()}` : form.idType.trim(),
       idNumber: form.idNumber.trim(),
       purposeOfVisit: form.purpose.trim(),
-      otherAgenda: form.agenda.trim()
+      otherAgenda: form.agenda.trim(),
+      building: form.building.trim(),
+      childrenIncluded: form.childrenIncluded,
+      childrenNames: form.childrenIncluded === "None" ? "" : form.childrenNames.trim()
     });
     router.push("/visit/face");
   };
@@ -334,6 +356,38 @@ export default function VisitDetailsPage() {
             onChange={(value) => updateField("agenda", value)}
             placeholder="Describe your agenda"
             error={errors.agenda}
+            required
+          />
+        ) : null}
+
+        <SelectField
+          label="Building"
+          value={form.building}
+          onChange={(value) => updateField("building", value)}
+          options={BUILDING_OPTIONS}
+          placeholder="Select building"
+          error={errors.building}
+          required
+        />
+        <SelectField
+          label="Children Included"
+          value={form.childrenIncluded}
+          onChange={(value) => {
+            updateField("childrenIncluded", value);
+            if (value === "None") updateField("childrenNames", "");
+          }}
+          options={CHILDREN_INCLUDED_OPTIONS}
+          placeholder="Select number of children"
+          error={errors.childrenIncluded}
+          required
+        />
+        {form.childrenIncluded !== "None" ? (
+          <TextField
+            label="Children's Names"
+            value={form.childrenNames}
+            onChange={(value) => updateField("childrenNames", value)}
+            placeholder="Separate names with commas"
+            error={errors.childrenNames}
             required
           />
         ) : null}

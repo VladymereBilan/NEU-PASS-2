@@ -181,6 +181,12 @@ export default function PendingVerificationsScreen() {
           <View key={registration.id} style={styles.itemCard}>
             <Text style={styles.itemTitle}>{registration.fullName}</Text>
             <Text style={styles.itemText}>Purpose: {registration.purposeOfVisit}</Text>
+            <Text style={styles.itemText}>Building: {registration.building}</Text>
+            {registration.childrenIncluded > 0 ? (
+              <Text style={styles.itemText}>
+                Children Included: {registration.childrenIncluded} ({registration.childrenNames})
+              </Text>
+            ) : null}
             <Text style={styles.itemText}>
               Created: {new Date(registration.createdAt).toLocaleString()}
             </Text>
