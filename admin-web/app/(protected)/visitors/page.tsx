@@ -11,6 +11,8 @@ type VisitorRow = {
   id: string;
   full_name: string;
   purpose_of_visit: string;
+  building: string;
+  accompanying_minors: number;
   registration_status: string;
   time_in: string | null;
   time_out: string | null;
@@ -22,6 +24,8 @@ type VisitorRow = {
 const COLUMNS = [
   "Visitor Name",
   "Purpose",
+  "Building",
+  "Accompanying Minors",
   "Status",
   "Time In",
   "Time Out",
@@ -45,6 +49,8 @@ function toRow(visitor: VisitorRow): Array<string> {
   return [
     visitor.full_name,
     visitor.purpose_of_visit,
+    visitor.building,
+    visitor.accompanying_minors > 0 ? String(visitor.accompanying_minors) : "-",
     visitor.registration_status,
     formatDate(visitor.time_in),
     formatDate(visitor.time_out),
@@ -113,7 +119,7 @@ export default function VisitorsPage() {
     let query = supabase
       .from("visitor_registrations")
       .select(
-        "id, full_name, purpose_of_visit, registration_status, time_in, time_out, qr_status, expiration_time, rejection_reason",
+        "id, full_name, purpose_of_visit, building, accompanying_minors, registration_status, time_in, time_out, qr_status, expiration_time, rejection_reason",
         { count: "exact" }
       );
 
@@ -154,7 +160,7 @@ export default function VisitorsPage() {
       let query = supabase
         .from("visitor_registrations")
         .select(
-          "id, full_name, purpose_of_visit, registration_status, time_in, time_out, qr_status, expiration_time, rejection_reason"
+          "id, full_name, purpose_of_visit, building, accompanying_minors, registration_status, time_in, time_out, qr_status, expiration_time, rejection_reason"
         );
 
       const operand = searchOperand(debouncedSearch);

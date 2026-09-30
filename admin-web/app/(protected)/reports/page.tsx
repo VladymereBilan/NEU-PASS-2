@@ -26,7 +26,7 @@ export default async function ReportsPage({
     );
   }
 
-  const { monthPurposeCounts, dailyBreakdown } = data;
+  const { monthPurposeCounts, monthBuildingCounts, dailyBreakdown } = data;
 
   const totalPages = Math.max(1, Math.ceil(dailyBreakdown.length / DAILY_BREAKDOWN_PAGE_SIZE));
   const requestedPage = Number(searchParams.page) || 1;
@@ -65,6 +65,19 @@ export default async function ReportsPage({
       >
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {Object.entries(monthPurposeCounts).map(([label, value], index) => (
+            <MetricCard
+              key={label}
+              label={label}
+              value={value}
+              accent={PURPOSE_ACCENTS[index % PURPOSE_ACCENTS.length]}
+            />
+          ))}
+        </div>
+      </Panel>
+
+      <Panel title="Building-Based Counts" eyebrow="By month">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {Object.entries(monthBuildingCounts).map(([label, value], index) => (
             <MetricCard
               key={label}
               label={label}

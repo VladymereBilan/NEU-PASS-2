@@ -6,7 +6,7 @@ import { getVisitorStatsRows, type VisitorStatsRow } from "../../src/repositorie
 import { DashboardScreen } from "../../src/components/dashboard/DashboardScreen";
 import type { BottomNavTab } from "../../src/components/dashboard/BottomNavBar";
 import { NEU_DARK } from "../../src/theme/brand";
-import { PURPOSE_OPTIONS } from "../../src/types/VisitorRegistration";
+import { BUILDING_OPTIONS, PURPOSE_OPTIONS } from "../../src/types/VisitorRegistration";
 
 const GUARD_TABS: BottomNavTab[] = [
   { key: "home", label: "Home", icon: "home-variant", route: "/(guard)/home" },
@@ -21,6 +21,7 @@ type MetricCardProps = {
 };
 
 type PurposeValue = (typeof PURPOSE_OPTIONS)[number]["value"];
+type BuildingValue = (typeof BUILDING_OPTIONS)[number];
 
 export default function ReportsScreen() {
   const router = useRouter();
@@ -76,6 +77,21 @@ export default function ReportsScreen() {
       const purpose = visitor.purposeOfVisit as PurposeValue;
       if (purpose in counts) {
         counts[purpose] += 1;
+      }
+    });
+
+    return counts;
+  }, [visitors]);
+
+  const buildingCounts = useMemo(() => {
+    const counts = Object.fromEntries(
+      BUILDING_OPTIONS.map((building) => [building, 0])
+    ) as Record<BuildingValue, number>;
+
+    visitors.forEach((visitor) => {
+      const building = visitor.building as BuildingValue;
+      if (building in counts) {
+        counts[building] += 1;
       }
     });
 
@@ -163,6 +179,15 @@ export default function ReportsScreen() {
                   label={purpose.label}
                   value={purposeCounts[purpose.value]}
                 />
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Building Counts</Text>
+            <View style={styles.summaryGrid}>
+              {BUILDING_OPTIONS.map((building) => (
+                <MetricCard key={building} label={building} value={buildingCounts[building]} />
               ))}
             </View>
           </View>

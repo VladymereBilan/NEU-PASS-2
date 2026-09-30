@@ -55,6 +55,7 @@ export async function getVisitorById(id: string) {
 
 export type VisitorStatsRow = {
   purposeOfVisit: string;
+  building: string;
   registrationStatus: string;
   checkoutStatus: string;
   qrStatus: string;
@@ -64,20 +65,21 @@ export type VisitorStatsRow = {
   createdAt: string;
 };
 
-// Reports screens only aggregate counts by status/purpose/date — selecting
-// just those columns (instead of select("*")) keeps names, addresses,
-// contact info, ID numbers, and image paths for every visitor ever
-// registered off the wire, since nothing here needs them.
+// Reports screens only aggregate counts by status/purpose/building/date —
+// selecting just those columns (instead of select("*")) keeps names,
+// addresses, contact info, ID numbers, and image paths for every visitor
+// ever registered off the wire, since nothing here needs them.
 export async function getVisitorStatsRows(): Promise<VisitorStatsRow[]> {
   const { data, error } = await supabase
     .from("visitor_registrations")
     .select(
-      "purpose_of_visit, registration_status, checkout_status, qr_status, time_in, time_out, expiration_time, created_at"
+      "purpose_of_visit, building, registration_status, checkout_status, qr_status, time_in, time_out, expiration_time, created_at"
     );
 
   if (error) throw new Error(error.message);
   return (data || []).map((row) => ({
     purposeOfVisit: row.purpose_of_visit,
+    building: row.building || "",
     registrationStatus: row.registration_status,
     checkoutStatus: row.checkout_status,
     qrStatus: row.qr_status,

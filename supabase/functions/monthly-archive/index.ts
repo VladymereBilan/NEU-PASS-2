@@ -38,6 +38,8 @@ const CSV_COLUMNS = [
   "id_number",
   "purpose_of_visit",
   "other_agenda",
+  "building",
+  "accompanying_minors",
   "visitor_pass_number",
   "registration_status",
   "checkout_status",

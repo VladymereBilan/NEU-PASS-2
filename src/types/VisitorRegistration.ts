@@ -8,6 +8,11 @@ export const PURPOSE_OPTIONS = [
   { value: "Others", label: "Others — Open 7:00 AM–6:00 PM" }
 ] as const;
 
+// Mirrors admin-web/src/lib/visitorRegistrationConstants.ts's BUILDING_OPTIONS
+// ordering — captured from which gate's QR a visitor scans, never picked by
+// the guard, so this is only used for iterating a fixed display order here.
+export const BUILDING_OPTIONS = ["SOM", "PSB", "MAIN"] as const;
+
 export type RegistrationStatus = "Pending" | "Active" | "Rejected" | "Completed";
 
 export type QrStatus = "Active" | "Inactive" | "Used/Invalid";
