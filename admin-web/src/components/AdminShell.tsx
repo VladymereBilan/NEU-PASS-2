@@ -143,7 +143,7 @@ export function AdminShell({
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
+                    className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-400/60 ${
                       active
                         ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
                         : "border border-transparent text-gray-400 hover:bg-white/5 hover:text-gray-200"
@@ -209,7 +209,7 @@ export function AdminShell({
                   key={item.href}
                   href={item.href}
                   title={collapsed ? item.label : undefined}
-                  className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
+                  className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-400/60 ${
                     active
                       ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
                       : "border border-transparent text-gray-400 hover:bg-white/5 hover:text-gray-200"
