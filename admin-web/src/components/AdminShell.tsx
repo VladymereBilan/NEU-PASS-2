@@ -53,32 +53,43 @@ export function AdminShell({
   // stale the moment a tab was left open (never mind not showing time at
   // all). Ticks every second so it reads as a genuine live clock, not a
   // static timestamp from whenever the page loaded.
-  const [now, setNow] = useState(() => new Date());
+  //
+  // `now` starts `null` rather than `new Date()` on purpose: this component
+  // is still server-rendered for the initial HTML, and computing a real
+  // Date() there would bake in a timestamp that can never match the one the
+  // browser computes a moment later at hydration — a guaranteed React #418
+  // hydration mismatch, which forces React to discard and rebuild this
+  // entire subtree (including the Dashboard's chart panels), which in turn
+  // threw recharts' ResponsiveContainer into a measure/remount loop (#185
+  // "Maximum update depth exceeded"). Only setting a real Date after mount
+  // means the server and the first client render both show the placeholder.
+  const [now, setNow] = useState<Date | null>(null);
   useEffect(() => {
+    setNow(new Date());
     const interval = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
 
   const dateLabel = useMemo(
     () =>
-      now.toLocaleDateString("en-US", {
+      now?.toLocaleDateString("en-US", {
         weekday: "long",
         year: "numeric",
         month: "long",
         day: "numeric",
         timeZone: "Asia/Manila"
-      }),
+      }) ?? "—",
     [now]
   );
   const timeLabel = useMemo(
     () =>
-      now.toLocaleTimeString("en-US", {
+      now?.toLocaleTimeString("en-US", {
         hour: "numeric",
         minute: "2-digit",
         second: "2-digit",
         hour12: true,
         timeZone: "Asia/Manila"
-      }),
+      }) ?? "—",
     [now]
   );
 
