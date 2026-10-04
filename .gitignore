@@ -38,3 +38,6 @@ expo-env.d.ts
 # Local backups and Supabase CLI metadata
 app.json.backup
 supabase/.temp/
+
+# QA/testing artifacts kept local-only, not pushed to the shared repo
+/testing/
