@@ -26,7 +26,7 @@ export function DonutChart({
   return (
     <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-center">
       <div className="relative shrink-0" style={{ width: size, height: size }}>
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" debounce={200}>
           <PieChart>
             <Pie
               data={segments}
