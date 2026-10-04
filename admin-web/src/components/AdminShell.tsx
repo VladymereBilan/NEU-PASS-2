@@ -7,7 +7,6 @@ import { ClockIcon } from "@/components/icons";
 import { createClient } from "@/lib/supabase/client";
 import {
   AuditIcon,
-  ChevronLeftIcon,
   CloseIcon,
   DashboardIcon,
   MenuIcon,
@@ -33,7 +32,6 @@ export function AdminShell({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [collapsed, setCollapsed] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
@@ -179,36 +177,20 @@ export function AdminShell({
       ) : null}
 
       <div className="mx-auto flex min-h-screen w-full max-w-[1700px]">
-        <aside
-          className={`sticky top-0 hidden h-screen shrink-0 self-start flex-col border-r border-emerald-500/15 bg-[#040f0a]/95 p-5 backdrop-blur-sm transition-all duration-200 lg:flex ${
-            collapsed ? "w-24" : "w-72"
-          }`}
-        >
-          <div className="mb-8 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-3 overflow-hidden">
-              <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/neu-logo.webp" alt="New Era University" className="h-full w-full object-cover" />
-              </div>
-              {!collapsed ? (
-                <div className="overflow-hidden">
-                  <div className="truncate text-xs font-bold uppercase tracking-[0.3em] text-white">
-                    NEU PASS
-                  </div>
-                  <div className="truncate text-sm font-semibold text-emerald-400">
-                    Admin Console
-                  </div>
-                </div>
-              ) : null}
+        <aside className="sticky top-0 hidden h-screen w-72 shrink-0 self-start flex-col border-r border-emerald-500/15 bg-[#040f0a]/95 p-5 backdrop-blur-sm lg:flex">
+          <div className="mb-8 flex items-center gap-3 overflow-hidden">
+            <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/neu-logo.webp" alt="New Era University" className="h-full w-full object-cover" />
             </div>
-            <button
-              type="button"
-              onClick={() => setCollapsed((value) => !value)}
-              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-emerald-500/25 text-gray-400 transition hover:bg-emerald-500/10 hover:text-emerald-300"
-            >
-              <ChevronLeftIcon className={`h-4 w-4 transition-transform ${collapsed ? "rotate-180" : ""}`} />
-            </button>
+            <div className="overflow-hidden">
+              <div className="truncate text-xs font-bold uppercase tracking-[0.3em] text-white">
+                NEU PASS
+              </div>
+              <div className="truncate text-sm font-semibold text-emerald-400">
+                Admin Console
+              </div>
+            </div>
           </div>
 
           <nav className="flex flex-1 flex-col gap-1 overflow-y-auto">
@@ -219,7 +201,6 @@ export function AdminShell({
                 <Link
                   key={item.href}
                   href={item.href}
-                  title={collapsed ? item.label : undefined}
                   className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-400/60 ${
                     active
                       ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
@@ -227,7 +208,7 @@ export function AdminShell({
                   }`}
                 >
                   <Icon className="h-5 w-5 shrink-0" />
-                  {!collapsed ? <span className="truncate">{item.label}</span> : null}
+                  <span className="truncate">{item.label}</span>
                 </Link>
               );
             })}
@@ -235,11 +216,10 @@ export function AdminShell({
 
           <button
             onClick={() => void signOut()}
-            title={collapsed ? "Sign out" : undefined}
             className="mt-4 flex items-center gap-3 rounded-2xl border border-emerald-500/20 px-4 py-3 text-sm font-semibold text-gray-400 transition hover:bg-white/5 hover:text-gray-200"
           >
             <SignOutIcon className="h-5 w-5 shrink-0" />
-            {!collapsed ? <span>Sign Out</span> : null}
+            <span>Sign Out</span>
           </button>
         </aside>
 
