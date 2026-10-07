@@ -28,6 +28,13 @@ const RESEND_FROM_EMAIL = Deno.env.get("RESEND_FROM_EMAIL");
 
 const MANILA_OFFSET_MS = 8 * 60 * 60 * 1000;
 
+// PostgREST caps one response at 1,000 rows anyway; making the cap explicit
+// (and ordered) means the archived CSV and the purged rows are always the
+// same set, with any remainder picked up by the next run.
+const BATCH_LIMIT = 1000;
+// Keeps each delete/remove request's URL/body comfortably small.
+const DELETE_CHUNK_SIZE = 100;
+
 const CSV_COLUMNS = [
   "id",
   "full_name",
@@ -127,7 +134,9 @@ Deno.serve(async (req) => {
     .from("visitor_registrations")
     .select("*")
     .in("registration_status", ["Completed", "Rejected"])
-    .lt("created_at", cutoff);
+    .lt("created_at", cutoff)
+    .order("created_at", { ascending: true })
+    .limit(BATCH_LIMIT);
 
   if (queryError) {
     return jsonResponse({ error: `Query failed: ${queryError.message}` }, 500);
@@ -211,41 +220,54 @@ Deno.serve(async (req) => {
     }
   }
 
-  // Every recipient confirmed sent — safe to delete now, Storage first.
-  const idPaths = rows
-    .map((row: { id_image_path: string | null }) => row.id_image_path)
-    .filter((path): path is string => !!path);
-  const facePaths = rows
-    .map((row: { face_image_path: string | null }) => row.face_image_path)
-    .filter((path): path is string => !!path);
-
-  if (idPaths.length > 0) {
-    const { error } = await supabase.storage.from("visitor-ids").remove(idPaths);
-    if (error) {
-      return jsonResponse(
-        { error: `Storage cleanup (visitor-ids) failed after email was already sent: ${error.message}` },
-        500
-      );
-    }
-  }
-
-  if (facePaths.length > 0) {
-    const { error } = await supabase.storage.from("visitor-faces").remove(facePaths);
-    if (error) {
-      return jsonResponse(
-        { error: `Storage cleanup (visitor-faces) failed after email was already sent: ${error.message}` },
-        500
-      );
-    }
-  }
-
+  // Every recipient confirmed sent — safe to delete now. Rows go first, in
+  // small chunks (a single `.in("id", [...])` over hundreds of UUIDs makes a
+  // URL long enough to be rejected), then their photos. Deleting rows first
+  // means a failure partway can only leave orphaned private images behind,
+  // never rows pointing at images that are already gone.
   const ids = rows.map((row: { id: string }) => row.id);
-  const { error: deleteError } = await supabase.from("visitor_registrations").delete().in("id", ids);
+  for (let i = 0; i < ids.length; i += DELETE_CHUNK_SIZE) {
+    const { error: deleteError } = await supabase
+      .from("visitor_registrations")
+      .delete()
+      .in("id", ids.slice(i, i + DELETE_CHUNK_SIZE));
 
-  if (deleteError) {
+    if (deleteError) {
+      return jsonResponse(
+        {
+          error: `Row deletion failed after the archive email was already sent (${i} of ${ids.length} rows deleted): ${deleteError.message}`
+        },
+        500
+      );
+    }
+  }
+
+  const storageFailures: string[] = [];
+  for (const [bucket, column] of [
+    ["visitor-ids", "id_image_path"],
+    ["visitor-faces", "face_image_path"]
+  ] as const) {
+    const paths = rows
+      .map((row: Record<string, unknown>) => row[column] as string | null)
+      .filter((path): path is string => !!path);
+
+    for (let i = 0; i < paths.length; i += DELETE_CHUNK_SIZE) {
+      const { error } = await supabase.storage
+        .from(bucket)
+        .remove(paths.slice(i, i + DELETE_CHUNK_SIZE));
+      if (error) storageFailures.push(`${bucket}: ${error.message}`);
+    }
+  }
+
+  const remainingNote =
+    rows.length >= BATCH_LIMIT
+      ? ` Batch limit (${BATCH_LIMIT}) reached — run again to archive the rest.`
+      : "";
+
+  if (storageFailures.length > 0) {
     return jsonResponse(
       {
-        error: `Row deletion failed after email and Storage cleanup already completed: ${deleteError.message}`
+        error: `Purged ${rows.length} row(s) but some photo cleanup failed: ${storageFailures.join("; ")}.${remainingNote}`
       },
       500
     );
@@ -253,7 +275,7 @@ Deno.serve(async (req) => {
 
   return jsonResponse(
     {
-      message: `Archived and purged ${rows.length} registration(s); emailed ${recipients.length} admin(s).`
+      message: `Archived and purged ${rows.length} registration(s); emailed ${recipients.length} admin(s).${remainingNote}`
     },
     200
   );

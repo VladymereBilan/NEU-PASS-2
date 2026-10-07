@@ -120,7 +120,47 @@ async function checkDuplicateFace(
 // here before anything touches the database. Mirrors the client-side
 // `validate()` in details/page.tsx and the `hasValidDetails` check in
 // face/page.tsx; keep both in sync if either changes.
+// Generous caps — far above any real value, just enough to stop a direct
+// call from stuffing megabytes of text into a row.
+const MAX_TEXT_LENGTH = 200;
+const MAX_ADDRESS_LENGTH = 500;
+const MAX_AGENDA_LENGTH = 500;
+
+const STRING_FIELDS = [
+  "fullName",
+  "address",
+  "contactNumber",
+  "email",
+  "idType",
+  "idNumber",
+  "idImagePath",
+  "purposeOfVisit",
+  "otherAgenda",
+  "building",
+  "faceImagePath"
+] as const;
+
 function validate(input: VisitorRegistrationInput): string | null {
+  // Server Actions are callable directly with arbitrary JSON, so don't trust
+  // the declared types — a non-string would make the .trim() calls below throw.
+  if (!input || typeof input !== "object") return "Invalid registration.";
+  for (const field of STRING_FIELDS) {
+    if (typeof input[field] !== "string") return "Invalid registration.";
+  }
+  if (typeof input.accompanyingMinors !== "number" || typeof input.consentAccepted !== "boolean") {
+    return "Invalid registration.";
+  }
+  if (
+    input.fullName.length > MAX_TEXT_LENGTH ||
+    input.email.length > MAX_TEXT_LENGTH ||
+    input.idType.length > MAX_TEXT_LENGTH ||
+    input.idNumber.length > MAX_TEXT_LENGTH ||
+    input.address.length > MAX_ADDRESS_LENGTH ||
+    input.otherAgenda.length > MAX_AGENDA_LENGTH
+  ) {
+    return "One of the fields is too long.";
+  }
+
   const fullName = input.fullName.trim();
   if (!fullName || !NAME_LETTER_PATTERN.test(fullName) || NAME_DIGIT_PATTERN.test(fullName)) {
     return "Full Name is missing or invalid.";
@@ -192,7 +232,9 @@ export async function submitVisitorRegistration(
     return { error: "Your session expired. Please reload this page and start again." };
   }
 
-  const turnstileOk = await verifyTurnstileToken(input.turnstileToken);
+  const turnstileOk = await verifyTurnstileToken(
+    typeof input?.turnstileToken === "string" ? input.turnstileToken : ""
+  );
   if (!turnstileOk) {
     return { error: "Verification failed. Please reload the page and try again." };
   }

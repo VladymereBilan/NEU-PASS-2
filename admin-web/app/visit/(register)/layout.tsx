@@ -9,7 +9,7 @@ type BootstrapState =
   | { status: "loading" }
   | { status: "redirecting" }
   | { status: "error"; message: string }
-  | { status: "ready" };
+  | { status: "ready"; userId: string };
 
 export default function VisitLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -23,6 +23,19 @@ export default function VisitLayout({ children }: { children: React.ReactNode })
       const {
         data: { session }
       } = await supabase.auth.getSession();
+
+      // The browser client shares its auth cookie with the admin dashboard, so
+      // a signed-in admin/guard opening /visit in the same browser would
+      // otherwise register as that staff account. Don't reuse — and don't
+      // silently replace — a non-anonymous session.
+      if (session && !session.user.is_anonymous) {
+        setState({
+          status: "error",
+          message:
+            "You're signed in with a staff account in this browser. Open this page in a private window (or sign out first) to register as a visitor."
+        });
+        return;
+      }
 
       let userId = session?.user.id;
 
@@ -67,7 +80,7 @@ export default function VisitLayout({ children }: { children: React.ReactNode })
         return;
       }
 
-      setState({ status: "ready" });
+      setState({ status: "ready", userId });
     })();
 
     return () => {
@@ -84,7 +97,7 @@ export default function VisitLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <RegistrationDraftProvider>
+    <RegistrationDraftProvider userId={state.userId}>
       <ConsentGuard>{children}</ConsentGuard>
     </RegistrationDraftProvider>
   );

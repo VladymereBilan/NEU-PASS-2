@@ -61,6 +61,7 @@ export default function CheckoutVerificationScreen() {
   const [matchReasons, setMatchReasons] = useState<Record<string, string | undefined>>({});
   const [refreshHovered, setRefreshHovered] = useState(false);
   const [scanHovered, setScanHovered] = useState(false);
+  const [captureHovered, setCaptureHovered] = useState(false);
   const [secondaryHovered, setSecondaryHovered] = useState(false);
   const [completeHovered, setCompleteHovered] = useState(false);
   const { station, setStation } = useStationFilter();
@@ -165,8 +166,24 @@ export default function CheckoutVerificationScreen() {
     try {
       setCompletingId(id);
       await completeCheckout(id, status);
-    } catch {
-      Alert.alert("Unable to complete checkout.");
+    } catch (err) {
+      const reason = err instanceof Error && err.message ? `
+
+${err.message}` : "";
+      Alert.alert(`Unable to complete checkout.${reason}`);
+      // The visitor may have been checked out by another guard in the
+      // meantime — reload so a stale card doesn't linger, and drop the
+      // spotlight card if they're no longer active.
+      try {
+        const latest = await getActiveVisitors();
+        setActiveVisitors(latest);
+        void loadFaceUrls(latest);
+        setScannedVisitor((current) =>
+          current && !latest.some((visitor) => visitor.id === current.id) ? null : current
+        );
+      } catch {
+        // Best effort; the guard can pull Refresh.
+      }
       setCompletingId(null);
       return;
     }
@@ -311,6 +328,7 @@ export default function CheckoutVerificationScreen() {
 
       const expirationStatus = getExpirationStatus(visitor.expirationTime);
       setScannedVisitor(visitor);
+      void loadFaceUrls([visitor]);
       setSelectedStatus((prev) => ({
         ...prev,
         [visitor.id]: prev[visitor.id] || "Manual Review"
@@ -380,15 +398,15 @@ export default function CheckoutVerificationScreen() {
           <Pressable
             style={({ pressed }) => [
               styles.scanButton,
-              (pressed || scanHovered) && styles.scanButtonActive,
+              (pressed || captureHovered) && styles.scanButtonActive,
               !liveCameraReady && styles.scanButtonDisabled
             ]}
             onPress={() => void captureLivePhoto(id)}
-            onHoverIn={() => setScanHovered(true)}
-            onHoverOut={() => setScanHovered(false)}
+            onHoverIn={() => setCaptureHovered(true)}
+            onHoverOut={() => setCaptureHovered(false)}
             disabled={!liveCameraReady}
           >
-            <Text style={[styles.scanButtonText, (scanHovered || false) && styles.scanButtonTextActive]}>
+            <Text style={[styles.scanButtonText, captureHovered && styles.scanButtonTextActive]}>
               {liveCameraReady ? "Capture" : "Starting Camera..."}
             </Text>
           </Pressable>
@@ -617,7 +635,7 @@ export default function CheckoutVerificationScreen() {
             </View>
           ) : null}
 
-          {loading ? (
+          {loading && activeVisitors.length === 0 ? (
             <Text style={styles.body}>Loading active visitors...</Text>
           ) : error ? (
             <Text style={styles.body}>{error}</Text>

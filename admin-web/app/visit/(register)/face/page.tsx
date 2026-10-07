@@ -11,8 +11,10 @@ import {
   BUILDING_OPTIONS,
   EMAIL_PATTERN,
   ID_NUMBER_PATTERN,
+  ID_TYPE_OPTIONS,
   NAME_DIGIT_PATTERN,
-  NAME_LETTER_PATTERN
+  NAME_LETTER_PATTERN,
+  isValidPhilippineMobile
 } from "@/lib/visitorRegistrationConstants";
 import { VisitShell, PrimaryButton, SecondaryButton, ErrorBanner } from "@/components/VisitShell";
 import { Turnstile } from "@/components/Turnstile";
@@ -143,9 +145,12 @@ export default function VisitFaceCapturePage() {
       draft.address.trim() &&
       /[A-Za-zÀ-ÖØ-öø-ÿ]/.test(draft.address) &&
       draft.contactNumber.trim() &&
+      isValidPhilippineMobile(draft.contactNumber) &&
       draft.email.trim() &&
       EMAIL_PATTERN.test(draft.email.trim()) &&
       draft.idType.trim() &&
+      ((ID_TYPE_OPTIONS as readonly string[]).includes(draft.idType.trim()) ||
+        (draft.idType.startsWith("Other: ") && draft.idType.slice("Other: ".length).trim().length > 0)) &&
       draft.idNumber.trim() &&
       ID_NUMBER_PATTERN.test(draft.idNumber.trim()) &&
       draft.purposeOfVisit.trim() &&

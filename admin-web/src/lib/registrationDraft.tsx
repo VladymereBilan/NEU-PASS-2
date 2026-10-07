@@ -35,14 +35,25 @@ const EMPTY_DRAFT: RegistrationDraft = {
 };
 
 const STORAGE_KEY = "neu-pass-visit-draft";
+// Which Supabase user the stored draft belongs to. Its photo paths start with
+// that user's id, so a draft carried into a different (e.g. fresh anonymous)
+// session would be rejected at submit as "photo does not belong to this
+// session" — better to start clean than to fail on the last step.
+const OWNER_KEY = "neu-pass-visit-draft-owner";
 
 // Only text fields and already-uploaded Storage paths live here — never raw
 // image bytes. That's what makes it safe/cheap to persist to sessionStorage:
 // a mid-flow reload (a real risk on a visitor's own mobile browser) loses
 // nothing that isn't trivially re-derivable or already durably uploaded.
-function readStoredDraft(): RegistrationDraft {
+function readStoredDraft(userId: string): RegistrationDraft {
   if (typeof window === "undefined") return EMPTY_DRAFT;
   try {
+    const owner = window.sessionStorage.getItem(OWNER_KEY);
+    if (owner !== userId) {
+      window.sessionStorage.removeItem(STORAGE_KEY);
+      window.sessionStorage.setItem(OWNER_KEY, userId);
+      return EMPTY_DRAFT;
+    }
     const raw = window.sessionStorage.getItem(STORAGE_KEY);
     if (!raw) return EMPTY_DRAFT;
     return { ...EMPTY_DRAFT, ...JSON.parse(raw) };
@@ -78,8 +89,14 @@ const RegistrationDraftContext = createContext<RegistrationDraftContextValue | u
   undefined
 );
 
-export function RegistrationDraftProvider({ children }: { children: React.ReactNode }) {
-  const [draft, setDraft] = useState<RegistrationDraft>(readStoredDraft);
+export function RegistrationDraftProvider({
+  userId,
+  children
+}: {
+  userId: string;
+  children: React.ReactNode;
+}) {
+  const [draft, setDraft] = useState<RegistrationDraft>(() => readStoredDraft(userId));
   const draftRef = useRef(draft);
 
   const updateDraft = useCallback((updates: Partial<RegistrationDraft>) => {

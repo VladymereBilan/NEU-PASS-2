@@ -48,7 +48,7 @@ Three tables in the `public` schema, all with RLS enabled:
 
 **RLS helper**: `auth_account_type()` (a `SECURITY DEFINER` SQL function reading the caller's own `profiles.account_type`) is used throughout policies instead of repeating the same subquery.
 
-Schema/RLS/RPCs were provisioned directly against the Supabase project via `apply_migration` calls (Supabase MCP tooling) — there are no local `.sql` migration files in this repo to look at; use the Supabase MCP tools (`list_tables`, `list_migrations`, `get_advisors`) or the dashboard to inspect current state.
+The core schema/RLS/RPCs (including `guard_login_attempt`) were provisioned directly against the Supabase project via `apply_migration` calls (Supabase MCP tooling) and are not in the repo. Only later add-on migrations live in `supabase/*.sql` (building/minors, rejection reason, admin login lockout, guard profile picture) — don't assume they describe the whole schema; use the Supabase MCP tools (`list_tables`, `list_migrations`, `get_advisors`) or the dashboard to inspect current state.
 
 ## Architecture (root app)
 

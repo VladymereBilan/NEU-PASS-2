@@ -141,6 +141,9 @@ Deno.serve(async (request) => {
     .select("face_image_path")
     .in("registration_status", ["Pending", "Active"])
     .not("face_image_path", "is", null)
+    // Newest first, so if the cap is ever hit it's the oldest open
+    // registrations that fall off rather than an arbitrary subset.
+    .order("created_at", { ascending: false })
     .limit(MAX_CANDIDATES);
 
   if (queryError) {

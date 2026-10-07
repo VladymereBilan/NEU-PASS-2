@@ -18,6 +18,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [sessionResolved, setSessionResolved] = useState(false);
   const [role, setRole] = useState<Role>(null);
   const [roleResolved, setRoleResolved] = useState(false);
+  // Bumped to re-run the profile lookup after a failed one (see below).
+  const [lookupAttempt, setLookupAttempt] = useState(0);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -37,6 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let active = true;
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
 
     if (!session) {
       setRole(null);
@@ -58,6 +61,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // would bounce a signed-in guard back to the login screen.
         if (error) {
           setRoleResolved(true);
+          // On a cold start there is no "last known role" to keep, so a guard
+          // opening the app with a bad connection would sit on the login
+          // screen despite a valid saved session. Retry a few times.
+          if (lookupAttempt < 5) {
+            retryTimer = setTimeout(() => setLookupAttempt((n) => n + 1), 3000);
+          }
           return;
         }
 
@@ -76,8 +85,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       active = false;
+      if (retryTimer) clearTimeout(retryTimer);
     };
-  }, [session]);
+  }, [session, lookupAttempt]);
 
   useEffect(() => {
     if (!session) return;
