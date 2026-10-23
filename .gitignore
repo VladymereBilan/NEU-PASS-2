@@ -20,6 +20,9 @@ web-build/
 .env.local
 supabase/functions/.env.local
 
+# Google Play service account key (eas submit) — never commit, never share
+google-play-service-account.json
+
 # Logs
 npm-debug.log*
 yarn-debug.log*

@@ -19,7 +19,8 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "NEU PASS uses the camera to scan visitor QR passes and capture a live photo for checkout face verification."
+          "cameraPermission": "NEU PASS uses the camera to scan visitor QR passes and capture a live photo for checkout face verification.",
+          "recordAudioAndroid": false
         }
       ]
     ],
@@ -30,8 +31,13 @@
         "backgroundColor": "#F5F7F4"
       },
       "permissions": [
-        "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO"
+        "android.permission.CAMERA"
+      ],
+      "blockedPermissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.VIBRATE"
       ]
     },
     "assetBundlePatterns": [
