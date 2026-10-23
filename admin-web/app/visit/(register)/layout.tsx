@@ -4,10 +4,16 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { RegistrationDraftProvider, useRegistrationDraft } from "@/lib/registrationDraft";
+import {
+  GATE_CLOSE_LABEL,
+  GATE_OPEN_LABEL,
+  isGateRegistrationOpen
+} from "@/lib/visitorRegistrationConstants";
 
 type BootstrapState =
   | { status: "loading" }
   | { status: "redirecting" }
+  | { status: "closed" }
   | { status: "error"; message: string }
   | { status: "ready"; userId: string };
 
@@ -39,6 +45,50 @@ export default function VisitLayout({ children }: { children: React.ReactNode })
 
       let userId = session?.user.id;
 
+      // A visitor re-opening the gate QR link (or refreshing mid-flow) keeps
+      // their anonymous session — guard against starting a second
+      // registration while one is already Pending/Active, same as the old
+      // mobile app's register.tsx focus-guard did.
+      //
+      // This runs before the closed-hours check below so a visitor who
+      // already holds an Active pass can still reach /visit/status to show
+      // it (and get checked out) after 6:00 PM — the closure is only meant
+      // to stop *new* registrations. Someone with no session at all can't
+      // have a registration, so the query is skipped for them entirely.
+      if (userId) {
+        const { data: existing, error: queryError } = await supabase
+          .from("visitor_registrations")
+          .select("id")
+          .eq("visitor_user_id", userId)
+          .in("registration_status", ["Pending", "Active"])
+          .limit(1)
+          .maybeSingle();
+
+        if (cancelled) return;
+
+        if (queryError) {
+          setState({
+            status: "error",
+            message: "Unable to check your registration status. Please reload this page."
+          });
+          return;
+        }
+
+        if (existing) {
+          setState({ status: "redirecting" });
+          router.replace("/visit/status");
+          return;
+        }
+      }
+
+      // Checked on entry rather than on a ticking clock: a visitor who got
+      // in before 6:00 PM is allowed to finish the steps they started
+      // instead of being thrown out mid-registration.
+      if (!isGateRegistrationOpen()) {
+        setState({ status: "closed" });
+        return;
+      }
+
       if (!userId) {
         const { data, error } = await supabase.auth.signInAnonymously();
         if (cancelled) return;
@@ -52,34 +102,7 @@ export default function VisitLayout({ children }: { children: React.ReactNode })
         userId = data.user.id;
       }
 
-      // A visitor re-opening the gate QR link (or refreshing mid-flow) keeps
-      // their anonymous session — guard against starting a second
-      // registration while one is already Pending/Active, same as the old
-      // mobile app's register.tsx focus-guard did.
-      const { data: existing, error: queryError } = await supabase
-        .from("visitor_registrations")
-        .select("id")
-        .eq("visitor_user_id", userId)
-        .in("registration_status", ["Pending", "Active"])
-        .limit(1)
-        .maybeSingle();
-
       if (cancelled) return;
-
-      if (queryError) {
-        setState({
-          status: "error",
-          message: "Unable to check your registration status. Please reload this page."
-        });
-        return;
-      }
-
-      if (existing) {
-        setState({ status: "redirecting" });
-        router.replace("/visit/status");
-        return;
-      }
-
       setState({ status: "ready", userId });
     })();
 
@@ -90,6 +113,15 @@ export default function VisitLayout({ children }: { children: React.ReactNode })
 
   if (state.status === "loading" || state.status === "redirecting") {
     return <CenteredMessage title="Starting your registration…" body="One moment." />;
+  }
+
+  if (state.status === "closed") {
+    return (
+      <CenteredMessage
+        title="Visitor registration is closed"
+        body={`Registration is open daily from ${GATE_OPEN_LABEL} to ${GATE_CLOSE_LABEL}. Please scan this QR code again at ${GATE_OPEN_LABEL} tomorrow.`}
+      />
+    );
   }
 
   if (state.status === "error") {

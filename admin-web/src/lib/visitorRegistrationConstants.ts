@@ -7,9 +7,9 @@
 
 export const PURPOSE_OPTIONS = [
   { value: "Inquiries", label: "Inquiries — Open 7:00 AM–6:00 PM" },
-  { value: "Enrollment", label: "Enrollment — Open 7:00 AM–4:45 PM" },
-  { value: "Tuition Fee Payment", label: "Tuition Fee Payment — Open 7:00 AM–4:45 PM" },
-  { value: "Other Payments", label: "Other Payments — Open 7:00 AM–4:45 PM" },
+  { value: "Enrollment", label: "Enrollment — Open 7:00 AM–5:00 PM" },
+  { value: "Tuition Fee Payment", label: "Tuition Fee Payment — Open 7:00 AM–5:00 PM" },
+  { value: "Other Payments", label: "Other Payments — Open 7:00 AM–5:00 PM" },
   { value: "Others", label: "Others — Open 7:00 AM–6:00 PM" }
 ] as const;
 
@@ -116,4 +116,50 @@ export function getExpirationStatus(expirationTime: string | null): ExpirationSt
   if (minutesUntil <= 0) return "Expired";
   if (minutesUntil <= 15) return "Near Expiration";
   return "Active";
+}
+
+// --- Gate registration hours (Asia/Manila) -------------------------------
+//
+// The static QR codes posted at each gate are permanent, so the "the gate is
+// closed right now" state has to live in the app rather than in the QR. A
+// visitor scanning at 9:00 PM gets a closed screen instead of a registration
+// they'd never get approved (no guard is approving at that hour, and the
+// pass would be born already expired).
+//
+// 6:00 PM is the close because it's the latest expiration any purpose can
+// get (Inquiries/Others — see PURPOSE_OPTIONS and the approve_visitor RPC);
+// there's no purpose whose pass could outlive it. Registration then reopens
+// at 7:00 AM, which is also the opening hour every PURPOSE_OPTIONS label
+// already advertises.
+export const GATE_OPEN_HOUR = 7;
+export const GATE_CLOSE_HOUR = 18;
+export const GATE_OPEN_LABEL = "7:00 AM";
+export const GATE_CLOSE_LABEL = "6:00 PM";
+
+// A visitor's own device clock/timezone can't be trusted to be Manila (and
+// the expiration times the approve_visitor RPC writes are computed in
+// Asia/Manila server-side), so the hour is read through Intl rather than
+// from getHours(). The Philippines has never observed DST, but going
+// through the tz database instead of a hardcoded +8 keeps this correct
+// without depending on that staying true.
+const MANILA_HOUR_MINUTE_FORMAT = new Intl.DateTimeFormat("en-US", {
+  timeZone: "Asia/Manila",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false
+});
+
+export function getManilaHourMinute(now: Date = new Date()): { hour: number; minute: number } {
+  const parts = MANILA_HOUR_MINUTE_FORMAT.formatToParts(now);
+  const read = (type: "hour" | "minute") =>
+    Number(parts.find((part) => part.type === type)?.value ?? "0");
+  // hour12:false still renders midnight as "24" in some engines — normalize
+  // so 12:30 AM is hour 0, not hour 24 (which would read as "open").
+  return { hour: read("hour") % 24, minute: read("minute") };
+}
+
+// Open 7:00 AM through 5:59 PM Manila; closed from 6:00 PM to 6:59 AM.
+export function isGateRegistrationOpen(now: Date = new Date()): boolean {
+  const { hour } = getManilaHourMinute(now);
+  return hour >= GATE_OPEN_HOUR && hour < GATE_CLOSE_HOUR;
 }
